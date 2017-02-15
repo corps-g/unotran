@@ -1,8 +1,8 @@
 module angle
 
 integer :: number_angles ! number angles per half space
-double precision, dimension(:) :: mu ! cosine of angles
-double precision, dimension(:) :: wt ! quadrature weight (sum to 1)
+double precision, allocatable, dimension(:) :: mu ! cosine of angles
+double precision, allocatable, dimension(:) :: wt ! quadrature weight (sum to 1)
 
 integer, parameter :: GL = 1, DGL = 2
 
@@ -18,7 +18,7 @@ subroutine initialize(n, option)
     call fill_gl()
   else if (option .eq. DGL) then
     call fill_dgl()
-  else if
+  else
     stop "Invalid quadrature option."
   end if
   
