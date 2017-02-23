@@ -3,14 +3,14 @@ module material
   integer :: nMaterials, nGroups, debugFlag
   double precision, allocatable, dimension(:) :: ebounds, velocity
   double precision, allocatable, dimension(:,:) :: sig_t, sig_f, vsig_f, chi
-  double precision, allocatable, dimension(:,:,:) :: sig_s
+  double precision, allocatable, dimension(:,:,:,:) :: sig_s
     
   contains
 
   subroutine create(fileName)
     character(len=*), intent(in) :: fileName
     character(1000) :: materialName
-    integer :: mat, group, groupp, numLegendre, dataPresent
+    integer :: mat, group, groupp, L, nLegendre, dataPresent
     double precision :: t, f, vf, c, energyFission, energyCapture, gramAtomWeight
     double precision, allocatable, dimension(:) :: array1
     
@@ -21,19 +21,23 @@ module material
     read(5,*) ebounds
     allocate(velocity(nGroups))
     read(5,*) velocity
+    read(5,'(a)') materialName
+    read(5,*) nLegendre, dataPresent, energyFission, energyCapture, gramAtomWeight
     
     ! Make space for cross sections
     allocate(sig_t(nMaterials, nGroups))
     allocate(sig_f(nMaterials, nGroups))
     allocate(vsig_f(nMaterials, nGroups))
     allocate(chi(nMaterials, nGroups))
-    allocate(sig_s(nMaterials, nGroups, nGroups))
+    allocate(sig_s(nMaterials, nLegendre, nGroups, nGroups))
     allocate(array1(nGroups))
     
     ! Read the cross sections from the file
     do mat = 1, nMaterials
-      read(5,'(a)') materialName
-      read(5,*) numLegendre, dataPresent, energyFission, energyCapture, gramAtomWeight
+      if (mat > 1) then  ! The first material was read above to get array sizes
+        read(5,'(a)') materialName
+        read(5,*) nLegendre, dataPresent, energyFission, energyCapture, gramAtomWeight
+      end if
       do group = 1, nGroups
         if (dataPresent == 1) then
           ! Read total and fission cross sections
@@ -52,10 +56,12 @@ module material
         end if
       end do
       ! Read scattering cross section
-      do group = 1, nGroups
-        read(5,*) array1
-        do groupp = 1, nGroups
-          sig_s(mat, group, groupp) = array1(groupp)
+      do L = 1, nLegendre
+        do group = 1, nGroups
+          read(5,*) array1
+          do groupp = 1, nGroups
+            sig_s(mat, L, group, groupp) = array1(groupp)
+          end do
         end do
       end do
     end do
