@@ -34,12 +34,12 @@ module material
     
     ! Read the cross sections from the file
     do mat = 1, number_materials
-      if (mat > 1) then  ! The first material was read above to get array sizes
+      if (mat .gt. 1) then  ! The first material was read above to get array sizes
         read(5,'(a)') materialName
         read(5,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
       end if
       do group = 1, number_groups
-        if (dataPresent == 1) then
+        if (dataPresent .eq. 1) then
           ! Read total and fission cross sections
           read(5,*) t, f, vf, c
           sig_t(mat, group) = t

@@ -63,7 +63,7 @@ module sweeper
           fission = 0.0
           do gp = 1, number_groups
             ! Get the scattering source
-            if gp /= g  ! Only care about groups outside of the current group
+            if (gp .ne. g) then  ! Only care about groups outside of the current group
               do l = 0, number_legendre
                 out_scatter = out_scatter + (2 * l + 1) * P(l, a) * sig_s(mMap(c), l, g, gp) * phistar(c, l, gp)
               end do
