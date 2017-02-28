@@ -1,12 +1,13 @@
 module mesh
   implicit none
-  integer :: nCells  ! Total number of cells in the mesh
+  integer :: number_cells  ! Total number of cells in the mesh
   double precision, allocatable, dimension(:) :: dx  ! Width of each cell
   integer, allocatable, dimension(:) :: mMap  ! Material within each cell
+  save
 
   contains
 
-  subroutine create(fineMesh, courseMesh, materialMap)
+  subroutine create_mesh(fineMesh, courseMesh, materialMap)
     integer, intent(in) :: fineMesh(:)
     integer, intent(in) :: materialMap(:)
     double precision, intent(in) :: courseMesh(:)
@@ -17,8 +18,8 @@ module mesh
     n = size(fineMesh)  ! Number of course mesh regions
     c = 1  ! counting variable
       
-    nCells = sum(fineMesh)
-    allocate(dx(nCells), mMap(nCells))
+    number_cells = sum(fineMesh)
+    allocate(dx(number_cells), mMap(number_cells))
       
     do i = 1, n
       ddx = (courseMesh(i+1) - courseMesh(i)) / fineMesh(i)
@@ -29,6 +30,6 @@ module mesh
       end do
     end do
     width = courseMesh(n) - courseMesh(1)
-  end subroutine create
+  end subroutine create_mesh
 
 end module mesh
