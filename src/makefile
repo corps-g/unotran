@@ -59,6 +59,15 @@ mesh:
 	
 material:
 	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c material.f90 -m $@
+	
+state:
+	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c material.f90 mesh.f90 state.f90 -m $@
+	
+sweeper:
+	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c sweeper.f90 -m $@
+
+main:
+	$(COMPILER) $(OMPFLAG) $(LIBBLAS) -o main.exe material.f90 mesh.f90 angle.f90 state.f90 main.f90
 
 # Remove objects, module files, and exectables
 clean:
