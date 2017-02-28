@@ -1,6 +1,4 @@
 module angle
-
-
 implicit none
 
 ! number angles per *half space*
@@ -9,6 +7,8 @@ integer :: number_angles
 double precision, allocatable, dimension(:) :: mu 
 ! quadrature weight (sum to 1)
 double precision, allocatable, dimension(:) :: wt 
+! Polynomial container for the legendre polynomials
+double precision, allocatable, dimension(:,:) :: p_leg
 
 integer, parameter :: GL = 1, DGL = 2
 
@@ -71,6 +71,18 @@ subroutine generate_gl_parameters(m, x, w)
     w(i) = 2.0_8/((1.0 - x(i)**2)*d_legendre_p(m, x(i))**2)
   end do
 end subroutine generate_gl_parameters
+
+subroutine initialize_polynomials(number_legendre)
+  integer, intent(in) :: number_legendre
+  integer :: l, a
+  allocate(p_leg(0:number_legendre, number_angles * 2))
+  do l = 0, number_legendre
+    do a = 1, number_angles
+      p_leg(l,a) = legendre_p(l,mu(a))
+      p_leg(l,2*number_angles - a + 1) = legendre_p(l,-mu(a))
+    end do
+  end do
+end subroutine initialize_polynomials
 
 ! Compute P_l(x) using recursion relationship
 double precision function legendre_p(l, x)
