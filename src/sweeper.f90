@@ -93,7 +93,7 @@ module sweeper
             ! for positive mu
             phistar(c, l, g) = phistar(c, l, g) + 0.5 * wt(a) * p_leg(l, a) * psi(c, a, g)
             ! for negative mu
-            an = 2*number_angles - a + 1
+            an = 2 * number_angles - a + 1
             phistar(c, l, g) = phistar(c, l, g) + 0.5 * wt(a) * p_leg(l, an) * psi(c, an, g)
           end do
         end do

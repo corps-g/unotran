@@ -1,14 +1,15 @@
 program main
-  use material, only : create_material, number_legendre
+  use material, only : create_material, number_legendre, number_groups
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials
-  use mesh, only : create_mesh
-  use state, only : initialize_state
+  use mesh, only : create_mesh, number_cells
+  use state, only : initialize_state, phi, source
+  use sweeper, only : sweep
   implicit none
   
   ! initialize types
-  integer :: fineMesh(3), l
+  integer :: fineMesh(3), l, c, a, g, counter
   integer :: materialMap(3)
-  double precision :: courseMesh(4)
+  double precision :: courseMesh(4), norm, error
   
   ! Define problem parameters
   character(len=10) :: filename = 'test.anlxs'
@@ -30,5 +31,29 @@ program main
   ! Create the state variable containers
   call initialize_state()
 
+  do c = 1, number_cells
+    do a = 1, number_angles * 2
+      do g = 1, number_groups
+        if (g .eq. 1) then
+          source(c,a,g) = 1.0
+        else
+          source(c,a,g) = 0.0
+        end if
+      end do
+    end do
+  end do
+  
+  error = 1.0
+  norm = 0.0
+  counter = 1
+  do while (error .gt. 1e-6)
+    call sweep()
+    error = abs(norm - norm2(phi))
+    norm = norm2(phi)
+    print *, error, counter
+    print *, phi
+    counter = counter + 1
+  end do
+  print *, phi
   
 end program main

@@ -1,6 +1,6 @@
 module state
-  use material, only: number_groups,number_legendre
-  use mesh, only: number_cells, mmap
+  use material, only: number_groups, number_legendre
+  use mesh, only: number_cells
   use angle, only: number_angles
   implicit none
   double precision, allocatable, dimension(:,:) :: phi
