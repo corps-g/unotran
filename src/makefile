@@ -54,6 +54,9 @@ endif
 #===============================================================================
 
 # Use the repository's BLAS implementation
+angle:
+	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c angle.f90 -m $@ 
+
 mesh:
 	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c mesh.f90 -m $@ 
 	
