@@ -13,9 +13,9 @@ program main
   
   ! Define problem parameters
   character(len=10) :: filename = 'test.anlxs'
-  fineMesh = [3, 10, 3]
+  fineMesh = [3, 22, 3]
   materialMap = [6,1,6]
-  courseMesh = [0.0, 1.0, 2.0, 3.0]
+  courseMesh = [0.0, 0.09, 1.17, 1.26]
   
   ! Make the mesh
   call create_mesh(fineMesh, courseMesh, materialMap)

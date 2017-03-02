@@ -17,6 +17,12 @@ module state
     allocate(phistar(number_cells,number_legendre,number_groups))
     allocate(internal_source(number_cells,number_angles*2,number_groups))
     
+    phi = 0.0
+    psi = 0.0
+    source = 0.0
+    phistar = 0.0
+    internal_source = 0.0
+    
   end subroutine initialize_state
   
-end module
+end module state
