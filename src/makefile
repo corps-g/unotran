@@ -53,24 +53,41 @@ endif
 # Targets
 #===============================================================================
 
+vpath test_%.f90 
+BC := /usr/bin/bc
+
+objects = material mesh angle sweeper state
+
+all: $(objects) main
+
 # Use the repository's BLAS implementation
-angle:
-	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c angle.f90 -m $@ 
+angle: angle.f90
+	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
+	
+test_angle: angle.f90 ./test/test_angle.f90
+	$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_angle.so $^ 
+	./test/test_angle.so
+	
+test_mesh: mesh.f90 ./test/test_mesh.f90
+	$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_mesh.so $^ 
+	./test/test_mesh.so
 
-mesh:
-	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c mesh.f90 -m $@ 
+mesh: mesh.f90
+	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
 	
-material:
-	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c material.f90 -m $@
+material: material.f90
+	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-state:
-	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c material.f90 mesh.f90 angle.f90 state.f90 -m $@
+state: material.f90 mesh.f90 angle.f90 state.f90
+	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-sweeper:
-	f2py2.7 --fcompiler=$(COMPILER) $(LIBBLAS) -c sweeper.f90 -m $@
+sweeper: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90
+	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 
-main:
-	$(COMPILER) $(OMPFLAG) $(LIBBLAS) -o main.exe material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90 main.f90
+main: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90 main.f90
+	$(F90) $(OMPFLAG) $(LIBBLAS) -o main.exe $^ 
+
+test: test_angle
 
 # Remove objects, module files, and exectables
 clean:
