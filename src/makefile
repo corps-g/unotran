@@ -65,12 +65,16 @@ angle: angle.f90
 	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
 	
 test_angle: angle.f90 ./test/test_angle.f90
-	$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_angle.so $^ 
-	./test/test_angle.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_angle.so $^ 
+	@./test/test_angle.so
 	
 test_mesh: mesh.f90 ./test/test_mesh.f90
-	$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_mesh.so $^ 
-	./test/test_mesh.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_mesh.so $^ 
+	@./test/test_mesh.so
+	
+test_material: material.f90 ./test/test_material.f90
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_material.so $^ 
+	@./test/test_material.so
 
 mesh: mesh.f90
 	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
@@ -87,7 +91,7 @@ sweeper: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90
 main: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90 main.f90
 	$(F90) $(OMPFLAG) $(LIBBLAS) -o main.exe $^ 
 
-test: test_angle
+test: test_angle test_mesh test_material
 
 # Remove objects, module files, and exectables
 clean:

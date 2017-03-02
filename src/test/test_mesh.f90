@@ -37,6 +37,7 @@ implicit none
     t2 = 0
   end if
   
+  ! test material map
   if (ALL(mMap.eq.mMap_test)) then
     write(*,"(A)") '.'
   else
@@ -44,12 +45,15 @@ implicit none
     t3=0
   end if
   
-  if (t1.eq.0) then
+  ! Print appropriate output statements
+  if (t1 .eq. 0) then
     print *, 'mesh: number_cells failed'
   else if (t2 .eq. 0) then
     print *, 'mesh: dx failed'
   else if (t3 .eq. 0) then
     print *, 'mesh: mMap failed'
+  else
+    print *
   end if
 
 end program test_mesh
