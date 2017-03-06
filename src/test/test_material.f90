@@ -9,7 +9,7 @@ implicit none
   double precision :: ebounds_test(8), velocity_test(7)
   real :: sig_t_test(7,7), sig_f_test(7,7), vsig_f_test(7,7), chi_test(7,7)
   double precision :: sig_s_test(8,7,7)
-  integer :: t1=1, t2=1, t3=1, t4=1, t5=1
+  integer :: t1=1, t2=1, t3=1, t4=1, t5=1, testCond
   
   character(len=10) :: filename = 'test.anlxs'
   
@@ -101,44 +101,19 @@ implicit none
                          0.199363,0.022191,0.009386,0.006565,0.003632,0.001115,0.000818,0.001271 /), shape(sig_s_test))
   
   ! Test total cross section             
-  if (norm2(sig_t - sig_t_test) .lt. 1e-6) then
-    write(*,"(A)",advance="no") '.'
-  else
-    write(*,"(A)",advance="no") 'F'
-    t1=0
-  end if
+  t1 = testCond(norm2(sig_t - sig_t_test) .lt. 1e-6)
   
   ! Test fission cross section  
-  if (norm2(sig_f - sig_f_test) .lt. 1e-6) then
-    write(*,"(A)",advance="no") '.'
-  else
-    write(*,"(A)",advance="no") 'F'
-    t2=0
-  end if
+  t2 = testCond(norm2(sig_f - sig_f_test) .lt. 1e-6)
   
   ! Test nu * fission cross section  
-  if (norm2(vsig_f - vsig_f_test) .lt. 1e-6) then
-    write(*,"(A)",advance="no") '.'
-  else
-    write(*,"(A)",advance="no") 'F'
-    t3=0
-  end if
+  t3 = testCond(norm2(vsig_f - vsig_f_test) .lt. 1e-6)
   
   ! Test chi
-  if (norm2(chi - chi_test) .lt. 1e-6) then
-    write(*,"(A)",advance="no") '.'
-  else
-    write(*,"(A)",advance="no") 'F'
-    t4=0
-  end if
+  t4 = testCond(norm2(chi - chi_test) .lt. 1e-6)
   
   ! Test scattering cross section  
-  if (norm2(sig_s(1,:,:,:) - sig_s_test) .lt. 1e-5) then
-    write(*,"(A)",advance="no") '.'
-  else
-    write(*,"(A)",advance="no") 'F'
-    t5=0
-  end if
+  t5 = testCond(norm2(sig_s(1,:,:,:) - sig_s_test) .lt. 1e-5)
   
   ! Print appropriate output statements
   if (t1 .eq. 0) then
@@ -156,3 +131,15 @@ implicit none
   end if
   
 end program test_material
+
+integer function testCond(condition)
+  logical, intent(in) :: condition
+  if (condition) then
+    write(*,"(A)",advance="no") '.'
+    testCond = 1
+  else
+    write(*,"(A)",advance="no") 'F'
+    testCond = 0
+  end if
+
+end function testCond

@@ -7,7 +7,7 @@ implicit none
 ! initialize types
   integer :: fineMesh(3), materialMap(3), number_cells_test, mMap_test(8)
   double precision :: courseMesh(4), dx_test(8)
-  integer :: t1=1, t2=1, t3=1
+  integer :: t1=1, t2=1, t3=1, testCond
   
   ! Define problem parameters
   fineMesh = [2, 4, 2]
@@ -22,28 +22,13 @@ implicit none
   mMap_test = [1, 1, 2, 2, 2, 2, 3, 3]
 
   ! Test number of cells
-  if (number_cells_test .eq. number_cells) then
-    write(*,"(A)",advance="no") '.'
-  else
-    write(*,"(A)",advance="no") 'F'
-    t1=0
-  end if
+  t1 = testCond(number_cells_test .eq. number_cells)
   
   ! test dx
-  if (norm2(dx-dx_test) .lt. 1e-7) then
-    write(*,"(A)",advance="no") '.'
-  else
-    write(*,"(A)",advance="no") 'F'
-    t2 = 0
-  end if
+  t2 = testCond(norm2(dx-dx_test) .lt. 1e-7)
   
   ! test material map
-  if (ALL(mMap.eq.mMap_test)) then
-    write(*,"(A)",advance="no") '.'
-  else
-    write(*,"(A)",advance="no") 'F'
-    t3=0
-  end if
+  t3 = testCond(ALL(mMap.eq.mMap_test))
   
   ! Print appropriate output statements
   if (t1 .eq. 0) then
@@ -57,3 +42,15 @@ implicit none
   end if
 
 end program test_mesh
+
+integer function testCond(condition)
+  logical, intent(in) :: condition
+  if (condition) then
+    write(*,"(A)",advance="no") '.'
+    testCond = 1
+  else
+    write(*,"(A)",advance="no") 'F'
+    testCond = 0
+  end if
+
+end function testCond
