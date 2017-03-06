@@ -14,7 +14,7 @@ module state
     allocate(phi(number_cells,number_groups))
     allocate(psi(number_cells,number_angles*2,number_groups))
     allocate(source(number_cells,number_angles*2,number_groups))
-    allocate(phistar(number_cells,number_legendre,number_groups))
+    allocate(phistar(number_cells,0:number_legendre,number_groups))
     allocate(internal_source(number_cells,number_angles*2,number_groups))
     
     phi = 0.0
