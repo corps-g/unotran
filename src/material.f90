@@ -23,13 +23,15 @@ module material
     read(5,*) velocity
     read(5,'(a)') materialName
     read(5,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
+    ! Count the highest order + zeroth order
+    number_legendre = number_legendre - 1
     
     ! Make space for cross sections
     allocate(sig_t(number_materials, number_groups))
     allocate(sig_f(number_materials, number_groups))
     allocate(vsig_f(number_materials, number_groups))
     allocate(chi(number_materials, number_groups))
-    allocate(sig_s(number_materials, number_legendre, number_groups, number_groups))
+    allocate(sig_s(number_materials, 0:number_legendre, number_groups, number_groups))
     allocate(array1(number_groups))
     
     ! Read the cross sections from the file
@@ -37,6 +39,8 @@ module material
       if (mat .gt. 1) then  ! The first material was read above to get array sizes
         read(5,'(a)') materialName
         read(5,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
+        ! Count the highest order + zeroth order
+        number_legendre = number_legendre - 1
       end if
       do group = 1, number_groups
         if (dataPresent .eq. 1) then
@@ -56,7 +60,7 @@ module material
         end if
       end do
       ! Read scattering cross section
-      do L = 1, number_legendre
+      do L = 0, number_legendre
         do group = 1, number_groups
           read(5,*) array1
           do groupp = 1, number_groups
