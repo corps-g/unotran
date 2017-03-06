@@ -36,7 +36,7 @@ program test_angle
   else if (t2 .eq. 0) then
     print *, 'angle: DGL option failed'
   else
-    print *
+    print *, 'all tests passed for angle'
   end if
 
 end program test_angle

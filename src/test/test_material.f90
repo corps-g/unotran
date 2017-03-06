@@ -152,7 +152,7 @@ implicit none
   else if (t3 .eq. 0) then
     print *, 'material: sig_s failed'
   else
-    print *
+    print *, ' all tests passed for material'
   end if
   
 end program test_material

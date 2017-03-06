@@ -39,7 +39,7 @@ implicit none
   
   ! test material map
   if (ALL(mMap.eq.mMap_test)) then
-    write(*,"(A)") '.'
+    write(*,"(A)",advance="no") '.'
   else
     write(*,"(A)",advance="no") 'F'
     t3=0
@@ -53,7 +53,7 @@ implicit none
   else if (t3 .eq. 0) then
     print *, 'mesh: mMap failed'
   else
-    print *
+    print *, 'all tests passed for mesh'
   end if
 
 end program test_mesh
