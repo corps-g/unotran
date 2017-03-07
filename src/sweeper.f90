@@ -15,7 +15,10 @@ module sweeper
     double precision :: incoming, scat, invmu
     
     ! get the source array
+    call update_phistar()
     call update_source()
+    
+    phi = 0.0
     
     incoming = 0.0
     ! Sweep in positive mu direction
@@ -58,7 +61,6 @@ module sweeper
   subroutine update_source()
     integer :: c, a, g, gp, l
     double precision :: out_scatter, fission
-    call update_phistar()
   
     do c = 1, number_cells
       do a = 1, number_angles * 2

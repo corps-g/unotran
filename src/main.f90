@@ -31,18 +31,10 @@ program main
   ! Create the state variable containers
   call initialize_state()
 
-  do c = 1, number_cells
-    do a = 1, number_angles * 2
-      do g = 1, number_groups
-        if (g .eq. 1) then
-          source(c,a,g) = 1.0
-        else
-          source(c,a,g) = 0.0
-        end if
-      end do
-    end do
-  end do
-  
+  source = 0.0
+  ! Source only in first group
+  source(:,:,1) = 1.0
+
   error = 1.0
   norm = 0.0
   counter = 1
@@ -51,7 +43,6 @@ program main
     error = abs(norm - norm2(phi))
     norm = norm2(phi)
     print *, error, counter
-    print *, phi
     counter = counter + 1
   end do
   print *, phi
