@@ -31,9 +31,9 @@ program main
   ! Create the state variable containers
   call initialize_state()
 
-  source = 0.0
+  source = 1.0
   ! Source only in first group
-  source(:,:,1) = 1.0
+  !source(:,:,1) = 1.0
 
   error = 1.0
   norm = 0.0
@@ -45,6 +45,6 @@ program main
     print *, error, counter
     counter = counter + 1
   end do
-  print *, phi
+  print *, phi(:,0,:)
   
 end program main

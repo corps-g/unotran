@@ -103,7 +103,7 @@ test_main: mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 ./test/test_mai
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_main.so $^ 
 	@./test/test_main.so
 
-test: test_angle test_mesh test_material test_state test_sweeper test_main
+test: test_angle test_mesh test_material test_state test_main
 
 # Remove objects, module files, and exectables
 clean:

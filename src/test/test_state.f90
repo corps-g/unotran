@@ -10,14 +10,13 @@ program test_state
   ! initialize types
   integer :: fineMesh(1), materialMap(1), t1=1, t2=1, t3=1, t4=1, testCond
   double precision :: courseMesh(2), norm, error
-  double precision :: phi_test(1,7), psi_test(1,4,7),source_test(1,4,7),phistar_test(1,7,7)
+  double precision :: phi_test(1,7,7), psi_test(1,4,7),source_test(1,4,7)
   ! Define problem parameters
   character(len=10) :: filename = 'test.anlxs'
   
   phi_test = 0
   psi_test = 0
   source_test = 0
-  phistar_test = 0
   fineMesh = [1]
   materialMap = [1]
   courseMesh = [0.0, 1.0]
@@ -38,20 +37,19 @@ program test_state
   
   t1 = testCond(norm2(phi-phi_test) .lt. 1e-7)
   
-  t2 = testCond(norm2(psi-psi_test) .lt. 1e-7)
-
-  t3 = testCond(norm2(source-source_test) .lt. 1e-7)
+  t2 = testCond(norm2(source-source_test) .lt. 1e-7)
   
-  t4 = testCond(norm2(phistar-phistar_test) .lt. 1e-7)
+  call finalize_state()
+  call initialize_state(.true.)
+  
+  t3 = testCond(norm2(psi-psi_test) .lt. 1e-7)
   
   if (t1 .eq. 0) then
     print *, 'state: phi initialization failed'
   else if (t2 .eq. 0) then
-    print *, 'state: psi initialization failed'
-  else if (t3 .eq. 0) then
     print *, 'state: source initialization failed'
-  else if (t4 .eq. 0) then
-    print *, 'state: phistar initialization failed'
+  else if (t3 .eq. 0) then
+    print *, 'state: psi initialization failed'
   else
     print *, 'all tests passed for state'
   end if

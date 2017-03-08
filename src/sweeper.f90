@@ -4,103 +4,84 @@ module sweeper
   use material, only: sig_s, sig_t, vsig_f, chi, number_groups, number_legendre
   use mesh, only: dx, number_cells, mMap
   use angle, only: number_angles, p_leg, wt, mu
-  use state, only: phi, psi, source, phistar, internal_source
+  use state, only: phi, psi, source, store_psi, equation
   implicit none
   
   contains
   ! Define source
   
   subroutine sweep()
-    integer :: c, a, g, l, an
-    double precision :: incoming, scat, invmu
+    integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep
+    double precision :: incoming, Q, Ps, invmu
+    double precision :: phi_old(number_cells,0:number_legendre,number_groups)
     
-    ! get the source array
-    call update_phistar()
-    call update_source()
-    
-    phi = 0.0
-    
-    incoming = 0.0
-    ! Sweep in positive mu direction
-    do c = 1, number_cells
-      do a = 1, number_angles
-        do g = 1, number_groups
-          invmu = dx(c) / (2 * abs(mu(a)))
-          scat = 0.0
-          do l = 0, number_legendre
-            scat = scat + (2 * l + 1) * p_leg(l, a) * sig_s(mMap(c), l, g, g) * phistar(c, l, g)
+    do o = 1, 2  ! Sweep over octants
+      ! Sweep in the correct direction in the octant
+      if (o .eq. 1) then
+        cmin = 1
+        cmax = number_cells
+        cstep = 1
+        amin = 1
+        amax = number_angles
+        astep = 1
+      else
+        cmin = number_cells
+        cmax = 1
+        cstep = -1
+        amin = number_angles
+        amax = 1
+        astep = -1
+      end if
+      
+      phi_old = phi
+      phi = 0.0  ! Reset phi
+      incoming = 0.0  ! Set vacuum conditions for both faces
+      do c = cmin, cmax, cstep  ! Sweep over cells
+        do g = 1, number_groups  ! Sweep over group
+          do a = amin, amax, astep  ! Sweep over angle
+            ! Get the correct angle index
+            if (o .eq. 1) then
+              an = a
+            else
+              an = 2 * number_angles - a + 1
+            end if
+          
+            ! get a common fraction
+            invmu = dx(c) / (2 * abs(mu(a)))
+            ! Update the right hand side
+            Q = source(c, an, g)
+            do gp = 1, number_groups
+              Q = Q + chi(mMap(c), g) * vsig_f(mMap(c), gp) * phi_old(c, 0, gp)
+              do l = 0, number_legendre
+                Q = Q + (2 * l + 1) * p_leg(l, an) * sig_s(mMap(c), l, g, gp) * phi_old(c, l, gp)
+              end do
+            end do
+            
+            call computeEQ(Q, incoming, sig_t(mMap(c), g), invmu, incoming, Ps)
+            
+            if (store_psi) then
+              psi(c,an,g) = Ps
+            end if
+            
+            do l = 0, number_legendre
+              phi(c,l,g) = phi(c,l,g) + 0.5 * wt(a) * p_leg(l, an) * Ps
+            end do
           end do
-          !psi(c, a, g) = (incoming + invmu * (scat + source(c, a, g))) / (1 + sig_t(c, g) * invmu)
-          phi(c, g) = phi(c,g) + wt(a)*(incoming+invmu*(scat+internal_source(c, a, g)))/(1+sig_t(mMap(c), g)*invmu)
-          incoming = 2 * psi(c, a, g) - incoming
         end do
       end do
     end do
-    
-    incoming = 0.0
-    ! Sweep in negative mu direction
-    do c = number_cells, 1, -1
-      do a = number_angles, 1, -1
-        do g = 1, number_groups
-          invmu = dx(c) / (2 * abs(mu(a)))
-          scat = 0.0
-          do l = 0, number_legendre
-            scat = scat + (2 * l + 1) * p_leg(l, 2*number_angles - a + 1) * sig_s(mMap(c), l, g, g) * phistar(c, l, g)
-          end do
-          !psi(c, a, g) = (incoming + invmu * (scat + source(c, a, g))) / (1 + sig_t(c, g) * invmu)
-          an = 2 * number_angles - a + 1
-          phi(c, g) = phi(c,g) + wt(a) * (incoming + invmu * (scat + internal_source(c, an, g))) / (1 + sig_t(mMap(c), g) * invmu)
-          incoming = 2 * psi(c, an, g) - incoming
-        end do
-      end do
-    end do
-        
-  
   end subroutine sweep
   
-  subroutine update_source()
-    integer :: c, a, g, gp, l
-    double precision :: out_scatter, fission
+  subroutine computeEQ(Q, incoming, sig, invmu, outgoing, Ps)
+    implicit none
+    double precision, intent(in) :: Q, incoming, sig, invmu
+    double precision, intent(out) :: outgoing, Ps
+    
+    if (equation .eq. 'DD') then
+      Ps = (incoming + invmu * Q) / (1 + invmu * sig)
+      outgoing = 2 * Ps - incoming
+    end if
   
-    do c = 1, number_cells
-      do a = 1, number_angles * 2
-        do g = 1, number_groups
-          out_scatter = 0.0
-          fission = 0.0
-          do gp = 1, number_groups
-            ! Get the scattering source
-            if (gp .ne. g) then  ! Only care about groups outside of the current group
-              do l = 0, number_legendre
-                out_scatter = out_scatter + (2 * l + 1) * p_leg(l, a) * sig_s(mMap(c), l, g, gp) * phistar(c, l, gp)
-              end do
-            end if
-            ! Get the fission source
-            fission = fission + vsig_f(mMap(c), g) * phi(c, g)
-          end do
-          fission = fission * chi(mMap(c), g)
-          ! Save the right hand side of the equation
-          internal_source(c, a, g) = out_scatter + fission + source(c, a, g)
-        end do
-      end do
-    end do
-  end subroutine update_source
-  
-  subroutine update_phistar()
-    integer :: c, l, g, a, an
-    do c = 1, number_cells
-      do l = 0, number_legendre
-        do g = 1, number_groups
-          phistar(c, l, g) = 0.0
-          do a = 1, number_angles
-            ! for positive mu
-            phistar(c, l, g) = phistar(c, l, g) + 0.5 * wt(a) * p_leg(l, a) * psi(c, a, g)
-            ! for negative mu
-            an = 2 * number_angles - a + 1
-            phistar(c, l, g) = phistar(c, l, g) + 0.5 * wt(a) * p_leg(l, an) * psi(c, an, g)
-          end do
-        end do
-      end do
-    end do
-  end subroutine update_phistar
+  end subroutine computeEQ
   
 end module sweeper
