@@ -12,7 +12,7 @@ module sweeper
   
   subroutine sweep()
     integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep
-    double precision :: incoming, Q, Ps, invmu
+    double precision :: incoming(number_angles*2), Q, Ps, invmu
     double precision :: phi_old(number_cells,0:number_legendre,number_groups)
     
     do o = 1, 2  ! Sweep over octants
@@ -57,7 +57,7 @@ module sweeper
               end do
             end do
             
-            call computeEQ(Q, incoming, sig_t(mMap(c), g), invmu, incoming, Ps)
+            call computeEQ(Q, incoming(an), sig_t(mMap(c), g), invmu, incoming(an), Ps)
             
             if (store_psi) then
               psi(c,an,g) = Ps

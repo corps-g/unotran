@@ -8,8 +8,7 @@ module mesh
   contains
 
   subroutine create_mesh(fineMesh, courseMesh, materialMap)
-    integer, intent(in) :: fineMesh(:)
-    integer, intent(in) :: materialMap(:)
+    integer, intent(in) :: fineMesh(:), materialMap(:)
     double precision, intent(in) :: courseMesh(:)
       
     double precision :: width  ! Total width of problem
