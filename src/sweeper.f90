@@ -13,7 +13,7 @@ module sweeper
   subroutine sweep()
     integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep
     double precision :: incoming(number_angles*2), Q, Ps, invmu
-    double precision :: phi_old(number_cells,0:number_legendre,number_groups)
+    double precision :: phi_old(0:number_legendre,number_groups,number_cells)
     
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction in the octant
@@ -49,22 +49,22 @@ module sweeper
             ! get a common fraction
             invmu = dx(c) / (2 * abs(mu(a)))
             ! Update the right hand side
-            Q = source(c, an, g)
+            Q = source(g, an, c)
             do gp = 1, number_groups
-              Q = Q + chi(mMap(c), g) * vsig_f(mMap(c), gp) * phi_old(c, 0, gp)
+              Q = Q + chi(g, mMap(c)) * vsig_f(gp, mMap(c)) * phi_old(0, gp, c)
               do l = 0, number_legendre
-                Q = Q + (2 * l + 1) * p_leg(l, an) * sig_s(mMap(c), l, g, gp) * phi_old(c, l, gp)
+                Q = Q + (2 * l + 1) * p_leg(l, an) * sig_s(l, g, gp, mMap(c)) * phi_old(l, gp, c)
               end do
             end do
             
-            call computeEQ(Q, incoming(an), sig_t(mMap(c), g), invmu, incoming(an), Ps)
+            call computeEQ(Q, incoming(an), sig_t(g, mMap(c)), invmu, incoming(an), Ps)
             
             if (store_psi) then
-              psi(c,an,g) = Ps
+              psi(g,an,c) = Ps
             end if
             
             do l = 0, number_legendre
-              phi(c,l,g) = phi(c,l,g) + 0.5 * wt(a) * p_leg(l, an) * Ps
+              phi(l,g,c) = phi(l,g,c) + 0.5 * wt(a) * p_leg(l, an) * Ps
             end do
           end do
         end do

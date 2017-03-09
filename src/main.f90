@@ -34,6 +34,6 @@ program main
     print *, error, counter
     counter = counter + 1
   end do
-  print *, phi(:,0,:)
+  print *, phi(0,:,:)
   
 end program main

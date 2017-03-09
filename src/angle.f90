@@ -76,10 +76,10 @@ subroutine initialize_polynomials(number_legendre)
   integer, intent(in) :: number_legendre
   integer :: l, a
   allocate(p_leg(0:number_legendre, number_angles * 2))
-  do l = 0, number_legendre
-    do a = 1, number_angles
+  do a = 1, number_angles
+    do l = 0, number_legendre
       p_leg(l,a) = legendre_p(l,mu(a))
-      p_leg(l,2*number_angles - a + 1) = legendre_p(l,-mu(a))
+      p_leg(l,2 * number_angles - a + 1) = legendre_p(l,-mu(a))
     end do
   end do
 end subroutine initialize_polynomials

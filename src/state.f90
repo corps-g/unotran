@@ -31,12 +31,12 @@ module state
 
     ! Only allocate psi if the option is to store psi    
     if (store_psi) then
-      allocate(psi(number_cells,number_angles*2,number_groups))
+      allocate(psi(number_groups,number_angles*2,number_cells))
       psi = 0.0
     end if
     
-    allocate(phi(number_cells,0:number_legendre,number_groups))
-    allocate(source(number_cells,number_angles*2,number_groups))
+    allocate(phi(0:number_legendre,number_groups,number_cells))
+    allocate(source(number_groups,number_angles*2,number_cells))
     
     phi = 0.0
     source = 0.0

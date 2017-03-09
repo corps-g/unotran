@@ -10,7 +10,7 @@ module material
   subroutine create_material(fileName)
     character(len=*), intent(in) :: fileName
     character(1000) :: materialName
-    integer :: mat, group, groupp, L, dataPresent
+    integer :: mat, g, gp, L, dataPresent
     double precision :: t, f, vf, c, energyFission, energyCapture, gramAtomWeight
     double precision, allocatable, dimension(:) :: array1
     
@@ -27,11 +27,11 @@ module material
     number_legendre = number_legendre - 1
     
     ! Make space for cross sections
-    allocate(sig_t(number_materials, number_groups))
-    allocate(sig_f(number_materials, number_groups))
-    allocate(vsig_f(number_materials, number_groups))
-    allocate(chi(number_materials, number_groups))
-    allocate(sig_s(number_materials, 0:number_legendre, number_groups, number_groups))
+    allocate(sig_t(number_groups, number_materials))
+    allocate(sig_f(number_groups, number_materials))
+    allocate(vsig_f(number_groups, number_materials))
+    allocate(chi(number_groups, number_materials))
+    allocate(sig_s(0:number_legendre, number_groups, number_groups, number_materials))
     allocate(array1(number_groups))
     
     ! Read the cross sections from the file
@@ -42,29 +42,29 @@ module material
         ! Count the highest order + zeroth order
         number_legendre = number_legendre - 1
       end if
-      do group = 1, number_groups
+      do g = 1, number_groups
         if (dataPresent .eq. 1) then
           ! Read total and fission cross sections
           read(5,*) t, f, vf, c
-          sig_t(mat, group) = t
-          sig_f(mat, group) = f
-          vsig_f(mat, group) = vf
-          chi(mat, group) = c
+          sig_t(g, mat) = t
+          sig_f(g, mat) = f
+          vsig_f(g, mat) = vf
+          chi(g, mat) = c
         else
           ! Read just the total cross section
           read(5,*) t
-          sig_t(mat, group) = t
-          sig_f(mat, group) = 0.0
-          vsig_f(mat, group) = 0.0
-          chi(mat, group) = 0.0
+          sig_t(g, mat) = t
+          sig_f(g, mat) = 0.0
+          vsig_f(g, mat) = 0.0
+          chi(g, mat) = 0.0
         end if
       end do
       ! Read scattering cross section
       do L = 0, number_legendre
-        do group = 1, number_groups
+        do g = 1, number_groups
           read(5,*) array1
-          do groupp = 1, number_groups
-            sig_s(mat, L, group, groupp) = array1(groupp)
+          do gp = 1, number_groups
+            sig_s(L, g, gp, mat) = array1(gp)
           end do
         end do
       end do
