@@ -68,8 +68,15 @@ module material
           end do
         end do
       end do
+      
+      ! make sure chi is a PDF
+      if (dataPresent .eq. 1) then
+        chi(:,mat) = chi(:,mat) / sum(chi(:,mat))
+      end if
     end do
       
+      
+  
     
   end subroutine create_material
 
