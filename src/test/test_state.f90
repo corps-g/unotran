@@ -10,7 +10,7 @@ program test_state
   ! initialize types
   integer :: fineMesh(1), materialMap(1), t1=1, t2=1, t3=1, t4=1, testCond
   double precision :: courseMesh(2), norm, error
-  double precision :: phi_test(1,7,7), psi_test(1,4,7),source_test(1,4,7)
+  double precision :: phi_test(7,1), psi_test(7,4,1),source_test(7,4,1)
   ! Define problem parameters
   character(len=10) :: filename = 'test.anlxs'
   
@@ -35,7 +35,7 @@ program test_state
   ! Create the state variable containers
   call initialize_state()
   
-  t1 = testCond(norm2(phi-phi_test) .lt. 1e-7)
+  t1 = testCond(norm2(phi(0,:,:)-phi_test) .lt. 1e-7)
   
   t2 = testCond(norm2(source-source_test) .lt. 1e-7)
   
