@@ -11,7 +11,7 @@ use material, only : create_material, number_legendre, number_groups
   double precision :: courseMesh(4), norm, error, phi_test(7,28)
   
   ! Define problem parameters
-  character(len=10) :: filename = 'test.anlxs'
+  character(len=17) :: filename = 'test/testXS.anlxs'
   fineMesh = [3, 22, 3]
   materialMap = [6,1,6]
   courseMesh = [0.0, 0.09, 1.17, 1.26]
