@@ -4,10 +4,15 @@ module material
   double precision, allocatable, dimension(:) :: ebounds, velocity
   double precision, allocatable, dimension(:,:) :: sig_t, sig_f, vsig_f, chi
   double precision, allocatable, dimension(:,:,:,:) :: sig_s
-  save
+
   contains
 
+  ! Read the cross section data from the file
   subroutine create_material(fileName)
+    ! Inputs :
+    !   fileName : file where cross sections are stored
+
+    ! Read a file that is stored in the proteus format
     character(len=*), intent(in) :: fileName
     character(1000) :: materialName
     integer :: mat, g, gp, L, dataPresent
@@ -75,9 +80,6 @@ module material
       end if
     end do
       
-      
-  
-    
   end subroutine create_material
 
 end module material
