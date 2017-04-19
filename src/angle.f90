@@ -9,9 +9,9 @@ double precision, allocatable, dimension(:) :: mu
 double precision, allocatable, dimension(:) :: wt 
 ! Polynomial container for the legendre polynomials
 double precision, allocatable, dimension(:,:) :: p_leg
-
+! Choice between the type of quadrature
 integer, parameter :: GL = 1, DGL = 2
-
+! Setting the value of pi
 double precision, parameter :: PI = 3.141592653589793116_8
 
 contains
@@ -72,6 +72,7 @@ subroutine generate_gl_parameters(m, x, w)
   end do
 end subroutine generate_gl_parameters
 
+! Fill p_leg with the discrete column vectors of DLP
 subroutine initialize_polynomials(number_legendre)
   integer, intent(in) :: number_legendre
   integer :: l, a
