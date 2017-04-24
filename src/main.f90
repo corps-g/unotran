@@ -6,24 +6,29 @@ program main
   integer :: l, c, a, g, n
   ! fineMesh : vector of int for number of fine mesh divisions per cell
   ! materialMap : vector of int with material index for each course region
-  integer, allocatable :: fineMesh(:), materialMap(:)
+  integer, allocatable :: fm(:), mm(:), em(:)
   ! courseMap : vector of float with bounds for course mesh regions
-  double precision, allocatable :: courseMesh(:)
+  double precision, allocatable :: cm(:)
   
   ! Define file for cross sections
   character(len=10) :: filename = 'test.anlxs'
   
+  ! define energy map
+  allocate(em(1))
+  em(1) = 4
+
   ! number of pins in model
   n = 10
   
   ! fill the mesh containers for the n-pin problem
-  allocate(fineMesh(3*n), courseMesh(3*n+1), materialMap(3*n))
+  allocate(fm(3*n), cm(3*n+1), mm(3*n))
   
   ! initialize the mesh for the problem using mesh containers
-  call get_mesh(n, fineMesh, courseMesh, materialMap)
+  call get_mesh(n, fm, cm, mm)
   
   ! initialize the variables necessary to solve the problem
-  call initialize_solver(fineMesh, courseMesh, materialMap,filename, 10, 1)
+  call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, filename=filename, &
+                         angle_order=10, angle_option=1, energyMap=em)
 
   ! add source to all cells in 1st energy group
   source(:,:,:) = 1.0
