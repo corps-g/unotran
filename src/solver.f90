@@ -4,13 +4,15 @@ module solver
   use mesh, only : create_mesh, number_cells
   use state, only : initialize_state, phi, source
   use sweeper, only : sweep
+  use dgm, only : initialize_moments, initialize_basis
+
   implicit none
   
   contains
   
   ! Initialize all of the variables and solvers
   subroutine initialize_solver(fineMesh, courseMesh, materialMap, fileName, angle_order, &
-                               angle_option, store, EQ, energyMap)
+                               angle_option, store, EQ, energyMap, basisName)
     ! Inputs :
     !   fineMesh : vector of int for number of fine mesh divisions per cell
     !   courseMap : vector of float with bounds for course mesh regions
@@ -30,8 +32,7 @@ module solver
     logical :: store_psi, useDGM
     character(len=2) :: equation
     integer, intent(in), optional :: energyMap(:)
-    integer, allocatable :: energyMesh(:)
-    integer :: g, gp
+    character(len=*), intent(in) :: basisName
     
     ! Check if the optional argument store is given
     if (present(store)) then
@@ -51,28 +52,22 @@ module solver
     call create_mesh(fineMesh, courseMesh, materialMap)
     ! read the material cross sections
     call create_material(filename)
-    ! make the energy mesh if energyMap was given
-    if (present(energyMap)) then
-      useDGM = .true.
-      allocate(energyMesh(number_groups))
-      g = 1
-      do gp = 1, number_groups
-        energyMesh(gp) = g
-        if (gp .eq. energyMap(g)) then
-          g = g + 1
-        end if
-      end do
-      print *, energyMesh
-    else
-      useDGM = .false.
-    end if
-
     ! initialize the angle quadrature
     call initialize_angle(angle_order, angle_option)
     ! get the basis vectors
     call initialize_polynomials(number_legendre)
     ! allocate the solutions variables
     call initialize_state(store_psi, equation)
+
+    ! make the energy mesh if energyMap was given
+    if (present(energyMap)) then
+      useDGM = .true.
+      call initialize_moments(energyMap)
+      call initialize_basis(basisName)
+    else
+      useDGM = .false.
+    end if
+
   
   end subroutine initialize_solver
 

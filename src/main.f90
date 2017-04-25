@@ -1,5 +1,6 @@
 program main
   use solver
+
   implicit none
   
   ! initialize types
@@ -11,7 +12,8 @@ program main
   double precision, allocatable :: cm(:)
   
   ! Define file for cross sections
-  character(len=10) :: filename = 'test.anlxs'
+  character(len=10) :: fileName = 'test.anlxs'
+  character(len=5) :: basisName = 'basis'
   
   ! define energy map
   allocate(em(1))
@@ -27,8 +29,8 @@ program main
   call get_mesh(n, fm, cm, mm)
   
   ! initialize the variables necessary to solve the problem
-  call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, filename=filename, &
-                         angle_order=10, angle_option=1, energyMap=em)
+  call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, fileName=fileName, &
+                         angle_order=10, angle_option=1, energyMap=em, basisName=basisName)
 
   ! add source to all cells in 1st energy group
   source(:,:,:) = 1.0
