@@ -1,5 +1,6 @@
 module material
   implicit none
+
   integer :: number_materials, number_groups, debugFlag, number_legendre
   double precision, allocatable, dimension(:) :: ebounds, velocity
   double precision, allocatable, dimension(:,:) :: sig_t, sig_f, vsig_f, chi

@@ -1,5 +1,6 @@
 module mesh
   implicit none
+
   integer :: number_cells  ! Total number of cells in the mesh
   double precision :: width  ! Total width of the problem
   double precision, allocatable, dimension(:) :: dx  ! Width of each cell
