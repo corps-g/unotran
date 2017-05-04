@@ -2,9 +2,10 @@ module solver
   use material, only : create_material, number_legendre, number_groups
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials
   use mesh, only : create_mesh, number_cells
-  use state, only : initialize_state, phi, source
+  use state, only : initialize_state, phi, source, useDGM
   use sweeper, only : sweep
   use dgm, only : initialize_moments, initialize_basis
+  use dgmsweeper, only : dgmsweep
 
   implicit none
   
@@ -32,7 +33,7 @@ module solver
     logical :: store_psi, useDGM
     character(len=2) :: equation
     integer, intent(in), optional :: energyMap(:)
-    character(len=*), intent(in) :: basisName
+    character(len=*), intent(in), optional :: basisName
     
     ! Check if the optional argument store is given
     if (present(store)) then
@@ -68,7 +69,7 @@ module solver
       useDGM = .false.
     end if
 
-  
+
   end subroutine initialize_solver
 
   ! Interate equations until convergance
@@ -88,7 +89,11 @@ module solver
     counter = 1
     do while (error .gt. eps)  ! Interate to convergance tolerance
       ! Sweep through the mesh
-      call sweep()
+      if (useDGM) then
+        call dgmsweep()
+      else
+        call sweep()
+      end if
       ! Store norm of scalar flux
       hold = norm2(phi)
       ! error is the difference in the norm of phi for successive iterations

@@ -39,7 +39,7 @@ program main
   call solve(1e-8_8)
 
   ! output the resulting scalar flux
-  print *, phi(0,:,:)
+  !print *, phi(0,:,:)
   
 end program main
 

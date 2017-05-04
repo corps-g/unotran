@@ -6,7 +6,7 @@ module state
   implicit none
 
   double precision, allocatable, dimension(:,:,:) :: psi, source, phi
-  logical :: store_psi
+  logical :: store_psi, useDGM
   character(len=2) :: equation
   
   contains
