@@ -28,7 +28,7 @@ module dgm
     ! Create the map of course groups and default to full expansion order
     allocate(energyMesh(number_groups))
     allocate(order(number_course_groups))
-    order(:) = 0
+    order = 0
     g = 1
     do gp = 1, number_groups
       energyMesh(gp) = g
@@ -43,7 +43,7 @@ module dgm
     ! Allocate the moment containers
     allocate(sig_s_moment(0:number_legendre, expansion_order, number_course_groups, number_course_groups, number_cells))
     allocate(phi_moment(0:number_legendre, expansion_order, number_course_groups, number_cells))
-    allocate(source_moment(expansion_order, number_course_groups, number_angles, number_cells))
+    allocate(source_moment(expansion_order, number_course_groups, 2*number_angles, number_cells))
     allocate(psi_0_moment(number_course_groups, 2*number_angles, number_cells))
     allocate(delta_moment(expansion_order, number_course_groups, 2*number_angles, number_cells))
     allocate(sig_t_moment(number_course_groups, number_cells))
@@ -131,23 +131,20 @@ module dgm
 
     ! Get moments for the fluxes
     do c = 1, number_cells
+      ! Scalar flux
       do g = 1, number_groups
         cg = energyMesh(g)
         do i = 1, order(cg)
           do l = 0, number_legendre
-            ! Scalar flux
-            print *, g, i, l, basis(i,g) * phi(l,g,c)
             phi_moment(l, i, cg, c) = phi_moment(l, i, cg, c) + basis(i, g) * phi(l, g, c)
           end do
         end do
       end do
-      print *, phi_moment(:,:,:,1)
-      stop 'break'
+
+      ! Angular flux
       do a = 1, number_angles * 2
         do g = 1, number_groups
           cg = energyMesh(g)
-          ! i represents the angle in this case
-          ! Angular flux
           psi_0_moment(cg, a, c) = psi_0_moment(cg, a, c) +  basis(1, g) * psi(g, a, c)
         end do
       end do
