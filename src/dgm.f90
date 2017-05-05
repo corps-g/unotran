@@ -11,16 +11,17 @@ module dgm
   double precision, allocatable, dimension(:,:,:) :: psi_0_moment
   double precision, allocatable, dimension(:,:) :: sig_t_moment, basis
   integer :: expansion_order, number_course_groups
-  integer, allocatable :: energyMesh(:)
+  integer, allocatable :: energyMesh(:), order(:)
 
   contains
 
   ! Initialize the container for the cross section and flux moments
   subroutine initialize_moments(energyMap)
     integer, intent(in) :: energyMap(:)
-    integer, dimension(:), allocatable :: order
     integer :: g, gp
 
+    phi = 1.0
+    psi = 1.0
     ! Get the number of course groups
     number_course_groups = size(energyMap) + 1
 
@@ -38,39 +39,60 @@ module dgm
     end do
 
     expansion_order = MAXVAL(order)
-    deallocate(order)
 
     ! Allocate the moment containers
-    allocate(sig_s_moment(number_course_groups, number_course_groups, expansion_order, 0:number_legendre, number_cells))
-    allocate(phi_moment(number_course_groups, expansion_order, 0:number_legendre, number_cells))
-    allocate(source_moment(number_course_groups, expansion_order, number_angles, number_cells))
+    allocate(sig_s_moment(0:number_legendre, expansion_order, number_course_groups, number_course_groups, number_cells))
+    allocate(phi_moment(0:number_legendre, expansion_order, number_course_groups, number_cells))
+    allocate(source_moment(expansion_order, number_course_groups, number_angles, number_cells))
     allocate(psi_0_moment(number_course_groups, 2*number_angles, number_cells))
-    allocate(delta_moment(number_course_groups, expansion_order, 2*number_angles, number_cells))
+    allocate(delta_moment(expansion_order, number_course_groups, 2*number_angles, number_cells))
     allocate(sig_t_moment(number_course_groups, number_cells))
+
+    sig_s_moment = 0.0
+    phi_moment = 0.0
+    source_moment = 0.0
+    psi_0_moment = 0.0
+    delta_moment = 0.0
+    sig_t_moment = 0.0
+
   end subroutine initialize_moments
 
   ! Load basis set from file
   subroutine initialize_basis(fileName)
     character(len=*), intent(in) :: fileName
     double precision, allocatable, dimension(:) :: array1
-    integer :: g
+    integer, allocatable :: cumsum(:)
+    integer :: g, cg, i
 
     ! allocate the basis array
-    allocate(basis(number_groups, expansion_order))
-    allocate(array1(expansion_order))
+    allocate(basis(expansion_order, number_groups))
+    allocate(array1(number_groups))
+    allocate(cumsum(number_course_groups))
     ! initialize the basis to zero
-    basis(:,:) = 0.0
+    basis = 0.0
+
+    cumsum = order
+
+    do cg = 1, number_course_groups
+      if (cg == 1) then
+        cycle
+      end if
+      cumsum(cg) = cumsum(cg-1) + cumsum(cg)
+    end do
+    cumsum = cumsum - order
 
     ! open the file and read into the basis container
     open(unit=5, file=fileName)
     do g = 1, number_groups
+      cg = energyMesh(g)
       array1(:) = 0.0
       read(5,*) array1
-      basis(g,:) = array1
+      do i = 1, order(cg)
+        basis(i,g) = array1(cumsum(cg) + i)
+      end do
     end do
-
     ! clean up
-    deallocate(array1)
+    deallocate(array1, cumsum)
 
   end subroutine initialize_basis
 
@@ -109,55 +131,65 @@ module dgm
 
     ! Get moments for the fluxes
     do c = 1, number_cells
-      do i = 1, expansion_order
-        do g = 1, number_groups
-          cg = energyMesh(g)
+      do g = 1, number_groups
+        cg = energyMesh(g)
+        do i = 1, order(cg)
           do l = 0, number_legendre
             ! Scalar flux
-            phi_moment(l, cg, i, c) = phi_moment(l, cg, i, c) + basis(g, i) * phi(l, g, c)
+            print *, g, i, l, basis(i,g) * phi(l,g,c)
+            phi_moment(l, i, cg, c) = phi_moment(l, i, cg, c) + basis(i, g) * phi(l, g, c)
           end do
-          ! i represents the angle in this case
-          ! Angular flux
-          psi_0_moment(cg, i, c) = psi_0_moment(cg, i, c) +  basis(g, 0) * psi(g, i, c)
-          psi_0_moment(cg, i+number_angles, c) = psi_0_moment(cg, i+number_angles, c) +  basis(g, 0) * psi(g, i+number_angles, c)
         end do
       end do
-    end do
+      print *, phi_moment(:,:,:,1)
+      stop 'break'
+      do a = 1, number_angles * 2
+        do g = 1, number_groups
+          cg = energyMesh(g)
+          ! i represents the angle in this case
+          ! Angular flux
+          psi_0_moment(cg, a, c) = psi_0_moment(cg, a, c) +  basis(1, g) * psi(g, a, c)
+        end do
+      end do
 
-    ! Get moments for the cross sections
-    do c = 1, number_cells
+      ! Get moments for the cross sections
       mat = mMap(c)
       ! total cross section moment
       do g = 1, number_groups
         cg = energyMesh(g)
-        sig_t_moment(cg, c) = sig_t_moment(cg, c) + basis(g,0) * sig_t(g, c) * phi(c, g, 0) / phi_moment(0, cg, 0, c)
+        sig_t_moment(cg, c) = sig_t_moment(cg, c) + basis(1, g) * sig_t(g, c) * phi(0, g, c) / phi_moment(0, 1, cg, c)
       end do
-      do a = 1, number_angles*2
-        do i = 1, expansion_order
-          do g = 1, number_groups
-            cg = energyMesh(g)
+      do a = 1, number_angles * 2
+        do g = 1, number_groups
+          cg = energyMesh(g)
+          do i = 1, order(cg)
             ! angular total cross section moment (delta)
-            num = basis(g, i) * (sig_t(g, c) - sig_t_moment(cg, c)) * psi(g, a, c) / psi_0_moment(cg, a, c)
-            delta_moment(cg, i, a, c) = delta_moment(cg, i, a, c) + num
+            num = basis(i, g) * (sig_t(g, c) - sig_t_moment(cg, c)) * psi(g, a, c) / psi_0_moment(cg, a, c)
+            if (num /= num) then
+              num = 0.0
+            end if
+            delta_moment(i, cg, a, c) = delta_moment(i, cg, a, c) + num
             ! Source moment
-            source_moment(cg, i, a, c) = source_moment(cg, i, a, c) + basis(g, i) * source(g, a, c)
+            source_moment(i, cg, a, c) = source_moment(i, cg, a, c) + basis(i, g) * source(g, a, c)
           end do
         end do
       end do
-      do i = 1, expansion_order
-        do g = 1, number_groups
-          cg = energyMesh(g)
-          do gp = 1, number_groups
-            cgp = energyMesh(gp)
+      do g = 1, number_groups
+        cg = energyMesh(g)
+        do gp = 1, number_groups
+          cgp = energyMesh(gp)
+          do i = 1, order(cg)
             do l = 0, number_legendre
               ! Scattering cross section moment
-              num = basis(g,i) * sig_s(l, gp, g, mat) * phi(l, gp, c) / phi_moment(l, cg, 0, c)
-              sig_s_moment(l, cgp, cg, i, c) = sig_s_moment(l, cgp, cg, i, c) + num
+              !print *, l,i,cgp,cg,c, phi_moment(l, 1, cgp, c)
+              num = basis(i,g) * sig_s(l, gp, g, mat) * phi(l, gp, c) / phi_moment(l, 1, cgp, c)
+              sig_s_moment(l, i, cgp, cg, c) = sig_s_moment(l, i, cgp, cg, c) + num
             end do
           end do
         end do
       end do
     end do
+
   end subroutine compute_moments
 
 end module dgm

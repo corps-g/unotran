@@ -2,13 +2,15 @@ module solver
   use material, only : create_material, number_legendre, number_groups
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials
   use mesh, only : create_mesh, number_cells
-  use state, only : initialize_state, phi, source, useDGM
+  use state, only : initialize_state, phi, source
   use sweeper, only : sweep
-  use dgm, only : initialize_moments, initialize_basis
+  use dgm, only : initialize_moments, initialize_basis, compute_moments
   use dgmsweeper, only : dgmsweep
 
   implicit none
   
+  logical :: useDGM
+
   contains
   
   ! Initialize all of the variables and solvers
@@ -30,13 +32,15 @@ module solver
     character(len=*), intent(in) :: fileName
     logical, intent(in), optional :: store
     character(len=2), intent(in), optional :: EQ
-    logical :: store_psi, useDGM
+    logical :: store_psi
     character(len=2) :: equation
     integer, intent(in), optional :: energyMap(:)
     character(len=*), intent(in), optional :: basisName
     
     ! Check if the optional argument store is given
-    if (present(store)) then
+    if (present(energyMap)) then
+      store_psi = .true.
+    else if (present(store)) then
       store_psi = store  ! Set the option to the given parameter
     else
       store_psi = .false.  ! Default to not storing the angular flux
@@ -69,7 +73,6 @@ module solver
       useDGM = .false.
     end if
 
-
   end subroutine initialize_solver
 
   ! Interate equations until convergance
@@ -90,6 +93,7 @@ module solver
     do while (error .gt. eps)  ! Interate to convergance tolerance
       ! Sweep through the mesh
       if (useDGM) then
+        call compute_moments()
         call dgmsweep()
       else
         call sweep()

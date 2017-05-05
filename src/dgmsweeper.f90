@@ -49,6 +49,9 @@ module dgmsweeper
           do i = 1, expansion_order
             do g = 1, number_groups  ! Sweep over group
               cg = energyMesh(g)
+              if (i > order(cg)) then
+                cycle
+              end if
               ! Use the specified equation.  Defaults to DD
               delta = delta_moment(cg,i,an,c) * psi_0_moment(cg, an, c)
               call computeEQ(Q(cg,i), incoming(cg,i,an), sig_t_moment(cg, mMap(c)), delta, invmu, incoming(cg,i,an), Ps)
@@ -85,7 +88,7 @@ module dgmsweeper
     double precision :: updateSource(number_course_groups,expansion_order)
     double precision :: num
     integer, intent(in) :: cell, angle
-    integer :: l, i, g, gp
+    integer :: l, i, g, gp, cg
     
     ! Include the external source and the fission source
     updateSource(:,:) = source_moment(:,:,angle,cell)
@@ -93,6 +96,10 @@ module dgmsweeper
     ! Add the scattering source for each legendre moment
     do i = 1, expansion_order
       do g = 1, number_course_groups
+        cg = energyMesh(g)
+        if (i > order(cg)) then
+          cycle
+        end if
         do l = 0, number_legendre
           do gp = 1, number_course_groups
             num = (2 * l + 1) * p_leg(l, angle) * sig_s_moment(l, gp, g, i, cell) * phi_moment(l, gp, i, cell)
