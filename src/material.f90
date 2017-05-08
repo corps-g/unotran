@@ -80,6 +80,8 @@ module material
         chi(:,mat) = chi(:,mat) / sum(chi(:,mat))
       end if
     end do
+
+    close(unit=5)
       
   end subroutine create_material
 
