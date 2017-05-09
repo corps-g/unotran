@@ -76,13 +76,20 @@ module solver
   end subroutine initialize_solver
 
   ! Interate equations until convergance
-  subroutine solve(eps)
+  subroutine solve(eps, lambda_arg)
     ! Inputs
     !   eps : error tolerance for convergance
 
     double precision, intent(in) :: eps
-    double precision :: norm, error, hold
+    double precision, intent(in), optional :: lambda_arg
+    double precision :: norm, error, hold, lambda
     integer :: counter
+
+    if (present(lambda_arg)) then
+      lambda = lambda_arg
+    else
+      lambda = 1.0
+    end if
 
     ! Error of current iteration
     error = 1.0
@@ -94,7 +101,7 @@ module solver
       ! Sweep through the mesh
       if (useDGM) then
         call compute_moments()
-        call dgmsweep()
+        call dgmsweep(lambda)
       else
         call sweep()
       end if

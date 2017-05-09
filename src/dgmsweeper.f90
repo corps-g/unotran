@@ -12,11 +12,12 @@ module dgmsweeper
   contains
   ! Define source
   
-  subroutine dgmsweep()
+  subroutine dgmsweep(lambda)
     integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep, cg, i
     double precision :: incoming(number_groups,expansion_order,2*number_angles), Q(number_groups, expansion_order), Ps, invmu
     double precision :: phi_old(0:number_legendre,number_groups,number_cells)
     double precision :: S(number_course_groups,expansion_order), delta
+    double precision, intent(in) :: lambda
     logical :: octant
     
     phi_old = phi
@@ -67,6 +68,9 @@ module dgmsweeper
         end do
       end do
     end do
+
+  phi = lambda * phi + (1 - lambda) * phi_old
+
   end subroutine dgmsweep
   
   subroutine computeEQ(Qg, incoming, sig, delta, invmu, outgoing, Ps)

@@ -36,7 +36,7 @@ program main
   source(:,:,:) = 1.0
 
   ! call the solver with error tolerance
-  call solve(1e-8_8)
+  call solve(1e-8_8, 0.01_8)
 
   ! output the resulting scalar flux
   !print *, phi(0,:,:)
