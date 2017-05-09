@@ -70,7 +70,7 @@ module material
         do g = 1, number_groups
           read(5,*) array1
           do gp = 1, number_groups
-            sig_s(L, g, gp, mat) = array1(gp)
+            sig_s(L, gp, g, mat) = array1(gp)
           end do
         end do
       end do
