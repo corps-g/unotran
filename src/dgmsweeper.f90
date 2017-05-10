@@ -15,9 +15,9 @@ module dgmsweeper
   
   subroutine dgmsweep(lambda)
     integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep, cg, i
-    double precision :: incoming(expansion_order,number_groups,2*number_angles), Q(expansion_order,number_groups), Ps, invmu
+    double precision :: incoming(expansion_order,number_groups,2*number_angles), Q(expansion_order,number_groups), invmu
     double precision :: phi_old(0:number_legendre,number_groups,number_cells)
-    double precision :: delta, num, M(0:number_legendre)
+    double precision :: delta, num, M(0:number_legendre), Ps(expansion_order, number_course_groups)
     double precision, intent(in) :: lambda
     logical :: octant
     
@@ -48,15 +48,19 @@ module dgmsweeper
 
           ! Update the right hand side
           Q = updateSource(c, an)
-          do g = 1, number_groups  ! Sweep over group
-            cg = energyMesh(g)
-
+          do cg = 1, number_course_groups  ! sweep oper course group
             num = 0.0
             do i = 1, order(cg)
+              ! compute psi_moment for given order and course group
               ! Use the specified equation.  Defaults to DD
-              call computeEQ(Q(i,cg), incoming(i,cg,an), sig_t_moment(cg, c), invmu, incoming(i,cg,an), Ps)
-            
-              num = num + lambda * basis(i,g) * Ps
+              call computeEQ(Q(i,cg), incoming(i,cg,an), sig_t_moment(cg, c), invmu, incoming(i,cg,an), Ps(i,cg))
+            end do
+          end do
+
+          do g = 1, number_groups  ! Sweep over group
+            cg = energyMesh(g)  ! get course group
+            do i = 1, order(cg)  ! sweep over expansion order
+              num = num + lambda * basis(i,g) * Ps(i,cg)
             end do
             ! compute the angular flux
             psi(g,an,c) = psi(g,an,c) + num
