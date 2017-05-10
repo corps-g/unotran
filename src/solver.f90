@@ -2,7 +2,7 @@ module solver
   use material, only : create_material, number_legendre, number_groups
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials
   use mesh, only : create_mesh, number_cells
-  use state, only : initialize_state, phi, source
+  use state, only : initialize_state, phi, source, psi
   use sweeper, only : sweep
   use dgm, only : initialize_moments, initialize_basis, compute_moments
   use dgmsweeper, only : dgmsweep
@@ -94,7 +94,7 @@ module solver
     ! Error of current iteration
     error = 1.0
     ! 2 norm of the scalar flux
-    norm = 0.0
+    norm = norm2(phi)
     ! interation number
     counter = 1
     do while (error .gt. eps)  ! Interate to convergance tolerance

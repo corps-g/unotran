@@ -57,15 +57,17 @@ module sweeper
     end do
   end subroutine sweep
   
-  subroutine computeEQ(Qg, incoming, sig, invmu, outgoing, Ps)
+  subroutine computeEQ(Qg, incoming, sig, invmu, outgoing, cellPsi)
     implicit none
     double precision, intent(in) :: Qg, incoming, sig, invmu
-    double precision, intent(out) :: outgoing, Ps
+    double precision, intent(out) :: outgoing, cellPsi
     
     if (equation .eq. 'DD') then
       ! Diamond Difference relationship
-      Ps = (incoming + invmu * Qg) / (1 + invmu * sig)
-      outgoing = 2 * Ps - incoming
+      cellPsi = (incoming + invmu * Qg) / (1 + invmu * sig)
+      outgoing = 2 * cellPsi - incoming
+    else
+      print *, 'ERROR : Equation not implemented'
     end if
   
   end subroutine computeEQ
