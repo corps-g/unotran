@@ -1,12 +1,20 @@
-program test_dgmsolver
+program test_dgmsweeper
 
-  use solver
+  use solver, only : initialize_solver
+  use dgmsweeper
 
   implicit none
 
   ! initialize types
-  integer :: testCond, t1=1, t2=1
-  double precision :: phi_test(0:7,7,1), psi_test(7,4,1)
+  integer :: testCond, t1=1, t2=1, o, a, an, amin, amax, astep
+  logical :: octant
+  double precision :: source_test(7,4), phi_test(0:7,7,1), psi_test(7,4,1), S(7,4), Q(1,7)
+
+  source_test = reshape((/1.26182329,  1.6959436 ,  1.50956709,  1.50099137,  1.37433726,  1.33575837,  1.34199138,&
+                          1.34257405,  1.76680291,  1.51043675,  1.50101764,  1.3745595 ,  1.33587244,  1.34058049,&
+                          1.34257405,  1.76680291,  1.51043675,  1.50101764,  1.3745595 ,  1.33587244,  1.34058049,&
+                          1.26182329,  1.69594359,  1.50956709,  1.50099137,  1.37433726,  1.33575837,  1.34199138 &
+                          /), shape(source_test))
 
   phi_test = reshape((/1.22317204e+00,   1.00000000e-8,  -1.83146441e-01,   6.93889390e-18,&
                        1.00000000e-8,   3.46944695e-18,   1.15120620e-01,   1.00000000e-8,&
@@ -48,21 +56,28 @@ program test_dgmsolver
   ! compute the moments
   call compute_moments()
 
-  call dgmsweep(1.0_8)
-  print *, phi_test
+  do o = 1, 2  ! Sweep over octants
+    ! Sweep in the correct direction in the octant
+    octant = o .eq. 1
+    amin = merge(1, number_angles, octant)
+    amax = merge(number_angles, 1, octant)
+    astep = merge(1, -1, octant)
+    do a = amin, amax, astep
+      an = merge(a, 2 * number_angles - a + 1, octant)
+      Q = updateSource(1, an)
+      S(:,an) = Q(1,:)
+    end do
+  end do
 
-  t1 = testCond(norm2(phi - phi_test) .lt. 1e-6)
-  t2 = testCond(norm2(psi - psi_test) .lt. 1e-6)
+  t1 = testCond(norm2(S - source_test) .lt. 1e-6)
 
   if (t1 .eq. 0) then
-    print *, 'DGM solver: phi failed'
-  else if (t2 .eq. 0) then
-    print *, 'DGM solver: psi failed'
+    print *, 'DGM sweeper: update source failed'
   else
-    print *, 'all tests passed for DGM solver'
+    print *, 'all tests passed for DGM sweeper'
   end if
 
-end program test_dgmsolver
+end program test_dgmsweeper
 
 integer function testCond(condition)
   logical, intent(in) :: condition
