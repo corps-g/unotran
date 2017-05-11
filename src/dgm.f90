@@ -120,6 +120,9 @@ module dgm
     if (allocated(basis)) then
       deallocate(basis)
     end if
+    if (allocated(order)) then
+      deallocate(order)
+    end if
     if (allocated(energyMesh)) then
       deallocate(energyMesh)
     end if
@@ -155,7 +158,12 @@ module dgm
       ! total cross section moment
       do g = 1, number_groups
         cg = energyMesh(g)
-        sig_t_moment(cg, c) = sig_t_moment(cg, c) + basis(1, g) * sig_t(g, c) * phi(0, g, c) / phi_moment(0, 1, cg, c)
+        if (phi_moment(0, 1, cg, c) == 0) then
+          num = 0.0
+        else
+          num = basis(1, g) * sig_t(g, c) * phi(0, g, c) / phi_moment(0, 1, cg, c)
+        end if
+        sig_t_moment(cg, c) = sig_t_moment(cg, c) + num
       end do
       do a = 1, number_angles * 2
         do g = 1, number_groups
