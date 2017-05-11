@@ -82,8 +82,33 @@ module material
     end do
 
     close(unit=5)
+    deallocate(array1)
       
   end subroutine create_material
+
+  subroutine finalize_material()
+    if (allocated(ebounds)) then
+      deallocate(ebounds)
+    end if
+    if (allocated(velocity)) then
+      deallocate(velocity)
+    end if
+    if (allocated(sig_t)) then
+      deallocate(sig_t)
+    end if
+    if (allocated(sig_f)) then
+      deallocate(sig_f)
+    end if
+    if (allocated(chi)) then
+      deallocate(chi)
+    end if
+    if (allocated(vsig_f)) then
+      deallocate(vsig_f)
+    end if
+    if (allocated(sig_s)) then
+      deallocate(sig_s)
+    end if
+  end subroutine finalize_material
 
 end module material
     

@@ -45,6 +45,9 @@ module angle
     if (allocated(wt)) then
       deallocate(wt)
     end if
+    if (allocated(p_leg)) then
+      deallocate(p_leg)
+    end if
   end subroutine finalize_angle
 
   ! Generate Gauss-Legendre parameters.

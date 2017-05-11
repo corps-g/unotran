@@ -1,10 +1,10 @@
 module solver
-  use material, only : create_material, number_legendre, number_groups
-  use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials
-  use mesh, only : create_mesh, number_cells
-  use state, only : initialize_state, phi, source, psi
+  use material, only : create_material, number_legendre, number_groups, finalize_material
+  use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
+  use mesh, only : create_mesh, number_cells, finalize_mesh
+  use state, only : initialize_state, phi, source, psi, finalize_state
   use sweeper, only : sweep
-  use dgm, only : initialize_moments, initialize_basis, compute_moments
+  use dgm, only : initialize_moments, initialize_basis, compute_moments, finalize_moments
   use dgmsweeper, only : dgmsweep
 
   implicit none
@@ -115,8 +115,17 @@ module solver
       print *, error, counter
       ! increment the iteration
       counter = counter + 1
+
     end do
 
   end subroutine solve
+
+  subroutine finalize_solver()
+    call finalize_angle()
+    call finalize_mesh()
+    call finalize_material()
+    call finalize_state()
+    call finalize_moments()
+  end subroutine
 
 end module solver

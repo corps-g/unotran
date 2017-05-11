@@ -42,4 +42,13 @@ module mesh
     width = courseMesh(n) - courseMesh(1)
   end subroutine create_mesh
 
+  subroutine finalize_mesh()
+    if (allocated(dx)) then
+      deallocate(dx)
+    end if
+    if (allocated(mMap)) then
+      deallocate(mMap)
+    end if
+  end subroutine finalize_mesh
+
 end module mesh
