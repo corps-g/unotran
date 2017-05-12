@@ -80,7 +80,7 @@ module sweeper
     integer :: l
     
     ! Include the external source and the fission source
-    updateSource(:) = Sg(:)! + chi(:, mMap(cell)) * dot_product(vsig_f(:, mMap(cell)), phig(0,:))
+    updateSource(:) = Sg(:) + chi(:, mMap(cell)) * dot_product(vsig_f(:, mMap(cell)), phig(0,:))
     
     ! Add the scattering source for each legendre moment
     do l = 0, number_legendre
