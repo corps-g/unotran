@@ -28,7 +28,7 @@ use material, only : create_material, number_legendre, number_groups
   call initialize_polynomials(number_legendre)
     
   ! Create the state variable containers
-  call initialize_state()
+  call initialize_state(.false., 'DD')
 
   source = 1.0
 
@@ -83,7 +83,7 @@ use material, only : create_material, number_legendre, number_groups
                         4.58369841267,  1.5626711117,  1.31245374786,  1.12046360588,  0.867236739559,  &
                         0.595606769942 /),shape(phi_test))
                  
-  t1 = testCond(norm2(phi(0,:,:) - phi_test) .lt. 2e-5)
+  t1 = testCond(norm2(phi(0,:,:) - phi_test) .lt. 1e-4)
   
   if (t1 .eq. 0) then
     print *, 'main: phi comparison failed'

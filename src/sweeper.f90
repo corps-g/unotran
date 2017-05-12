@@ -5,6 +5,7 @@ module sweeper
   use mesh, only: dx, number_cells, mMap
   use angle, only: number_angles, p_leg, wt, mu
   use state, only: phi, psi, source, store_psi, equation
+
   implicit none
   
   contains
@@ -56,15 +57,17 @@ module sweeper
     end do
   end subroutine sweep
   
-  subroutine computeEQ(Qg, incoming, sig, invmu, outgoing, Ps)
+  subroutine computeEQ(S, incoming, sig, invmu, outgoing, cellPsi)
     implicit none
-    double precision, intent(in) :: Qg, incoming, sig, invmu
-    double precision, intent(out) :: outgoing, Ps
+    double precision, intent(in) :: S, incoming, sig, invmu
+    double precision, intent(out) :: outgoing, cellPsi
     
     if (equation .eq. 'DD') then
       ! Diamond Difference relationship
-      Ps = (incoming + invmu * Qg) / (1 + invmu * sig)
-      outgoing = 2 * Ps - incoming
+      cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
+      outgoing = 2 * cellPsi - incoming
+    else
+      print *, 'ERROR : Equation not implemented'
     end if
   
   end subroutine computeEQ
@@ -81,7 +84,7 @@ module sweeper
     
     ! Add the scattering source for each legendre moment
     do l = 0, number_legendre
-      scat(:) = (2 * l + 1) * p_leg(l, angle) * matmul(sig_s(l, :, :, mMap(cell)), phig(l,:))
+      scat(:) = (2 * l + 1) * p_leg(l, angle) * matmul(transpose(sig_s(l, :, :, mMap(cell))), phig(l,:))
       updateSource(:) = updateSource(:) + scat(:)
     end do
     

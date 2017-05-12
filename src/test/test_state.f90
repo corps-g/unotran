@@ -33,14 +33,14 @@ program test_state
   call initialize_polynomials(number_legendre)
     
   ! Create the state variable containers
-  call initialize_state()
+  call initialize_state(.false., 'dd')
   
   t1 = testCond(norm2(phi(0,:,:)-phi_test) .lt. 1e-7)
   
   t2 = testCond(norm2(source-source_test) .lt. 1e-7)
   
   call finalize_state()
-  call initialize_state(.true.)
+  call initialize_state(.true., 'dd')
   
   t3 = testCond(norm2(psi-psi_test) .lt. 1e-7)
   

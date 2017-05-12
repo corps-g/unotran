@@ -1,5 +1,6 @@
 module material
   implicit none
+
   integer :: number_materials, number_groups, debugFlag, number_legendre
   double precision, allocatable, dimension(:) :: ebounds, velocity
   double precision, allocatable, dimension(:,:) :: sig_t, sig_f, vsig_f, chi
@@ -65,12 +66,10 @@ module material
         end if
       end do
       ! Read scattering cross section
-      do L = 0, number_legendre
+      do l = 0, number_legendre
         do g = 1, number_groups
           read(5,*) array1
-          do gp = 1, number_groups
-            sig_s(L, g, gp, mat) = array1(gp)
-          end do
+          sig_s(l, :, g, mat) = array1(:)
         end do
       end do
       
@@ -79,8 +78,35 @@ module material
         chi(:,mat) = chi(:,mat) / sum(chi(:,mat))
       end if
     end do
+
+    close(unit=5)
+    deallocate(array1)
       
   end subroutine create_material
+
+  subroutine finalize_material()
+    if (allocated(ebounds)) then
+      deallocate(ebounds)
+    end if
+    if (allocated(velocity)) then
+      deallocate(velocity)
+    end if
+    if (allocated(sig_t)) then
+      deallocate(sig_t)
+    end if
+    if (allocated(sig_f)) then
+      deallocate(sig_f)
+    end if
+    if (allocated(chi)) then
+      deallocate(chi)
+    end if
+    if (allocated(vsig_f)) then
+      deallocate(vsig_f)
+    end if
+    if (allocated(sig_s)) then
+      deallocate(sig_s)
+    end if
+  end subroutine finalize_material
 
 end module material
     

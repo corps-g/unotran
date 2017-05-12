@@ -2,7 +2,9 @@ module state
   use material, only: number_groups, number_legendre
   use mesh, only: number_cells
   use angle, only: number_angles
+
   implicit none
+
   double precision, allocatable, dimension(:,:,:) :: psi, source, phi
   logical :: store_psi
   character(len=2) :: equation
