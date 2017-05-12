@@ -28,7 +28,7 @@ use material, only : create_material, number_legendre, number_groups
   call initialize_polynomials(number_legendre)
     
   ! Create the state variable containers
-  call initialize_state(.false., 'dd')
+  call initialize_state(.false., 'DD')
 
   source = 1.0
 
