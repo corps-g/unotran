@@ -170,11 +170,7 @@ module dgm
           cg = energyMesh(g)
           do i = 1, order(cg)
             ! angular total cross section moment (delta)
-            if (psi_0_moment(cg, a, c) == 0) then
-              num = 0.0
-            else
-              num = basis(i, g) * (sig_t(g, c) - sig_t_moment(cg, c)) * psi(g, a, c) / psi_0_moment(cg, a, c)
-            end if
+            num = basis(i, g) * (sig_t(g, c) - sig_t_moment(cg, c)) * psi(g, a, c)
             delta_moment(i, cg, a, c) = delta_moment(i, cg, a, c) + num
             ! Source moment
             source_moment(i, cg, a, c) = source_moment(i, cg, a, c) + basis(i, g) * source(g, a, c)
@@ -188,11 +184,7 @@ module dgm
           do i = 1, order(cg)
             do l = 0, number_legendre
               ! Scattering cross section moment
-              if (phi_moment(l, 1, cgp, c) == 0) then
-                num = 0.0
-              else
-                num = basis(i,g) * sig_s(l, gp, g, mat) * phi(l, gp, c) / phi_moment(l, 1, cgp, c)
-              end if
+              num = basis(i,g) * sig_s(l, gp, g, mat) * phi(l, gp, c)
               sig_s_moment(l, i, cgp, cg, c) = sig_s_moment(l, i, cgp, cg, c) + num
             end do
           end do
