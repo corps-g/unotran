@@ -66,12 +66,10 @@ module material
         end if
       end do
       ! Read scattering cross section
-      do L = 0, number_legendre
+      do l = 0, number_legendre
         do g = 1, number_groups
           read(5,*) array1
-          do gp = 1, number_groups
-            sig_s(L, gp, g, mat) = array1(gp)
-          end do
+          sig_s(l, :, g, mat) = array1(:)
         end do
       end do
       

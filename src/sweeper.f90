@@ -57,14 +57,14 @@ module sweeper
     end do
   end subroutine sweep
   
-  subroutine computeEQ(Qg, incoming, sig, invmu, outgoing, cellPsi)
+  subroutine computeEQ(S, incoming, sig, invmu, outgoing, cellPsi)
     implicit none
-    double precision, intent(in) :: Qg, incoming, sig, invmu
+    double precision, intent(in) :: S, incoming, sig, invmu
     double precision, intent(out) :: outgoing, cellPsi
     
     if (equation .eq. 'DD') then
       ! Diamond Difference relationship
-      cellPsi = (incoming + invmu * Qg) / (1 + invmu * sig)
+      cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
       outgoing = 2 * cellPsi - incoming
     else
       print *, 'ERROR : Equation not implemented'
@@ -80,11 +80,11 @@ module sweeper
     integer :: l
     
     ! Include the external source and the fission source
-    updateSource(:) = Sg(:) + chi(:, mMap(cell)) * dot_product(vsig_f(:, mMap(cell)), phig(0,:))
+    updateSource(:) = Sg(:)! + chi(:, mMap(cell)) * dot_product(vsig_f(:, mMap(cell)), phig(0,:))
     
     ! Add the scattering source for each legendre moment
     do l = 0, number_legendre
-      scat(:) = (2 * l + 1) * p_leg(l, angle) * matmul(sig_s(l, :, :, mMap(cell)), phig(l,:))
+      scat(:) = (2 * l + 1) * p_leg(l, angle) * matmul(transpose(sig_s(l, :, :, mMap(cell))), phig(l,:))
       updateSource(:) = updateSource(:) + scat(:)
     end do
     
