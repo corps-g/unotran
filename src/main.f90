@@ -16,7 +16,7 @@ program main
   em(1) = 4
 
   ! number of pins in model
-  n = 1
+  n = 10
   
   ! fill the mesh containers for the n-pin problem
   allocate(fm(3*n), cm(3*n+1), mm(3*n))
@@ -25,23 +25,21 @@ program main
   call get_mesh(n, fm, cm, mm)
   
   ! initialize the variables necessary to solve the problem
-!  call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, fileName=fileName, &
-!                         angle_order=10, angle_option=1)!, energyMap=em, basisName=basisName)
+  call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, fileName='test.anlxs', &
+                         angle_order=10, angle_option=1, energyMap=em, basisName='basis')
 
-  call initialize_solver(fineMesh=[1], courseMesh=[0.0_8,1.0_8], materialMap=[1], fileName='2gXS.anlxs', &
-                         store=.true., angle_order=2, angle_option=1, energyMap=[1], basisName='2gbasis')
+!  call initialize_solver(fineMesh=[1], courseMesh=[0.0_8,1.0_8], materialMap=[1], fileName='test.anlxs', &
+!                         store=.true., angle_order=2, angle_option=1, energyMap=[4], basisName='basis')
 
 
   ! add source to all cells in 1st energy group
   source(:,:,:) = 1.0
 
   ! call the solver with error tolerance
-  call solve(1e-8_8, 0.01_8)
+  call solve(1e-8_8, 0.1_8)
 
   ! output the resulting scalar flux
-  print *, phi
-  print *
-  print *, psi
+  print *, phi(0,:,:)
   
   call finalize_solver()
 
