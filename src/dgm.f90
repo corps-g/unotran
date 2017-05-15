@@ -181,7 +181,7 @@ module dgm
         vsig_f_moment(cg, c) = vsig_f(g, mat) * phi(0, g, c)
         ! chi moment
         do i = 1, order(cg)
-          chi_moment(i, cg, c) = basis(i,g) * chi(g, mat)
+          chi_moment(i, cg, c) = chi_moment(i, cg, c) + basis(i,g) * chi(g, mat)
         end do
       end do
 
