@@ -168,8 +168,6 @@ subroutine test1()
   chi_m_test = reshape((/0.4999999996, -0.2595977384, -0.3848769417, 0.5216659709,&
                          0.0, 0.0, 0.0, 0.0/), shape(chi_m_test))
 
-  print *, chi_moment
-
   t13 = testCond(all((chi_moment - chi_m_test) .lt. 1e-6))
 
   if (t1 .eq. 0) then
@@ -217,11 +215,12 @@ subroutine test2()
 
   ! initialize types
   integer :: fineMesh(1), materialMap(1), testCond, em(6), l, i, c, cg, cgp,g,gp
-  integer :: t1=1, t2=1, t3=1, t4=1, t5=1, t6=1, t7=1, t8=1, t9=1, t10=1, t11=1
+  integer :: t1=1, t2=1, t3=1, t4=1, t5=1, t6=1, t7=1, t8=1, t9=1, t10=1, t11=1, t12=1, t13=1
   double precision :: courseMesh(2), norm, error, basis_test(1,7)
   double precision :: phi_m_test(0:7,1,7,1), psi_m_test(7,1,1),source_m_test(4,2,4,1)
   double precision :: phi_test(0:7,7,1), psi_test(7,4,1)
   double precision :: sig_t_m_test(2,1), delta_m_test(4,2,4,1), sig_s_m_test(8,4,2,2,1)
+  double precision :: vsig_f_m_test(7,1), chi_m_test(1,7,1)
   integer :: order_test(7), energyMesh_test(7), eo_test, ncg_test
   ! Define problem parameters
   character(len=10) :: filename = 'test.anlxs'
@@ -315,6 +314,7 @@ subroutine test2()
 
   t10 = testCond(all((delta_moment - delta_m_test) .lt. 1e-6))
 
+  ! test scattering cross section moments
   do g = 1, number_groups
     do gp = 1, number_groups
       do l = 0, number_legendre
@@ -327,9 +327,13 @@ subroutine test2()
     end do
   end do
 
-
-  ! test scattering cross section moments
   t11 = testCond(all((sig_s_moment(:,1,:,:,:) - sig_s) .lt. 1e-7))
+
+  ! test fission cross section moments
+  t12 = testCond(all((vsig_f_moment(:,1) - vsig_f(:,1)*phi(0,:,1)) .lt. 1e-6))
+
+  ! test chi moments
+  t13 = testCond(all((chi_moment(1,:,1) - chi(:,1)) .lt. 1e-6))
 
   if (t1 .eq. 0) then
     print *, 'DGM2: order failed'
@@ -353,6 +357,10 @@ subroutine test2()
     print *, 'DGM2: delta moment failed'
   else if (t11 .eq. 0) then
     print *, 'DGM2: sig_s moment failed'
+  else if (t12 .eq. 0) then
+    print *, 'DGM2: vsig_f moment failed'
+  else if (t13 .eq. 0) then
+    print *, 'DGM2: chi moment failed'
   else
     print *, 'all tests passed for DGM2'
   end if

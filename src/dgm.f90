@@ -178,7 +178,7 @@ module dgm
         end if
         sig_t_moment(cg, c) = sig_t_moment(cg, c) + num
         ! fission cross section moment
-        vsig_f_moment(cg, c) = vsig_f(g, mat) * phi(0, g, c)
+        vsig_f_moment(cg, c) = vsig_f_moment(cg, c) + vsig_f(g, mat) * phi(0, g, c)
         ! chi moment
         do i = 1, order(cg)
           chi_moment(i, cg, c) = chi_moment(i, cg, c) + basis(i,g) * chi(g, mat)
