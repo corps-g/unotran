@@ -133,6 +133,14 @@ module dgm
     integer :: a, c, cg, cgp, g, gp, l, i, mat
     double precision :: num
 
+    ! initialize all moments to zero
+    phi_moment = 0.0
+    psi_0_moment = 0.0
+    sig_t_moment = 0.0
+    delta_moment = 0.0
+    source_moment = 0.0
+    sig_s_moment = 0.0
+
     ! Get moments for the fluxes
     do c = 1, number_cells
       ! Scalar flux
