@@ -72,11 +72,6 @@ module material
           sig_s(l, :, g, mat) = array1(:)
         end do
       end do
-      
-      ! make sure chi is a PDF
-      if (dataPresent .eq. 1) then
-        chi(:,mat) = chi(:,mat) / sum(chi(:,mat))
-      end if
     end do
 
     close(unit=5)
