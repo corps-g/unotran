@@ -1,5 +1,5 @@
 module dgm
-  use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t
+  use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t, vsig_f, chi
   use mesh, only: number_cells, mMap
   use angle, only: number_angles
   use state, only: phi, psi, source
@@ -8,8 +8,8 @@ module dgm
 
   double precision, allocatable, dimension(:,:,:,:,:) :: sig_s_moment
   double precision, allocatable, dimension(:,:,:,:) :: phi_moment, source_moment, delta_moment
-  double precision, allocatable, dimension(:,:,:) :: psi_0_moment
-  double precision, allocatable, dimension(:,:) :: sig_t_moment, basis
+  double precision, allocatable, dimension(:,:,:) :: psi_0_moment, chi_moment
+  double precision, allocatable, dimension(:,:) :: sig_t_moment, basis, vsig_f_moment
   integer :: expansion_order, number_course_groups
   integer, allocatable :: energyMesh(:), order(:)
 
@@ -47,13 +47,8 @@ module dgm
     allocate(psi_0_moment(number_course_groups, 2*number_angles, number_cells))
     allocate(delta_moment(expansion_order, number_course_groups, 2*number_angles, number_cells))
     allocate(sig_t_moment(number_course_groups, number_cells))
-
-    sig_s_moment = 0.0
-    phi_moment = 0.0
-    source_moment = 0.0
-    psi_0_moment = 0.0
-    delta_moment = 0.0
-    sig_t_moment = 0.0
+    allocate(vsig_f_moment(number_course_groups, number_cells))
+    allocate(chi_moment(expansion_order, number_course_groups, number_cells))
 
   end subroutine initialize_moments
 
@@ -117,6 +112,12 @@ module dgm
     if (allocated(sig_t_moment)) then
       deallocate(sig_t_moment)
     end if
+    if (allocated(vsig_f_moment)) then
+      deallocate(vsig_f_moment)
+    end if
+    if (allocated(chi_moment)) then
+      deallocate(chi_moment)
+    end if
     if (allocated(basis)) then
       deallocate(basis)
     end if
@@ -134,15 +135,19 @@ module dgm
     double precision :: num
 
     ! initialize all moments to zero
-    phi_moment = 0.0
-    psi_0_moment = 0.0
-    sig_t_moment = 0.0
-    delta_moment = 0.0
-    source_moment = 0.0
     sig_s_moment = 0.0
+    phi_moment = 0.0
+    source_moment = 0.0
+    psi_0_moment = 0.0
+    delta_moment = 0.0
+    sig_t_moment = 0.0
+    vsig_f_moment = 0.0
+    chi_moment = 0.0
 
     ! Get moments for the fluxes
     do c = 1, number_cells
+      ! get the material for the current cell
+      mat = mMap(c)
       ! Scalar flux
       do g = 1, number_groups
         cg = energyMesh(g)
@@ -162,23 +167,27 @@ module dgm
       end do
 
       ! Get moments for the cross sections
-      mat = mMap(c)
-      ! total cross section moment
+      ! total cross section moment and fission moment
       do g = 1, number_groups
         cg = energyMesh(g)
         if (phi_moment(0, 1, cg, c) == 0) then
           num = 0.0
         else
-          num = basis(1, g) * sig_t(g, c) * phi(0, g, c) / phi_moment(0, 1, cg, c)
+          num = basis(1, g) * sig_t(g, mat) * phi(0, g, c) / phi_moment(0, 1, cg, c)
         end if
         sig_t_moment(cg, c) = sig_t_moment(cg, c) + num
+        vsig_f_moment(cg, c) = vsig_f(g, mat) * phi(0, g, c)
+        ! chi moment
+        do i = 1, order(cg)
+          chi_moment(i, cg, c) = basis(i,g) * chi(g, mat)
+        end do
       end do
       do a = 1, number_angles * 2
         do g = 1, number_groups
           cg = energyMesh(g)
           do i = 1, order(cg)
             ! angular total cross section moment (delta)
-            num = basis(i, g) * (sig_t(g, c) - sig_t_moment(cg, c)) * psi(g, a, c)
+            num = basis(i, g) * (sig_t(g, mat) - sig_t_moment(cg, c)) * psi(g, a, c)
             delta_moment(i, cg, a, c) = delta_moment(i, cg, a, c) + num
             ! Source moment
             source_moment(i, cg, a, c) = source_moment(i, cg, a, c) + basis(i, g) * source(g, a, c)
