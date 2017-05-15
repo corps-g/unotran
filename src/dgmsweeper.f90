@@ -82,12 +82,9 @@ module dgmsweeper
     integer, intent(in) :: cell, angle
     integer :: l, i, cg, cgp
     
-
-
     do cg = 1, number_course_groups
       ! Include the external source and the delta_moment term
       updateSource(:,cg) = source_moment(:,cg,angle,cell) - delta_moment(:,cg,angle,cell)
-
       do cgp = 1, number_course_groups
         do i = 1, order(cg)
           ! add the fision term
@@ -101,7 +98,6 @@ module dgmsweeper
         end do
       end do
     end do
-
 
   end function updateSource
   

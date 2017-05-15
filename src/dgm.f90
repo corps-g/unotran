@@ -148,6 +148,7 @@ module dgm
     do c = 1, number_cells
       ! get the material for the current cell
       mat = mMap(c)
+
       ! Scalar flux
       do g = 1, number_groups
         cg = energyMesh(g)
@@ -166,22 +167,24 @@ module dgm
         end do
       end do
 
-      ! Get moments for the cross sections
-      ! total cross section moment and fission moment
+      ! cross section moments
       do g = 1, number_groups
         cg = energyMesh(g)
+        ! total cross section moment
         if (phi_moment(0, 1, cg, c) == 0) then
           num = 0.0
         else
           num = basis(1, g) * sig_t(g, mat) * phi(0, g, c) / phi_moment(0, 1, cg, c)
         end if
         sig_t_moment(cg, c) = sig_t_moment(cg, c) + num
+        ! fission cross section moment
         vsig_f_moment(cg, c) = vsig_f(g, mat) * phi(0, g, c)
         ! chi moment
         do i = 1, order(cg)
           chi_moment(i, cg, c) = basis(i,g) * chi(g, mat)
         end do
       end do
+
       do a = 1, number_angles * 2
         do g = 1, number_groups
           cg = energyMesh(g)
@@ -194,6 +197,7 @@ module dgm
           end do
         end do
       end do
+
       do g = 1, number_groups
         cg = energyMesh(g)
         do gp = 1, number_groups

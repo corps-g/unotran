@@ -28,10 +28,6 @@ program main
   call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, fileName='test.anlxs', &
                          angle_order=10, angle_option=1, energyMap=em, basisName='basis')
 
-!  call initialize_solver(fineMesh=[1], courseMesh=[0.0_8,1.0_8], materialMap=[1], fileName='test.anlxs', &
-!                         store=.true., angle_order=2, angle_option=1, energyMap=[4], basisName='basis')
-
-
   ! add source to all cells in 1st energy group
   source(:,:,:) = 1.0
 
