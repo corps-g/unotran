@@ -7,7 +7,7 @@ implicit none
 ! initialize types
   integer :: number_materials_test, number_groups_test, number_legendre_test, debugFlag_test
   double precision :: ebounds_test(8), velocity_test(7)
-  double precision :: sig_t_test(7,6), sig_f_test(7,6), vsig_f_test(7,6), chi_test(7,6), sig_s_test(0:7,7,7)
+  double precision :: sig_t_test(7,6), sig_f_test(7,6), nu_sig_f_test(7,6), chi_test(7,6), sig_s_test(0:7,7,7)
   integer :: t1=1, t2=1, t3=1, t4=1, t5=1, testCond
   
   character(len=10) :: filename = 'test.anlxs'
@@ -28,13 +28,13 @@ implicit none
                          0.15358000, 0.25602200, 0.38234300, 0.28413800, 0.25509500, 0.26036200, 0.29965500, &
                          0.10642700, 0.29292300, 0.83901200, 1.05242000, 1.08411000, 1.89404000, 5.59617000/), &
                          shape(sig_t_test))
-  vsig_f_test = reshape((/0.04377570, 0.01259030, 0.00249733, 0.01962850, 0.05301660, 0.52135500, 2.03165000, &
+  nu_sig_f_test = reshape((/0.04377570, 0.01259030, 0.00249733, 0.01962850, 0.05301660, 0.52135500, 2.03165000, &
                           0.04867930, 0.01496700, 0.00294972, 0.02593640, 0.07556850, 1.02075000, 3.02363000, &
                           0.05036610, 0.01643930, 0.00432797, 0.03766070, 0.10852500, 1.50444000, 4.39402000, &
                           0.05165750, 0.01756960, 0.00544935, 0.04686690, 0.13377400, 1.90256000, 5.53922000, &
                           0.00000000, 0.00000000, 0.00000000, 0.00000000, 0.00000000, 0.00000000, 0.00000000, &
                           0.00000000, 0.00000000, 0.00000000, 0.00000000, 0.00000000, 0.00000000, 0.00000000/), &
-                          shape(vsig_f_test))
+                          shape(nu_sig_f_test))
   sig_f_test = reshape((/0.01361113, 0.00467188, 0.00097176, 0.00759461, 0.02030750, 0.19427521, 0.77935654, &
                          0.01502550, 0.00543715, 0.00103467, 0.00912987, 0.02654889, 0.35709163, 1.05926886, &
                          0.01544622, 0.00590706, 0.00150882, 0.01319072, 0.03796532, 0.52515394, 1.53287075, &
@@ -114,7 +114,7 @@ implicit none
   t2 = testCond(norm2(sig_f - sig_f_test) .lt. 1e-6)
   
   ! Test nu * fission cross section  
-  t3 = testCond(norm2(vsig_f - vsig_f_test) .lt. 1e-6)
+  t3 = testCond(norm2(nu_sig_f - nu_sig_f_test) .lt. 1e-6)
   
   ! Test chi
   t4 = testCond(norm2(chi - chi_test) .lt. 1e-6)
@@ -128,7 +128,7 @@ implicit none
   else if (t2 .eq. 0) then
     print *, 'material: sig_f failed'
   else if (t3 .eq. 0) then
-    print *, 'material: vsig_f failed'
+    print *, 'material: nu_sig_f failed'
   else if (t4 .eq. 0) then
     print *, 'material: chi failed'
   else if (t5 .eq. 0) then

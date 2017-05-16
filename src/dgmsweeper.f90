@@ -1,7 +1,7 @@
 module dgmsweeper
   ! Uses diamond difference
   ! Assumes only vacuum conditions
-  use material, only: sig_s, sig_t, vsig_f, chi, number_groups, number_legendre
+  use material, only: sig_s, sig_t, nu_sig_f, chi, number_groups, number_legendre
   use mesh, only: dx, number_cells, mMap
   use angle, only: number_angles, p_leg, wt, mu
   use state, only: phi, psi, source, store_psi, equation
@@ -48,7 +48,7 @@ module dgmsweeper
 
           ! Update the right hand side
           Q = updateSource(c, an)
-          do cg = 1, number_course_groups  ! sweep oper course group
+          do cg = 1, number_course_groups  ! sweep over course group
             do i = 1, order(cg)
               ! compute psi_moment for given order and course group
               ! Use the specified equation.  Defaults to DD
@@ -82,12 +82,14 @@ module dgmsweeper
     integer, intent(in) :: cell, angle
     integer :: l, i, cg, cgp
     
-    ! Include the external source and the fission source
-    ! Add the scattering source for each legendre moment
     do cg = 1, number_course_groups
+      ! Include the external source and the delta_moment term
       updateSource(:,cg) = source_moment(:,cg,angle,cell) - delta_moment(:,cg,angle,cell)
       do cgp = 1, number_course_groups
         do i = 1, order(cg)
+          ! add the fision term
+          updateSource(i,cg) = updateSource(i,cg) + chi_moment(i,cg,cell) * nu_sig_f_moment(cgp,cell)
+          ! Add the scattering source for each Legendre moment
           num = 0.0
           do l = 0, number_legendre
             num = num + (2 * l + 1) * p_leg(l, angle) * sig_s_moment(l, i, cgp, cg, cell)
@@ -96,7 +98,6 @@ module dgmsweeper
         end do
       end do
     end do
-
 
   end function updateSource
   

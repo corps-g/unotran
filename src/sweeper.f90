@@ -1,7 +1,7 @@
 module sweeper
   ! Uses diamond difference
   ! Assumes only vacuum conditions
-  use material, only: sig_s, sig_t, vsig_f, chi, number_groups, number_legendre
+  use material, only: sig_s, sig_t, nu_sig_f, chi, number_groups, number_legendre
   use mesh, only: dx, number_cells, mMap
   use angle, only: number_angles, p_leg, wt, mu
   use state, only: phi, psi, source, store_psi, equation
@@ -80,7 +80,7 @@ module sweeper
     integer :: l
     
     ! Include the external source and the fission source
-    updateSource(:) = Sg(:) + chi(:, mMap(cell)) * dot_product(vsig_f(:, mMap(cell)), phig(0,:))
+    updateSource(:) = Sg(:) + chi(:, mMap(cell)) * dot_product(nu_sig_f(:, mMap(cell)), phig(0,:))
     
     ! Add the scattering source for each legendre moment
     do l = 0, number_legendre

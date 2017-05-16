@@ -11,10 +11,6 @@ program main
   ! courseMap : vector of float with bounds for course mesh regions
   double precision, allocatable :: cm(:)
   
-  ! Define file for cross sections
-  character(len=10) :: fileName = 'test.anlxs'
-  character(len=5) :: basisName = 'basis'
-  
   ! define energy map
   allocate(em(1))
   em(1) = 4
@@ -29,18 +25,20 @@ program main
   call get_mesh(n, fm, cm, mm)
   
   ! initialize the variables necessary to solve the problem
-  call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, fileName=fileName, &
-                         angle_order=10, angle_option=1, energyMap=em, basisName=basisName)
+  call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, fileName='test.anlxs', &
+                         angle_order=10, angle_option=1, energyMap=em, basisName='basis')
 
   ! add source to all cells in 1st energy group
   source(:,:,:) = 1.0
 
   ! call the solver with error tolerance
-  call solve(1e-8_8, 0.01_8)
+  call solve(1e-8_8, 0.1_8)
 
   ! output the resulting scalar flux
-  !print *, phi(0,:,:)
+  print *, phi(0,:,:)
   
+  call finalize_solver()
+
 end program main
 
 ! Fill the mesh containers for a 2 material, n-pin problem

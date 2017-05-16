@@ -3,7 +3,7 @@ module material
 
   integer :: number_materials, number_groups, debugFlag, number_legendre
   double precision, allocatable, dimension(:) :: ebounds, velocity
-  double precision, allocatable, dimension(:,:) :: sig_t, sig_f, vsig_f, chi
+  double precision, allocatable, dimension(:,:) :: sig_t, sig_f, nu_sig_f, chi
   double precision, allocatable, dimension(:,:,:,:) :: sig_s
 
   contains
@@ -35,7 +35,7 @@ module material
     ! Make space for cross sections
     allocate(sig_t(number_groups, number_materials))
     allocate(sig_f(number_groups, number_materials))
-    allocate(vsig_f(number_groups, number_materials))
+    allocate(nu_sig_f(number_groups, number_materials))
     allocate(chi(number_groups, number_materials))
     allocate(sig_s(0:number_legendre, number_groups, number_groups, number_materials))
     allocate(array1(number_groups))
@@ -54,14 +54,14 @@ module material
           read(5,*) t, f, vf, c
           sig_t(g, mat) = t
           sig_f(g, mat) = f
-          vsig_f(g, mat) = vf
+          nu_sig_f(g, mat) = vf
           chi(g, mat) = c
         else
           ! Read just the total cross section
           read(5,*) t
           sig_t(g, mat) = t
           sig_f(g, mat) = 0.0
-          vsig_f(g, mat) = 0.0
+          nu_sig_f(g, mat) = 0.0
           chi(g, mat) = 0.0
         end if
       end do
@@ -72,11 +72,6 @@ module material
           sig_s(l, :, g, mat) = array1(:)
         end do
       end do
-      
-      ! make sure chi is a PDF
-      if (dataPresent .eq. 1) then
-        chi(:,mat) = chi(:,mat) / sum(chi(:,mat))
-      end if
     end do
 
     close(unit=5)
@@ -100,8 +95,8 @@ module material
     if (allocated(chi)) then
       deallocate(chi)
     end if
-    if (allocated(vsig_f)) then
-      deallocate(vsig_f)
+    if (allocated(nu_sig_f)) then
+      deallocate(nu_sig_f)
     end if
     if (allocated(sig_s)) then
       deallocate(sig_s)
