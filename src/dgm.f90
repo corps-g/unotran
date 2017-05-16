@@ -1,5 +1,5 @@
 module dgm
-  use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t, vsig_f, chi
+  use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t, nu_sig_f, chi
   use mesh, only: number_cells, mMap
   use angle, only: number_angles
   use state, only: phi, psi, source
@@ -9,7 +9,7 @@ module dgm
   double precision, allocatable, dimension(:,:,:,:,:) :: sig_s_moment
   double precision, allocatable, dimension(:,:,:,:) :: phi_moment, source_moment, delta_moment
   double precision, allocatable, dimension(:,:,:) :: psi_0_moment, chi_moment
-  double precision, allocatable, dimension(:,:) :: sig_t_moment, basis, vsig_f_moment
+  double precision, allocatable, dimension(:,:) :: sig_t_moment, basis, nu_sig_f_moment
   integer :: expansion_order, number_course_groups
   integer, allocatable :: energyMesh(:), order(:)
 
@@ -47,7 +47,7 @@ module dgm
     allocate(psi_0_moment(number_course_groups, 2*number_angles, number_cells))
     allocate(delta_moment(expansion_order, number_course_groups, 2*number_angles, number_cells))
     allocate(sig_t_moment(number_course_groups, number_cells))
-    allocate(vsig_f_moment(number_course_groups, number_cells))
+    allocate(nu_sig_f_moment(number_course_groups, number_cells))
     allocate(chi_moment(expansion_order, number_course_groups, number_cells))
 
   end subroutine initialize_moments
@@ -112,8 +112,8 @@ module dgm
     if (allocated(sig_t_moment)) then
       deallocate(sig_t_moment)
     end if
-    if (allocated(vsig_f_moment)) then
-      deallocate(vsig_f_moment)
+    if (allocated(nu_sig_f_moment)) then
+      deallocate(nu_sig_f_moment)
     end if
     if (allocated(chi_moment)) then
       deallocate(chi_moment)
@@ -141,7 +141,7 @@ module dgm
     psi_0_moment = 0.0
     delta_moment = 0.0
     sig_t_moment = 0.0
-    vsig_f_moment = 0.0
+    nu_sig_f_moment = 0.0
     chi_moment = 0.0
 
     ! Get moments for the fluxes
@@ -178,7 +178,7 @@ module dgm
         end if
         sig_t_moment(cg, c) = sig_t_moment(cg, c) + num
         ! fission cross section moment
-        vsig_f_moment(cg, c) = vsig_f_moment(cg, c) + vsig_f(g, mat) * phi(0, g, c)
+        nu_sig_f_moment(cg, c) = nu_sig_f_moment(cg, c) + nu_sig_f(g, mat) * phi(0, g, c)
         ! chi moment
         do i = 1, order(cg)
           chi_moment(i, cg, c) = chi_moment(i, cg, c) + basis(i,g) * chi(g, mat)
