@@ -16,9 +16,10 @@ module dgm
   contains
 
   ! Initialize the container for the cross section and flux moments
-  subroutine initialize_moments(energyMap)
+  subroutine initialize_moments(energyMap, truncation_order)
     integer, intent(in) :: energyMap(:)
-    integer :: g, gp
+    integer, intent(in), optional :: truncation_order(:)
+    integer :: g, gp, cg
 
     phi = 1.0
     psi = 1.0
@@ -33,10 +34,24 @@ module dgm
     do gp = 1, number_groups
       energyMesh(gp) = g
       order(g) = order(g) + 1
-      if (gp .eq. energyMap(g)) then
+      if (gp == energyMap(g)) then
         g = g + 1
       end if
     end do
+
+    ! Check if the optional argument for the truncation is present
+    if (present(truncation_order)) then
+      ! Check if the truncation array has the right number of entries
+      if (size(truncation_order) /= number_course_groups) then
+        error stop "Incorrect number of entries in truncation array"
+      end if
+      ! Update the order array with the truncated value if sensible
+      do cg = 1, number_course_groups
+        if ((truncation_order(cg) < order(cg)) .and. (truncation_order(cg) >= 0)) then
+          order(cg) = truncation_order(cg)
+        end if
+      end do
+    end if
 
     expansion_order = MAXVAL(order)
 
@@ -72,7 +87,7 @@ module dgm
       if (cg == 1) then
         cycle
       end if
-      cumsum(cg) = cumsum(cg-1) + cumsum(cg)
+      cumsum(cg) = cumsum(cg - 1) + cumsum(cg)
     end do
     cumsum = cumsum - order
 

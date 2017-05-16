@@ -31,3 +31,5 @@
 # misc
 .settings/
 *.py
+
+.pydevproject

@@ -1,9 +1,10 @@
 program test_dgm
   call test1()
   call test2()
-
+  call test3()
 end program test_dgm
 
+! Test that the DGM moments are correctly computed for a flux of one
 subroutine test1()
   use material, only : create_material
   use angle, only : initialize_angle, initialize_polynomials
@@ -203,6 +204,7 @@ subroutine test1()
   call finalize_solver()
 end subroutine test1
 
+! Test that the DO method is matched if using the delta basis and 1 fine per course energy group
 subroutine test2()
   use material
   use angle, only : initialize_angle, initialize_polynomials
@@ -369,6 +371,71 @@ subroutine test2()
 
 end subroutine test2
 
+! Test that providing truncation works as expected
+subroutine test3()
+  use material
+  use angle, only : initialize_angle, initialize_polynomials
+  use mesh, only : create_mesh
+  use state, only : initialize_state, source
+  use solver, only : finalize_solver
+  use dgm
+
+  implicit none
+
+  ! initialize types
+  integer :: fineMesh(1), materialMap(1), testCond, em(1), l, i, c, cg, cgp,g,gp
+  integer :: t1=1, t2=1, t3=1, t4=1, t5=1, t6=1, t7=1, t8=1, t9=1, t10=1, t11=1, t12=1, t13=1
+  double precision :: courseMesh(2), norm, error, basis_test(1,7)
+  double precision :: phi_m_test(0:7,1,7,1), psi_m_test(7,1,1),source_m_test(4,2,4,1)
+  double precision :: phi_test(0:7,7,1), psi_test(7,4,1)
+  double precision :: sig_t_m_test(2,1), delta_m_test(4,2,4,1), sig_s_m_test(8,4,2,2,1)
+  double precision :: nu_sig_f_m_test(7,1), chi_m_test(1,7,1)
+  integer :: order_test(2), energyMesh_test(7), eo_test, ncg_test
+  ! Define problem parameters
+  character(len=10) :: filename = 'test.anlxs'
+  character(len=5) :: basisName = 'basis'
+
+  fineMesh = [1]
+  materialMap = [1]
+  courseMesh = [0.0, 1.0]
+
+  em = [4]
+  order_test = [3,2]
+  energyMesh_test = [1,1,1,1,2,2,2]
+  eo_test = 3
+  ncg_test = 2
+
+  ! setup problem
+  call create_mesh(fineMesh, courseMesh, materialMap)
+  call create_material(filename)
+  call initialize_angle(2, 1)
+  call initialize_polynomials(number_legendre)
+  call initialize_state(.true., 'dd')
+  source = 1.0
+
+  ! test the moment construction
+  call initialize_moments(em, [3,2])
+
+  t1 = testCond(all(order .eq. order_test))
+  t2 = testCond(all(energyMesh .eq. energyMesh_test))
+  t3 = testCond(expansion_order-eo_test .eq. 0)
+  t4 = testCond(number_course_groups-ncg_test .eq. 0)
+
+  if (t1 .eq. 0) then
+    print *, 'DGM3: order failed'
+  else if (t2 .eq. 0) then
+    print *, 'DGM3: energy mesh failed'
+  else if (t3 .eq. 0) then
+    print *, 'DGM3: expansion order failed'
+  else if (t4 .eq. 0) then
+    print *, 'DGM3: number course groups failed'
+  else
+    print *, 'all tests passed for DGM3'
+  end if
+
+  call finalize_solver()
+
+end subroutine test3
 
 integer function testCond(condition)
   logical, intent(in) :: condition

@@ -26,7 +26,8 @@ program main
   
   ! initialize the variables necessary to solve the problem
   call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, fileName='test.anlxs', &
-                         angle_order=10, angle_option=1, energyMap=em, basisName='basis')
+                         angle_order=10, angle_option=1, energyMap=em, basisName='basis',&
+                         truncation=[3,2])
 
   ! add source to all cells in 1st energy group
   source(:,:,:) = 1.0

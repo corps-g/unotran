@@ -15,7 +15,7 @@ module solver
   
   ! Initialize all of the variables and solvers
   subroutine initialize_solver(fineMesh, courseMesh, materialMap, fileName, angle_order, &
-                               angle_option, store, EQ, energyMap, basisName)
+                               angle_option, store, EQ, energyMap, basisName, truncation)
     ! Inputs :
     !   fineMesh : vector of int for number of fine mesh divisions per cell
     !   courseMap : vector of float with bounds for course mesh regions
@@ -36,6 +36,7 @@ module solver
     character(len=2) :: equation
     integer, intent(in), optional :: energyMap(:)
     character(len=*), intent(in), optional :: basisName
+    integer, intent(in), optional :: truncation(:)
     
     ! Check if the optional argument store is given
     if (present(energyMap)) then
@@ -67,7 +68,12 @@ module solver
     ! make the energy mesh if energyMap was given
     if (present(energyMap)) then
       useDGM = .true.
-      call initialize_moments(energyMap)
+      ! Pass the truncation array to dgm if provided
+      if (present(truncation)) then
+        call initialize_moments(energyMap, truncation)
+      else
+        call initialize_moments(energyMap)
+      end if
       call initialize_basis(basisName)
     else
       useDGM = .false.
