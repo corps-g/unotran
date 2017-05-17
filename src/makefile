@@ -128,7 +128,7 @@ test: test_angle test_mesh test_material test_state test_dgm test_dgmsweeper tes
 
 # Remove objects, module files, and exectables
 clean:
-	@rm -f *.o *.mod *-x *wrap.cxx *.so
+	@rm -f *.o *.mod *-x *wrap.cxx *.so test/*.so
 
 # Same, but leave the executable
 neat:
