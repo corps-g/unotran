@@ -12,7 +12,7 @@ implicit none
   
   character(len=10) :: filename = 'test.anlxs'
   
-  call create_material(filename)
+  call create_material(filename, .true.)
   
   number_materials_test = 7
   number_groups_test = 7

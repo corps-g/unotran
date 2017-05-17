@@ -9,12 +9,14 @@ module material
   contains
 
   ! Read the cross section data from the file
-  subroutine create_material(fileName)
+  subroutine create_material(fileName, use_fission)
     ! Inputs :
     !   fileName : file where cross sections are stored
+    !   use_fission : boolian for setting fission to zero or not
 
     ! Read a file that is stored in the proteus format
     character(len=*), intent(in) :: fileName
+    logical, intent(in) :: use_fission
     character(1000) :: materialName
     integer :: mat, g, gp, L, dataPresent
     double precision :: t, f, vf, c, energyFission, energyCapture, gramAtomWeight
@@ -76,6 +78,11 @@ module material
 
     close(unit=5)
     deallocate(array1)
+
+    if (.not. use_fission) then
+      sig_f = 0.0
+      nu_sig_f = 0.0
+    end if
       
   end subroutine create_material
 

@@ -9,13 +9,14 @@ module solver
 
   implicit none
   
-  logical :: useDGM
+  logical :: useDGM, printOption, use_fission
 
   contains
   
   ! Initialize all of the variables and solvers
   subroutine initialize_solver(fineMesh, courseMesh, materialMap, fileName, angle_order, &
-                               angle_option, boundary, store, EQ, energyMap, basisName, truncation)
+                               angle_option, boundary, store, EQ, energyMap, basisName, &
+                               truncation, print_level, fission_option)
     ! Inputs :
     !   fineMesh : vector of int for number of fine mesh divisions per cell
     !   courseMap : vector of float with bounds for course mesh regions
@@ -28,6 +29,7 @@ module solver
     !   EQ (optional) : Define the type of closure relation used.  default is DD
     !   energyMap (optional) : Required if using DGM.  Sets the course group struc.
     !   truncation (optional) : provides the expansion order for the dgm expansion.  full order assumed if not given
+    !   silent (optional) : boolian that will show iteration prints or not
 
     integer, intent(in) :: fineMesh(:), materialMap(:), angle_order, angle_option
     double precision, intent(in) :: courseMesh(:), boundary(2)
@@ -39,6 +41,8 @@ module solver
     integer, intent(in), optional :: energyMap(:)
     character(len=*), intent(in), optional :: basisName
     integer, intent(in), optional :: truncation(:)
+    logical, intent(in), optional :: print_level
+    logical, intent(in), optional :: fission_option
     
     ! Check if the optional argument store is given
     if (present(energyMap)) then
@@ -56,10 +60,24 @@ module solver
       equation = 'DD'  ! Default to diamond difference
     end if
     
+    ! Activate print statements depending on output flag
+    if (present(print_level)) then
+      printOption = print_level
+    else
+      printOption = .true.
+    end if
+
+    ! Deactivate fission if option is selected
+    if (present(fission_option)) then
+      use_fission = fission_option
+    else
+      use_fission = .true.
+    end if
+
     ! initialize the mesh
     call create_mesh(fineMesh, courseMesh, materialMap, boundary)
     ! read the material cross sections
-    call create_material(filename)
+    call create_material(filename, use_fission)
     ! initialize the angle quadrature
     call initialize_angle(angle_order, angle_option)
     ! get the basis vectors
@@ -120,7 +138,9 @@ module solver
       ! Keep the norm for the next iteration
       norm = hold
       ! output the current error and iteration number
-      print *, error, counter
+      if (printOption) then
+        print *, error, counter
+      end if
       ! increment the iteration
       counter = counter + 1
 

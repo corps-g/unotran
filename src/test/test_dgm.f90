@@ -42,7 +42,7 @@ subroutine test1()
 
   ! setup problem
   call create_mesh(fineMesh, courseMesh, materialMap, boundary)
-  call create_material(filename)
+  call create_material(filename, .true.)
   call initialize_angle(2, 1)
   call initialize_polynomials(number_legendre)
   call initialize_state(.true., 'dd')
@@ -244,7 +244,7 @@ subroutine test2()
 
   ! setup problem
   call create_mesh(fineMesh, courseMesh, materialMap, boundary)
-  call create_material(filename)
+  call create_material(filename, .true.)
   call initialize_angle(2, 1)
   call initialize_polynomials(number_legendre)
   call initialize_state(.true., 'dd')
@@ -409,7 +409,7 @@ subroutine test3()
 
   ! setup problem
   call create_mesh(fineMesh, courseMesh, materialMap, boundary)
-  call create_material(filename)
+  call create_material(filename, .true.)
   call initialize_angle(2, 1)
   call initialize_polynomials(number_legendre)
   call initialize_state(.true., 'dd')

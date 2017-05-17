@@ -26,7 +26,7 @@ program test_state
   call create_mesh(fineMesh, courseMesh, materialMap, boundary)
   
   ! Read the material cross sections
-  call create_material(filename)
+  call create_material(filename, .true.)
   
   ! Create the cosines and angle space
   call initialize_angle(2, 1)
