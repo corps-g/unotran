@@ -10,6 +10,7 @@ program main
   integer, allocatable :: fm(:), mm(:), em(:)
   ! courseMap : vector of float with bounds for course mesh regions
   double precision, allocatable :: cm(:)
+  double precision :: boundary(2)
   
   ! define energy map
   allocate(em(1))
@@ -24,10 +25,12 @@ program main
   ! initialize the mesh for the problem using mesh containers
   call get_mesh(n, fm, cm, mm)
   
+  boundary = [1.0, 0.0]
+
   ! initialize the variables necessary to solve the problem
   call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, fileName='test.anlxs', &
-                         angle_order=10, angle_option=1, energyMap=em, basisName='basis',&
-                         truncation=[3,2])
+                         angle_order=10, angle_option=1, boundary=boundary)!,&
+                         !energyMap=em, basisName='basis', truncation=[4,3])
 
   ! add source to all cells in 1st energy group
   source(:,:,:) = 1.0

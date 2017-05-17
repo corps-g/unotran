@@ -9,7 +9,7 @@ program test_state
 
   ! initialize types
   integer :: fineMesh(1), materialMap(1), t1=1, t2=1, t3=1, t4=1, testCond
-  double precision :: courseMesh(2), norm, error
+  double precision :: courseMesh(2), norm, error, boundary(2)
   double precision :: phi_test(7,1), psi_test(7,4,1),source_test(7,4,1)
   ! Define problem parameters
   character(len=10) :: filename = 'test.anlxs'
@@ -20,9 +20,10 @@ program test_state
   fineMesh = [1]
   materialMap = [1]
   courseMesh = [0.0, 1.0]
+  boundary = [0.0, 0.0]
   
   ! Make the mesh
-  call create_mesh(fineMesh, courseMesh, materialMap)
+  call create_mesh(fineMesh, courseMesh, materialMap, boundary)
   
   ! Read the material cross sections
   call create_material(filename)

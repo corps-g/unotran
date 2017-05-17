@@ -43,7 +43,8 @@ program test_dgmsweeper
 
   ! initialize the variables necessary to solve the problem
   call initialize_solver(fineMesh=[1], courseMesh=[0.0_8,1.0_8], materialMap=[1], fileName='test.anlxs', &
-                         store=.true., angle_order=2, angle_option=1, energyMap=[1,2,3,4,5,6], basisName='deltaBasis')
+                         store=.true., angle_order=2, angle_option=1, boundary=[0.0_8, 0.0_8], &
+                         energyMap=[1,2,3,4,5,6], basisName='deltaBasis')
 
 
   ! set source

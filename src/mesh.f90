@@ -5,18 +5,19 @@ module mesh
   double precision :: width  ! Total width of the problem
   double precision, allocatable, dimension(:) :: dx  ! Width of each cell
   integer, allocatable, dimension(:) :: mMap  ! Material within each cell
+  double precision :: bounds(2)
 
   contains
 
   ! Compute the cell size and material map for the problem
-  subroutine create_mesh(fineMesh, courseMesh, materialMap)
+  subroutine create_mesh(fineMesh, courseMesh, materialMap, boundary)
     ! Inputs :
     !   fineMesh : vector of int for number of fine mesh divisions per cell
     !   courseMap : vector of float with bounds for course mesh regions
     !   materialMap : vector of int with material index for each course region
 
     integer, intent(in) :: fineMesh(:), materialMap(:)
-    double precision, intent(in) :: courseMesh(:)
+    double precision, intent(in) :: courseMesh(:), boundary(2)
 
     double precision :: width  ! Total width of problem
     double precision :: ddx  ! Temporary variable
@@ -40,6 +41,8 @@ module mesh
 
     ! Store the total width of the problem
     width = courseMesh(n) - courseMesh(1)
+
+    bounds = boundary
   end subroutine create_mesh
 
   subroutine finalize_mesh()

@@ -6,16 +6,17 @@ implicit none
 
 ! initialize types
   integer :: fineMesh(3), materialMap(3), number_cells_test, mMap_test(8)
-  double precision :: courseMesh(4), dx_test(8)
+  double precision :: courseMesh(4), dx_test(8), boundary(2)
   integer :: t1=1, t2=1, t3=1, testCond
   
   ! Define problem parameters
   fineMesh = [2, 4, 2]
   materialMap = [1,2,3]
   courseMesh = [0.0, 1.0, 2.0, 3.0]
+  boundary = [0.0, 0.0]
   
   ! Make the mesh
-  call create_mesh(fineMesh, courseMesh, materialMap)
+  call create_mesh(fineMesh, courseMesh, materialMap, boundary)
   
   number_cells_test = 8
   dx_test = [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5]

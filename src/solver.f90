@@ -15,7 +15,7 @@ module solver
   
   ! Initialize all of the variables and solvers
   subroutine initialize_solver(fineMesh, courseMesh, materialMap, fileName, angle_order, &
-                               angle_option, store, EQ, energyMap, basisName, truncation)
+                               angle_option, boundary, store, EQ, energyMap, basisName, truncation)
     ! Inputs :
     !   fineMesh : vector of int for number of fine mesh divisions per cell
     !   courseMap : vector of float with bounds for course mesh regions
@@ -23,12 +23,14 @@ module solver
     !   fileName : file where cross sections are stored
     !   angle_order : number of angles per octant
     !   angle_option : type of quadrature, defined in angle.f90
+    !   boundary : length 2 array containing boundary.  0=vacuum, 1=reflect.  values 0<=x<=1 are accepted.  [left, right]
     !   store (optional) : boolian for option to store angular flux
     !   EQ (optional) : Define the type of closure relation used.  default is DD
     !   energyMap (optional) : Required if using DGM.  Sets the course group struc.
+    !   truncation (optional) : provides the expansion order for the dgm expansion.  full order assumed if not given
 
     integer, intent(in) :: fineMesh(:), materialMap(:), angle_order, angle_option
-    double precision, intent(in) :: courseMesh(:)
+    double precision, intent(in) :: courseMesh(:), boundary(2)
     character(len=*), intent(in) :: fileName
     logical, intent(in), optional :: store
     character(len=2), intent(in), optional :: EQ
@@ -55,7 +57,7 @@ module solver
     end if
     
     ! initialize the mesh
-    call create_mesh(fineMesh, courseMesh, materialMap)
+    call create_mesh(fineMesh, courseMesh, materialMap, boundary)
     ! read the material cross sections
     call create_material(filename)
     ! initialize the angle quadrature

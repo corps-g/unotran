@@ -5,7 +5,7 @@ module state
 
   implicit none
 
-  double precision, allocatable, dimension(:,:,:) :: psi, source, phi
+  double precision, allocatable :: psi(:,:,:), source(:,:,:), phi(:,:,:), incoming(:,:)
   logical :: store_psi
   character(len=2) :: equation
   
@@ -32,10 +32,12 @@ module state
     ! Allocate the scalar flux and source containers
     allocate(phi(0:number_legendre,number_groups,number_cells))
     allocate(source(number_groups,number_angles*2,number_cells))
+    allocate(incoming(number_groups,2*number_angles))
     
     ! Initialize containers to zero
     phi = 0.0
     source = 0.0
+    incoming=1.0
     
   end subroutine initialize_state
   
@@ -49,6 +51,9 @@ module state
     end if
     if (allocated(psi)) then
       deallocate(psi)
+    end if
+    if (allocated(incoming)) then
+      deallocate(incoming)
     end if
   end subroutine finalize_state
   

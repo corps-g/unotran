@@ -18,7 +18,7 @@ subroutine test1()
   ! initialize types
   integer :: fineMesh(1), materialMap(1), testCond, em(1), l, i, c, cg, cgp,g,gp
   integer :: t1=1, t2=1, t3=1, t4=1, t5=1, t6=1, t7=1, t8=1, t9=1, t10=1, t11=1, t12=1, t13=1
-  double precision :: courseMesh(2), norm, error, basis_test(4,7)
+  double precision :: courseMesh(2), norm, error, basis_test(4,7), boundary(2)
   double precision :: phi_m_test(8,4,2,1), psi_m_test(2,4,1),source_m_test(4,2,4,1)
   double precision :: sig_t_m_test(2,1), delta_m_test(4,2,4,1), sig_s_m_test(8,4,2,2,1)
   double precision :: nu_sig_f_m_test(2,1), chi_m_test(4,2,1)
@@ -41,7 +41,7 @@ subroutine test1()
   ncg_test = 2
 
   ! setup problem
-  call create_mesh(fineMesh, courseMesh, materialMap)
+  call create_mesh(fineMesh, courseMesh, materialMap, boundary)
   call create_material(filename)
   call initialize_angle(2, 1)
   call initialize_polynomials(number_legendre)
@@ -218,7 +218,7 @@ subroutine test2()
   ! initialize types
   integer :: fineMesh(1), materialMap(1), testCond, em(6), l, i, c, cg, cgp,g,gp
   integer :: t1=1, t2=1, t3=1, t4=1, t5=1, t6=1, t7=1, t8=1, t9=1, t10=1, t11=1, t12=1, t13=1
-  double precision :: courseMesh(2), norm, error, basis_test(1,7)
+  double precision :: courseMesh(2), norm, error, basis_test(1,7), boundary(2)
   double precision :: phi_m_test(0:7,1,7,1), psi_m_test(7,1,1),source_m_test(4,2,4,1)
   double precision :: phi_test(0:7,7,1), psi_test(7,4,1)
   double precision :: sig_t_m_test(2,1), delta_m_test(4,2,4,1), sig_s_m_test(8,4,2,2,1)
@@ -234,6 +234,7 @@ subroutine test2()
   fineMesh = [1]
   materialMap = [1]
   courseMesh = [0.0, 1.0]
+  boundary = [0.0, 0.0]
 
   em = [1,2,3,4,5,6]
   order_test = [1,1,1,1,1,1,1]
@@ -242,7 +243,7 @@ subroutine test2()
   ncg_test = 7
 
   ! setup problem
-  call create_mesh(fineMesh, courseMesh, materialMap)
+  call create_mesh(fineMesh, courseMesh, materialMap, boundary)
   call create_material(filename)
   call initialize_angle(2, 1)
   call initialize_polynomials(number_legendre)
@@ -385,7 +386,7 @@ subroutine test3()
   ! initialize types
   integer :: fineMesh(1), materialMap(1), testCond, em(1), l, i, c, cg, cgp,g,gp
   integer :: t1=1, t2=1, t3=1, t4=1, t5=1, t6=1, t7=1, t8=1, t9=1, t10=1, t11=1, t12=1, t13=1
-  double precision :: courseMesh(2), norm, error, basis_test(1,7)
+  double precision :: courseMesh(2), norm, error, basis_test(1,7), boundary(2)
   double precision :: phi_m_test(0:7,1,7,1), psi_m_test(7,1,1),source_m_test(4,2,4,1)
   double precision :: phi_test(0:7,7,1), psi_test(7,4,1)
   double precision :: sig_t_m_test(2,1), delta_m_test(4,2,4,1), sig_s_m_test(8,4,2,2,1)
@@ -398,6 +399,7 @@ subroutine test3()
   fineMesh = [1]
   materialMap = [1]
   courseMesh = [0.0, 1.0]
+  boundary = [0.0, 0.0]
 
   em = [4]
   order_test = [3,2]
@@ -406,7 +408,7 @@ subroutine test3()
   ncg_test = 2
 
   ! setup problem
-  call create_mesh(fineMesh, courseMesh, materialMap)
+  call create_mesh(fineMesh, courseMesh, materialMap, boundary)
   call create_material(filename)
   call initialize_angle(2, 1)
   call initialize_polynomials(number_legendre)

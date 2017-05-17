@@ -1,5 +1,5 @@
-program test_sweeper
-use material, only : create_material, number_legendre, number_groups
+program test_main
+  use material, only : create_material, number_legendre, number_groups
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials
   use mesh, only : create_mesh, number_cells
   use state, only : initialize_state, phi, source, psi
@@ -8,16 +8,17 @@ use material, only : create_material, number_legendre, number_groups
   
   ! initialize types
   integer :: fineMesh(3), materialMap(3), l, c, a, g, counter, testCond, t1, t2
-  double precision :: courseMesh(4), norm, error, phi_test(7,28)
+  double precision :: courseMesh(4), norm, error, phi_test(7,28), boundary(2)
   
   ! Define problem parameters
   character(len=17) :: filename = 'test/testXS.anlxs'
   fineMesh = [3, 22, 3]
   materialMap = [6,1,6]
   courseMesh = [0.0, 0.09, 1.17, 1.26]
+  boundary = [0.0, 0.0]
   
   ! Make the mesh
-  call create_mesh(fineMesh, courseMesh, materialMap)
+  call create_mesh(fineMesh, courseMesh, materialMap, boundary)
   
   ! Read the material cross sections
   call create_material(filename)
@@ -91,7 +92,7 @@ use material, only : create_material, number_legendre, number_groups
     print *, 'all tests passed for main'
   end if
 
-end program test_sweeper
+end program test_main
 
 integer function testCond(condition)
   logical, intent(in) :: condition

@@ -2,9 +2,9 @@ module sweeper
   ! Uses diamond difference
   ! Assumes only vacuum conditions
   use material, only: sig_s, sig_t, nu_sig_f, chi, number_groups, number_legendre
-  use mesh, only: dx, number_cells, mMap
+  use mesh, only: dx, number_cells, mMap, bounds
   use angle, only: number_angles, p_leg, wt, mu
-  use state, only: phi, psi, source, store_psi, equation
+  use state, only: phi, psi, source, store_psi, equation, incoming
 
   implicit none
   
@@ -13,7 +13,7 @@ module sweeper
   
   subroutine sweep()
     integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep
-    double precision :: incoming(number_groups,2*number_angles), Q(number_groups), Ps, invmu, fiss
+    double precision :: Q(number_groups), Ps, invmu, fiss
     double precision :: phi_old(0:number_legendre,number_groups,number_cells)
     logical :: octant
     
@@ -29,8 +29,10 @@ module sweeper
       amax = merge(number_angles, 1, octant)
       astep = merge(1, -1, octant)
       
+      ! set boundary conditions
+      incoming = bounds(o) * incoming  ! Set albedo conditions
       
-      incoming = 0.0  ! Set vacuum conditions for both faces
+
       do c = cmin, cmax, cstep  ! Sweep over cells
         do a = amin, amax, astep  ! Sweep over angle
           ! Get the correct angle index
