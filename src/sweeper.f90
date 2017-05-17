@@ -31,7 +31,6 @@ module sweeper
       
       ! set boundary conditions
       incoming = bounds(o) * incoming  ! Set albedo conditions
-      
 
       do c = cmin, cmax, cstep  ! Sweep over cells
         do a = amin, amax, astep  ! Sweep over angle
