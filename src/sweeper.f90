@@ -1,6 +1,4 @@
 module sweeper
-  ! Uses diamond difference
-  ! Assumes only vacuum conditions
   use material, only: sig_s, sig_t, nu_sig_f, chi, number_groups, number_legendre
   use mesh, only: dx, number_cells, mMap, bounds
   use angle, only: number_angles, p_leg, wt, mu
@@ -9,12 +7,12 @@ module sweeper
   implicit none
   
   contains
-  ! Define source
   
   subroutine sweep()
     integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep
     double precision :: Q(number_groups), Ps, invmu, fiss
     double precision :: phi_old(0:number_legendre,number_groups,number_cells)
+    double precision :: M(0:number_legendre)
     logical :: octant
     
     phi_old = phi
@@ -39,6 +37,9 @@ module sweeper
           ! get a common fraction
           invmu = dx(c) / (2 * abs(mu(a)))
           
+          ! legendre polynomial integration vector
+          M = 0.5 * wt(a) * p_leg(:,an)
+
           ! Update the right hand side
           Q = updateSource(source(:,an,c), phi_old(:,:,c), c, an)
           
@@ -51,7 +52,7 @@ module sweeper
             end if
             
             ! Increment the legendre expansions of the scalar flux
-            phi(:,g,c) = phi(:,g,c) + 0.5 * wt(a) * p_leg(:, an) * Ps
+            phi(:,g,c) = phi(:,g,c) + M(:) * Ps
           end do
         end do
       end do
