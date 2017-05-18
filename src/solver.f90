@@ -107,7 +107,7 @@ module solver
     counter = 1
     do while (error .gt. eps)  ! Interate to convergance tolerance
       ! Sweep through the mesh
-      call sweep(sig_s, sig_t, nu_sig_f, chi, phi, psi, source, incoming)
+      call sweep(number_groups, sig_s, sig_t, nu_sig_f, chi, phi, psi, source, incoming)
       ! Store norm of scalar flux
       hold = norm2(phi)
       ! error is the difference in the norm of phi for successive iterations
