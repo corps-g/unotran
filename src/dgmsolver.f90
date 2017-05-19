@@ -3,13 +3,13 @@ module dgmsolver
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
   use state, only : initialize_state, phi, source, psi, finalize_state
-  use sweeper, only : sweep
-  use dgm, only : initialize_moments, initialize_basis, compute_moments, finalize_moments
-  use dgmsweeper, only : dgmsweep
+  use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments
+  use dgmsweeper, only : sweep
 
   implicit none
   
-  logical :: useDGM, printOption, use_fission
+  logical :: printOption, use_fission
+  double precision, allocatable :: incoming(:,:)
 
   contains
   
@@ -38,20 +38,13 @@ module dgmsolver
     character(len=2), intent(in), optional :: EQ
     logical :: store_psi
     character(len=2) :: equation
-    integer, intent(in), optional :: energyMap(:)
-    character(len=*), intent(in), optional :: basisName
+    integer, intent(in) :: energyMap(:)
+    character(len=*), intent(in) :: basisName
     integer, intent(in), optional :: truncation(:)
     logical, intent(in), optional :: print_level
     logical, intent(in), optional :: fission_option
     
-    ! Check if the optional argument store is given
-    if (present(energyMap)) then
-      store_psi = .true.
-    else if (present(store)) then
-      store_psi = store  ! Set the option to the given parameter
-    else
-      store_psi = .false.  ! Default to not storing the angular flux
-    end if
+    store_psi = .true.
     
     ! Check if the optional argument EQ is given
     if (present(EQ)) then
@@ -85,19 +78,16 @@ module dgmsolver
     ! allocate the solutions variables
     call initialize_state(store_psi, equation)
 
-    ! make the energy mesh if energyMap was given
-    if (present(energyMap)) then
-      useDGM = .true.
-      ! Pass the truncation array to dgm if provided
-      if (present(truncation)) then
-        call initialize_moments(energyMap, truncation)
-      else
-        call initialize_moments(energyMap)
-      end if
-      call initialize_basis(basisName)
+    ! make the energy mesh
+    ! Pass the truncation array to dgm if provided
+    if (present(truncation)) then
+      call initialize_moments(energyMap, truncation)
     else
-      useDGM = .false.
+      call initialize_moments(energyMap)
     end if
+    call initialize_basis(basisName)
+
+    allocate(incoming(number_course_groups, number_angles * 2))
 
   end subroutine initialize_solver
 
@@ -108,7 +98,7 @@ module dgmsolver
 
     double precision, intent(in) :: eps
     double precision, intent(in), optional :: lambda_arg
-    double precision :: norm, error, hold, lambda
+    double precision :: norm, outer_error, hold, lambda
     integer :: counter
 
     if (present(lambda_arg)) then
@@ -118,28 +108,23 @@ module dgmsolver
     end if
 
     ! Error of current iteration
-    error = 1.0
+    outer_error = 1.0
     ! 2 norm of the scalar flux
     norm = norm2(phi)
     ! interation number
     counter = 1
-    do while (error .gt. eps)  ! Interate to convergance tolerance
+    do while (outer_error .gt. eps)  ! Interate to convergance tolerance
       ! Sweep through the mesh
-      if (useDGM) then
-        call compute_moments()
-        call dgmsweep(lambda)
-      else
-        call sweep()
-      end if
+      call sweep(phi, psi, incoming, eps, .true.)
       ! Store norm of scalar flux
       hold = norm2(phi)
       ! error is the difference in the norm of phi for successive iterations
-      error = abs(norm - hold)
+      outer_error = abs(norm - hold)
       ! Keep the norm for the next iteration
       norm = hold
       ! output the current error and iteration number
       if (printOption) then
-        print *, error, counter
+        print *, outer_error, counter
       end if
       ! increment the iteration
       counter = counter + 1
@@ -154,6 +139,9 @@ module dgmsolver
     call finalize_material()
     call finalize_state()
     call finalize_moments()
+    if (allocated(incoming)) then
+      deallocate(incoming)
+    end if
   end subroutine
 
 end module dgmsolver
