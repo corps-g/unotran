@@ -3,7 +3,7 @@ module solver
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
-  use state, only : initialize_state, phi, source, psi, finalize_state
+  use state, only : initialize_state, phi, psi, finalize_state
   use sweeper, only : sweep
 
   implicit none
@@ -107,7 +107,7 @@ module solver
     counter = 1
     do while (error .gt. eps)  ! Interate to convergance tolerance
       ! Sweep through the mesh
-      call sweep(number_groups, sig_s, sig_t, nu_sig_f, chi, phi, psi, source, incoming)
+      call sweep(phi, psi, incoming)
       ! Store norm of scalar flux
       hold = norm2(phi)
       ! error is the difference in the norm of phi for successive iterations

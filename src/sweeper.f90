@@ -1,21 +1,19 @@
 module sweeper
-  use material, only: number_legendre
+  use material, only: number_groups, sig_s, sig_t, nu_sig_f, chi, number_legendre
   use mesh, only: dx, number_cells, mMap, bounds
   use angle, only: number_angles, p_leg, wt, mu
-  use state, only: store_psi, equation
+  use state, only: store_psi, equation, source
 
   implicit none
   
   contains
   
-  subroutine sweep(number_groups, sig_s, sig_t, nu_sig_f, chi, phi, psi, source, incoming)
+  subroutine sweep(phi, psi, incoming)
     integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep
-    integer, intent(in) :: number_groups
     double precision :: Q(number_groups), Ps, invmu, fiss
     double precision :: phi_old(0:number_legendre,number_groups,number_cells)
     double precision :: M(0:number_legendre)
-    double precision, intent(in) :: sig_s(:,:,:,:), sig_t(:,:), nu_sig_f(:,:), chi(:,:)
-    double precision, intent(inout) :: phi(:,:,:), source(:,:,:), incoming(:,:)
+    double precision, intent(inout) :: phi(:,:,:), incoming(:,:)
     double precision, optional, intent(inout) :: psi(:,:,:)
     logical :: octant
     
