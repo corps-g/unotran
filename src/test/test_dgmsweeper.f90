@@ -1,6 +1,6 @@
 program test_dgmsweeper
 
-  use solver, only : initialize_solver
+  use dgmsolver, only : initialize_solver
   use dgmsweeper
 
   implicit none
@@ -8,7 +8,7 @@ program test_dgmsweeper
   ! initialize types
   integer :: testCond, t1=1, t2=1, o, a, an, amin, amax, astep
   logical :: octant
-  double precision :: source_test(7,4), phi_test(0:7,7,1), psi_test(7,4,1), S(7,4), Q(1,7)
+  double precision :: source_test(7,4), phi_test(0:7,7,1), psi_test(7,4,1), S(7,4)
 
   source_test = reshape((/1.4263751 ,  2.91220996,  1.55883166,  1.50108595,  1.37433726,  1.33575837,  1.34199138,&
                           1.50712586,  2.98306927,  1.55970132,  1.50111222,  1.3745595 ,  1.33587244,  1.34058049,&
@@ -55,7 +55,8 @@ program test_dgmsweeper
   psi = psi_test
 
   ! compute the moments
-  call compute_moments()
+  call compute_flux_moments()
+  call compute_xs_moments(0)
 
   do o = 1, 2  ! Sweep over octants
     ! Sweep in the correct direction in the octant
@@ -65,8 +66,8 @@ program test_dgmsweeper
     astep = merge(1, -1, octant)
     do a = amin, amax, astep
       an = merge(a, 2 * number_angles - a + 1, octant)
-      Q = updateSource(1, an)
-      S(:,an) = Q(1,:)
+      S(:,an) = updateSource(7, source_moment(:, an, 1), phi_0_moment(:,:,1), an, &
+                         sig_s_moment(:,:,:,1), nu_sig_f_moment(:,1), chi_moment(:,1))
     end do
   end do
 

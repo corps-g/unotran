@@ -42,7 +42,7 @@ module dgmsweeper
       source_moment(:,:,:) = source_moment(:,:,:) + delta_moment(:,:,:) * psi_0_moment(:,:,:)
 
       ! Converge the 0th order flux moments
-      do while (inner_error .gt. eps)  ! Interate to convergance tolerance
+      do while (inner_error > eps)  ! Interate to convergance tolerance
         ! Sweep through the mesh
         call moment_sweep(phi_m, psi_m, source_moment, incoming)
 
@@ -109,7 +109,7 @@ module dgmsweeper
     phi_m = 0.0  ! Reset phi
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction in the octant
-      octant = o .eq. 1
+      octant = o == 1
       cmin = merge(1, number_cells, octant)
       cmax = merge(number_cells, 1, octant)
       cstep = merge(1, -1, octant)

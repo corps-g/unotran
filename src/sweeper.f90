@@ -80,14 +80,14 @@ module sweeper
   function updateSource(number_groups, Sg, Phig, angle, sig_s, nu_sig_f, chi)
     integer, intent(in) :: number_groups
     double precision :: updateSource(number_groups)
-    double precision, intent(in) :: Sg(:), Phig(0:number_legendre, number_groups), sig_s(:,:,:), nu_sig_f(:), chi(:)
+    double precision, intent(in) :: Sg(:), Phig(0:number_legendre, number_groups), nu_sig_f(:), chi(:)
+    double precision, intent(in) :: sig_s(0:number_legendre,number_groups,number_groups)
     double precision :: scat(number_groups)
     integer, intent(in) :: angle
     integer :: l
     
     ! Include the external source and the fission source
     updateSource(:) = Sg(:) + chi(:) * dot_product(nu_sig_f(:), phig(0,:))
-    
     ! Add the scattering source for each legendre moment
     do l = 0, number_legendre
       scat(:) = (2 * l + 1) * p_leg(l, angle) * matmul(transpose(sig_s(l, :, :)), phig(l,:))
