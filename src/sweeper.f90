@@ -21,7 +21,7 @@ module sweeper
     phi = 0.0  ! Reset phi
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction in the octant
-      octant = o .eq. 1
+      octant = o == 1
       cmin = merge(1, number_cells, octant)
       cmax = merge(number_cells, 1, octant)
       cstep = merge(1, -1, octant)
@@ -67,7 +67,7 @@ module sweeper
     double precision, intent(in) :: S, incoming, sig, invmu
     double precision, intent(out) :: outgoing, cellPsi
     
-    if (equation .eq. 'DD') then
+    if (equation == 'DD') then
       ! Diamond Difference relationship
       cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
       outgoing = 2 * cellPsi - incoming

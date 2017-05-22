@@ -68,9 +68,9 @@ subroutine test1()
                         4.58369841267,  1.5626711117,  1.31245374786,  1.12046360588,  0.867236739559,  &
                         0.595606769942 /),shape(phi_test))
                  
-  t1 = testCond(norm2(phi(0,:,:) - phi_test) .lt. 1e-5)
+  t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-5)
   
-  if (t1 .eq. 0) then
+  if (t1 == 0) then
     print *, 'solver: vacuum test failed'
   else
     print *, 'all tests passed for solver vacuum'
@@ -155,9 +155,9 @@ subroutine test2()
                         17.95365148,    6.2855009 ,    3.01584797,    1.21327705 &
                        /),shape(phi_test))
 
-  t1 = testCond(all((phi(0,:,:) - phi_test) .lt. 1e-5))
+  t1 = testCond(all(abs(phi(0,:,:) - phi_test) < 1e-5))
 
-  if (t1 .eq. 0) then
+  if (t1 == 0) then
     print *, 'solver: reflection test failed'
   else
     print *, 'all tests passed for solver reflect'

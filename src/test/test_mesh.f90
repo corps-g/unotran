@@ -23,20 +23,20 @@ implicit none
   mMap_test = [1, 1, 2, 2, 2, 2, 3, 3]
 
   ! Test number of cells
-  t1 = testCond(number_cells_test .eq. number_cells)
+  t1 = testCond(number_cells_test == number_cells)
   
   ! test dx
-  t2 = testCond(norm2(dx-dx_test) .lt. 1e-7)
+  t2 = testCond(norm2(dx-dx_test) < 1e-7)
   
   ! test material map
-  t3 = testCond(ALL(mMap.eq.mMap_test))
+  t3 = testCond(ALL(mMap == mMap_test))
   
   ! Print appropriate output statements
-  if (t1 .eq. 0) then
+  if (t1 == 0) then
     print *, 'mesh: number_cells failed'
-  else if (t2 .eq. 0) then
+  else if (t2 == 0) then
     print *, 'mesh: dx failed'
-  else if (t3 .eq. 0) then
+  else if (t3 == 0) then
     print *, 'mesh: mMap failed'
   else
     print *, 'all tests passed for mesh'

@@ -1,5 +1,5 @@
 program main
-  use solver
+  use dgmsolver
 
   implicit none
   
@@ -29,8 +29,8 @@ program main
 
   ! initialize the variables necessary to solve the problem
   call initialize_solver(fineMesh=fm, courseMesh=cm, materialMap=mm, fileName='test.anlxs', &
-                         angle_order=10, angle_option=1, boundary=boundary)!,&
-                         !energyMap=em, basisName='basis', truncation=[4,3])
+                         angle_order=10, angle_option=1, boundary=boundary,&
+                         energyMap=em, basisName='basis', truncation=[3,2])
 
   ! add source to all cells in 1st energy group
   source(:,:,:) = 1.0
@@ -74,7 +74,7 @@ subroutine get_mesh(n, fm, cm, mt)
   end do
   
   ! If only 1 cell use only UO2, else have half UO2 and half MOX
-  if (n .eq. 1) then
+  if (n == 1) then
     mt = [6, 1, 6]
   else
     ! fill with UO2

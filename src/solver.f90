@@ -105,7 +105,7 @@ module solver
     norm = norm2(phi)
     ! interation number
     counter = 1
-    do while (error .gt. eps)  ! Interate to convergance tolerance
+    do while (error > eps)  ! Interate to convergance tolerance
       ! Sweep through the mesh
       call sweep(phi, psi, incoming)
       ! Store norm of scalar flux

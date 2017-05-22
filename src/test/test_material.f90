@@ -108,30 +108,30 @@ implicit none
                       /), shape(sig_s_test))
   
   ! Test total cross section             
-  t1 = testCond(norm2(sig_t - sig_t_test) .lt. 1e-6)
+  t1 = testCond(norm2(sig_t - sig_t_test) < 1e-6)
   
   ! Test fission cross section  
-  t2 = testCond(norm2(sig_f - sig_f_test) .lt. 1e-6)
+  t2 = testCond(norm2(sig_f - sig_f_test) < 1e-6)
   
   ! Test nu * fission cross section  
-  t3 = testCond(norm2(nu_sig_f - nu_sig_f_test) .lt. 1e-6)
+  t3 = testCond(norm2(nu_sig_f - nu_sig_f_test) < 1e-6)
   
   ! Test chi
-  t4 = testCond(norm2(chi - chi_test) .lt. 1e-6)
+  t4 = testCond(norm2(chi - chi_test) < 1e-6)
   
   ! Test scattering cross section
-  t5 = testCond(all(sig_s(:,:,:,1) - sig_s_test .lt. 1e-3))
+  t5 = testCond(all(abs(sig_s(:,:,:,1) - sig_s_test) < 1e-3))
   
   ! Print appropriate output statements
-  if (t1 .eq. 0) then
+  if (t1 == 0) then
     print *, 'material: sig_t failed'
-  else if (t2 .eq. 0) then
+  else if (t2 == 0) then
     print *, 'material: sig_f failed'
-  else if (t3 .eq. 0) then
+  else if (t3 == 0) then
     print *, 'material: nu_sig_f failed'
-  else if (t4 .eq. 0) then
+  else if (t4 == 0) then
     print *, 'material: chi failed'
-  else if (t5 .eq. 0) then
+  else if (t5 == 0) then
     print *, 'material: sig_s failed'
   else
     print *, ' all tests passed for material'

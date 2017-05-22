@@ -36,20 +36,20 @@ program test_state
   ! Create the state variable containers
   call initialize_state(.false., 'dd')
   
-  t1 = testCond(norm2(phi(0,:,:)-phi_test) .lt. 1e-7)
+  t1 = testCond(norm2(phi(0,:,:)-phi_test) < 1e-7)
   
-  t2 = testCond(norm2(source-source_test) .lt. 1e-7)
+  t2 = testCond(norm2(source-source_test) < 1e-7)
   
   call finalize_state()
   call initialize_state(.true., 'dd')
   
-  t3 = testCond(norm2(psi-psi_test) .lt. 1e-7)
+  t3 = testCond(norm2(psi-psi_test) < 1e-7)
   
-  if (t1 .eq. 0) then
+  if (t1 == 0) then
     print *, 'state: phi initialization failed'
-  else if (t2 .eq. 0) then
+  else if (t2 == 0) then
     print *, 'state: source initialization failed'
-  else if (t3 .eq. 0) then
+  else if (t3 == 0) then
     print *, 'state: psi initialization failed'
   else
     print *, 'all tests passed for state'

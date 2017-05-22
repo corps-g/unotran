@@ -59,7 +59,7 @@ program test_dgmsweeper
 
   do o = 1, 2  ! Sweep over octants
     ! Sweep in the correct direction in the octant
-    octant = o .eq. 1
+    octant = o == 1
     amin = merge(1, number_angles, octant)
     amax = merge(number_angles, 1, octant)
     astep = merge(1, -1, octant)
@@ -70,9 +70,9 @@ program test_dgmsweeper
     end do
   end do
 
-  t1 = testCond(norm2(S - source_test) .lt. 1e-6)
+  t1 = testCond(norm2(S - source_test) < 1e-6)
 
-  if (t1 .eq. 0) then
+  if (t1 == 0) then
     print *, 'DGM sweeper: update source failed'
   else
     print *, 'all tests passed for DGM sweeper'

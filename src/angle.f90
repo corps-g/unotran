@@ -22,9 +22,9 @@ module angle
     integer :: i
     number_angles = n
     allocate(mu(number_angles), wt(number_angles))
-    if (option .eq. GL) then
+    if (option == GL) then
       call generate_gl_parameters(2*number_angles, mu, wt)
-    else if (option .eq. DGL) then
+    else if (option == DGL) then
       call generate_gl_parameters(number_angles, mu, wt)
       mu = 0.5*mu + 0.5
       wt = 0.5*wt
@@ -65,7 +65,7 @@ module angle
       do j = 1, 100
         p = legendre_p(m, x(i))
         dp = d_legendre_p(m, x(i))
-        if (abs(p/dp) .lt. 1e-16) then
+        if (abs(p/dp) < 1e-16) then
           exit
         end if
         ! Newton step
@@ -96,9 +96,9 @@ module angle
     ! local variables
     double precision :: P_0, P_1, P_2
     integer :: m
-    if (l .eq. 0) then
+    if (l == 0) then
       P_0 = 1.0_8
-    else if (l .eq. 1) then
+    else if (l == 1) then
       P_0 = x
     else
       P_1 = 1.0_8 ! P(l-2, x)
@@ -118,7 +118,7 @@ module angle
     integer, intent(in) :: l
     double precision, intent(in) :: x
     ! local variables
-    if (l .eq. 0) then
+    if (l == 0) then
       d_legendre_p = 0.0_8
     else
       d_legendre_p = (legendre_p(l-1, x)-x*legendre_p(l, x))*l/(1-x**2)

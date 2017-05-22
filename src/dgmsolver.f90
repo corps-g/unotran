@@ -113,7 +113,7 @@ module dgmsolver
     norm = norm2(phi)
     ! interation number
     counter = 1
-    do while (outer_error .gt. eps)  ! Interate to convergance tolerance
+    do while (outer_error > eps)  ! Interate to convergance tolerance
       ! Sweep through the mesh
       call sweep(phi, psi, incoming, eps, .true.)
       ! Store norm of scalar flux

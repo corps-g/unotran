@@ -33,12 +33,12 @@ program test_dgmsolver
 
   call dgmsweep(1.0_8)
 
-  t1 = testCond(norm2(phi - phi_test) .lt. 1e-6)
-  t2 = testCond(norm2(psi - psi_test) .lt. 1e-6)
+  t1 = testCond(norm2(phi - phi_test) < 1e-6)
+  t2 = testCond(norm2(psi - psi_test) < 1e-6)
 
-  if (t1 .eq. 0) then
+  if (t1 == 0) then
     print *, 'DGM solver: phi failed'
-  else if (t2 .eq. 0) then
+  else if (t2 == 0) then
     print *, 'DGM solver: psi failed'
   else
     print *, 'all tests passed for DGM solver'
