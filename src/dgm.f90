@@ -29,7 +29,7 @@ module dgm
     ! Create the map of course groups and default to full expansion order
     allocate(energyMesh(number_groups))
     allocate(order(number_course_groups))
-    order = 0
+    order = -1
     g = 1
     do gp = 1, number_groups
       energyMesh(gp) = g
@@ -81,7 +81,7 @@ module dgm
     ! initialize the basis to zero
     basis = 0.0
 
-    cumsum = order
+    cumsum = order + 1
 
     do cg = 1, number_course_groups
       if (cg == 1) then
@@ -97,7 +97,7 @@ module dgm
       cg = energyMesh(g)
       array1(:) = 0.0
       read(5,*) array1
-      do i = 1, order(cg)
+      do i = 0, order(cg)
         basis(g, i) = array1(cumsum(cg) + i)
       end do
     end do
@@ -187,29 +187,31 @@ module dgm
     do c = 1, number_cells
       ! get the material for the current cell
       mat = mMap(c)
+      do g = 1, number_groups
+        cg = energyMesh(g)
+        ! total cross section moment
+        sig_t_moment(cg, c) = sig_t_moment(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / phi_0_moment(0, cg, c)
+        ! fission cross section moment
+        nu_sig_f_moment(cg, c) = nu_sig_f_moment(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / phi_0_moment(0, cg, c)
+        ! chi moment
+        chi_moment(cg, c) = chi_moment(cg, c) + basis(g, order) * chi(g, mat)
+        ! Scattering cross section moment
+        do gp = 1, number_groups
+          cgp = energyMesh(gp)
+          sig_s_moment(:, cgp, cg, c) = sig_s_moment(:, cgp, cg, c) + &
+                                        basis(g, order) * sig_s(:, gp, g, mat) * phi(:, gp, c) / phi_0_moment(:, cgp, c)
+        end do
+      end do
 
       do a = 1, number_angles * 2
         do g = 1, number_groups
           cg = energyMesh(g)
-          if (a == 1) then
-            ! total cross section moment
-            sig_t_moment(cg, c) = sig_t_moment(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / phi_0_moment(0, cg, c)
-            ! fission cross section moment
-            nu_sig_f_moment(cg, c) = nu_sig_f_moment(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / phi_0_moment(0, cg, c)
-            ! chi moment
-            chi_moment(cg, c) = chi_moment(cg, c) + basis(g, order) * chi(g, mat)
-            ! Scattering cross section moment
-            do gp = 1, number_groups
-              cgp = energyMesh(gp)
-              sig_s_moment(:, cgp, cg, c) = sig_s_moment(:, cgp, cg, c) + &
-                                            basis(g, order) * sig_s(:, gp, g, mat) * phi(:, gp, c) / phi_0_moment(:, cg, c)
-            end do
-          end if
+          ! Source moment
+          source_moment(cg, a, c) = source_moment(cg, a, c) + basis(g, order) * source(g, a, c)
+
           ! angular total cross section moment (delta)
           delta_moment(cg, a, c) = delta_moment(cg, a, c) + &
                                    basis(g, order) * (sig_t(g, mat) - sig_t_moment(cg, c)) * psi(g, a, c) / psi_0_moment(cg, a, c)
-          ! Source moment
-          source_moment(cg, a, c) = source_moment(cg, a, c) + basis(g, order) * source(g, a, c)
         end do
       end do
     end do
