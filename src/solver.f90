@@ -3,7 +3,7 @@ module solver
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
-  use state, only : initialize_state, phi, psi, finalize_state
+  use state, only : initialize_state, phi, psi, source, finalize_state
   use sweeper, only : sweep
 
   implicit none
@@ -79,6 +79,7 @@ module solver
     call initialize_state(store_psi, equation)
 
     allocate(incoming(number_groups, number_angles * 2))
+    incoming = 0.0
 
   end subroutine initialize_solver
 
