@@ -3,18 +3,18 @@ module dgmsolver
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
   use state, only : initialize_state, phi, source, psi, finalize_state
-  use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments
+  use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order
   use dgmsweeper, only : sweep
 
   implicit none
   
   logical :: printOption, use_fission
-  double precision, allocatable :: incoming(:,:)
+  double precision, allocatable :: incoming(:,:,:)
 
   contains
   
   ! Initialize all of the variables and solvers
-  subroutine initialize_solver(fineMesh, courseMesh, materialMap, fileName, angle_order, &
+  subroutine initialize_dgmsolver(fineMesh, courseMesh, materialMap, fileName, angle_order, &
                                angle_option, boundary, store, EQ, energyMap, basisName, &
                                truncation, print_level, fission_option)
     ! Inputs :
@@ -87,18 +87,21 @@ module dgmsolver
     end if
     call initialize_basis(basisName)
 
-    allocate(incoming(number_course_groups, number_angles * 2))
+    allocate(incoming(number_course_groups, number_angles * 2, 0:expansion_order))
 
-  end subroutine initialize_solver
+    incoming  = 0.0
+
+  end subroutine initialize_dgmsolver
 
   ! Interate equations until convergance
-  subroutine solve(eps, lambda_arg)
+  subroutine dgmsolve(eps, lambda_arg)
     ! Inputs
     !   eps : error tolerance for convergance
 
     double precision, intent(in) :: eps
     double precision, intent(in), optional :: lambda_arg
     double precision :: norm, outer_error, hold, lambda
+    double precision :: phi_new(0:number_legendre,number_groups,number_cells), psi_new(number_groups,2*number_angles,number_cells)
     integer :: counter
 
     if (present(lambda_arg)) then
@@ -115,9 +118,9 @@ module dgmsolver
     counter = 1
     do while (outer_error > eps)  ! Interate to convergance tolerance
       ! Sweep through the mesh
-      call sweep(phi, psi, incoming, eps, .true.)
+      call sweep(phi_new, psi_new, incoming, eps, .false., .false., lambda)
       ! Store norm of scalar flux
-      hold = norm2(phi)
+      hold = norm2(phi_new)
       ! error is the difference in the norm of phi for successive iterations
       outer_error = abs(norm - hold)
       ! Keep the norm for the next iteration
@@ -128,12 +131,13 @@ module dgmsolver
       end if
       ! increment the iteration
       counter = counter + 1
-
+      phi = (1.0 - lambda) * phi + lambda * phi_new
+      psi = (1.0 - lambda) * psi + lambda * psi_new
     end do
 
-  end subroutine solve
+  end subroutine dgmsolve
 
-  subroutine finalize_solver()
+  subroutine finalize_dgmsolver()
     call finalize_angle()
     call finalize_mesh()
     call finalize_material()
@@ -142,6 +146,6 @@ module dgmsolver
     if (allocated(incoming)) then
       deallocate(incoming)
     end if
-  end subroutine
+  end subroutine finalize_dgmsolver
 
 end module dgmsolver

@@ -10,7 +10,7 @@ subroutine test1()
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
   use state, only : initialize_state, source
-  use dgmsolver, only : finalize_solver
+  use dgmsolver, only : finalize_dgmsolver
   use dgm
 
   implicit none
@@ -196,7 +196,7 @@ subroutine test1()
     print *, 'all tests passed for DGM1'
   end if
 
-  call finalize_solver()
+  call finalize_dgmsolver()
 end subroutine test1
 
 ! Test that the DO method is matched if using the delta basis and 1 fine per course energy group
@@ -205,7 +205,7 @@ subroutine test2()
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
   use state, only : initialize_state, source
-  use dgmsolver, only : finalize_solver
+  use dgmsolver, only : finalize_dgmsolver
   use dgm
 
   implicit none
@@ -354,7 +354,7 @@ subroutine test2()
     print *, 'all tests passed for DGM2'
   end if
 
-  call finalize_solver()
+  call finalize_dgmsolver()
 
 end subroutine test2
 
@@ -364,7 +364,7 @@ subroutine test3()
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
   use state, only : initialize_state, source
-  use dgmsolver, only : finalize_solver
+  use dgmsolver, only : finalize_dgmsolver
   use dgm
 
   implicit none
@@ -417,7 +417,7 @@ subroutine test3()
     print *, 'all tests passed for DGM3'
   end if
 
-  call finalize_solver()
+  call finalize_dgmsolver()
 
 end subroutine test3
 
