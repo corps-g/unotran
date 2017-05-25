@@ -85,7 +85,7 @@ test_dgmsweeper: mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 d
 dgmsolver: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 
-test_dgmsolver: mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 sweeper.f90 solver.f90 ./test/test_dgmsolver.f90
+test_dgmsolver: mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 sweeper.f90 dgmsolver.f90 ./test/test_dgmsolver.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgmsolver.so $^ 
 	@./test/test_dgmsolver.so
 	
