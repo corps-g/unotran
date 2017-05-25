@@ -5,7 +5,7 @@ module state
 
   implicit none
 
-  double precision, allocatable, dimension(:,:,:) :: psi, source, phi
+  double precision, allocatable :: psi(:,:,:), source(:,:,:), phi(:,:,:)
   logical :: store_psi
   character(len=2) :: equation
   

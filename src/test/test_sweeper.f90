@@ -40,20 +40,20 @@ program test_sweeper
   psi = 1.0
   source = 1.0
   
-  t1 = testCond(number_cells .eq. 1)
-  t1 = testCond(number_angles .eq. 2)
-  t1 = testCond(number_groups .eq. 7)
-  t1 = testCond(number_legendre .eq. 7)
+  t1 = testCond(number_cells == 1)
+  t1 = testCond(number_angles == 2)
+  t1 = testCond(number_groups == 7)
+  t1 = testCond(number_legendre == 7)
   
   psi = 1
   
-  if (t1 .eq. 0) then
+  if (t1 == 0) then
     print *, 'sweeper: phistar update failed'
-  else if (t2 .eq. 0) then
+  else if (t2 == 0) then
     print *, 'sweeper: source update failed'
-  else if (t3 .eq. 0) then
+  else if (t3 == 0) then
     print *, 'sweeper: source initialization failed'
-  else if (t4 .eq. 0) then
+  else if (t4 == 0) then
     print *, 'sweeper: phistar initialization failed'
   else
     print *, 'all tests passed for sweeper'

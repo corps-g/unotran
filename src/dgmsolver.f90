@@ -1,21 +1,22 @@
-module solver
-  use material, only : create_material, number_legendre, number_groups, finalize_material, &
-                       sig_t, sig_s, nu_sig_f, chi
+module dgmsolver
+  use material, only : create_material, number_legendre, number_groups, finalize_material
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
-  use state, only : initialize_state, phi, psi, source, finalize_state
-  use sweeper, only : sweep
+  use state, only : initialize_state, phi, source, psi, finalize_state
+  use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order
+  use dgmsweeper, only : sweep
 
   implicit none
   
   logical :: printOption, use_fission
-  double precision, allocatable :: incoming(:,:)
+  double precision, allocatable :: incoming(:,:,:)
 
   contains
   
   ! Initialize all of the variables and solvers
-  subroutine initialize_solver(fineMesh, courseMesh, materialMap, fileName, angle_order, &
-                               angle_option, boundary, store, EQ, print_level, fission_option)
+  subroutine initialize_dgmsolver(fineMesh, courseMesh, materialMap, fileName, angle_order, &
+                               angle_option, boundary, store, EQ, energyMap, basisName, &
+                               truncation, print_level, fission_option)
     ! Inputs :
     !   fineMesh : vector of int for number of fine mesh divisions per cell
     !   courseMap : vector of float with bounds for course mesh regions
@@ -26,8 +27,9 @@ module solver
     !   boundary : length 2 array containing boundary.  0=vacuum, 1=reflect.  values 0<=x<=1 are accepted.  [left, right]
     !   store (optional) : boolian for option to store angular flux
     !   EQ (optional) : Define the type of closure relation used.  default is DD
-    !   print_level (optional) : boolian that will show iteration prints or not
-    !   fission_option (optional) : set the fission cross sections to zero
+    !   energyMap (optional) : Required if using DGM.  Sets the course group struc.
+    !   truncation (optional) : provides the expansion order for the dgm expansion.  full order assumed if not given
+    !   silent (optional) : boolian that will show iteration prints or not
 
     integer, intent(in) :: fineMesh(:), materialMap(:), angle_order, angle_option
     double precision, intent(in) :: courseMesh(:), boundary(2)
@@ -36,15 +38,13 @@ module solver
     character(len=2), intent(in), optional :: EQ
     logical :: store_psi
     character(len=2) :: equation
+    integer, intent(in) :: energyMap(:)
+    character(len=*), intent(in) :: basisName
+    integer, intent(in), optional :: truncation(:)
     logical, intent(in), optional :: print_level
     logical, intent(in), optional :: fission_option
     
-    ! Check if the optional argument store is given
-    if (present(store)) then
-      store_psi = store  ! Set the option to the given parameter
-    else
-      store_psi = .false.  ! Default to not storing the angular flux
-    end if
+    store_psi = .true.
     
     ! Check if the optional argument EQ is given
     if (present(EQ)) then
@@ -78,20 +78,30 @@ module solver
     ! allocate the solutions variables
     call initialize_state(store_psi, equation)
 
-    allocate(incoming(number_groups, number_angles * 2))
-    incoming = 0.0
+    ! make the energy mesh
+    ! Pass the truncation array to dgm if provided
+    if (present(truncation)) then
+      call initialize_moments(energyMap, truncation)
+    else
+      call initialize_moments(energyMap)
+    end if
+    call initialize_basis(basisName)
 
-  end subroutine initialize_solver
+    allocate(incoming(number_course_groups, number_angles * 2, 0:expansion_order))
+
+    incoming  = 0.0
+
+  end subroutine initialize_dgmsolver
 
   ! Interate equations until convergance
-  subroutine solve(eps, lambda_arg)
+  subroutine dgmsolve(eps, lambda_arg)
     ! Inputs
     !   eps : error tolerance for convergance
-    !   lambda_arg (optional) : value of lambda for Krasnoselskii iteration
 
     double precision, intent(in) :: eps
     double precision, intent(in), optional :: lambda_arg
-    double precision :: norm, error, hold, lambda
+    double precision :: norm, outer_error, hold, lambda
+    double precision :: phi_new(0:number_legendre,number_groups,number_cells), psi_new(number_groups,2*number_angles,number_cells)
     integer :: counter
 
     if (present(lambda_arg)) then
@@ -101,39 +111,41 @@ module solver
     end if
 
     ! Error of current iteration
-    error = 1.0
+    outer_error = 1.0
     ! 2 norm of the scalar flux
     norm = norm2(phi)
     ! interation number
     counter = 1
-    do while (error > eps)  ! Interate to convergance tolerance
+    do while (outer_error > eps)  ! Interate to convergance tolerance
       ! Sweep through the mesh
-      call sweep(phi, psi, incoming)
+      call sweep(phi_new, psi_new, incoming, eps, .false., .false., lambda)
       ! Store norm of scalar flux
-      hold = norm2(phi)
+      hold = norm2(phi_new)
       ! error is the difference in the norm of phi for successive iterations
-      error = abs(norm - hold)
+      outer_error = abs(norm - hold)
       ! Keep the norm for the next iteration
       norm = hold
       ! output the current error and iteration number
       if (printOption) then
-        print *, error, counter
+        print *, outer_error, counter
       end if
       ! increment the iteration
       counter = counter + 1
-
+      phi = (1.0 - lambda) * phi + lambda * phi_new
+      psi = (1.0 - lambda) * psi + lambda * psi_new
     end do
 
-  end subroutine solve
+  end subroutine dgmsolve
 
-  subroutine finalize_solver()
+  subroutine finalize_dgmsolver()
     call finalize_angle()
     call finalize_mesh()
     call finalize_material()
     call finalize_state()
+    call finalize_moments()
     if (allocated(incoming)) then
       deallocate(incoming)
     end if
-  end subroutine
+  end subroutine finalize_dgmsolver
 
-end module solver
+end module dgmsolver

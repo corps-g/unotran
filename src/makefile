@@ -62,73 +62,76 @@ all: $(objects) main
 
 # Use the repository's BLAS implementation
 angle: angle.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
 	
 test_angle: angle.f90 ./test/test_angle.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_angle.so $^ 
 	@./test/test_angle.so
 	
 dgm: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-test_dgm: mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 dgmsweeper.f90 solver.f90 dgm.f90 ./test/test_dgm.f90
+test_dgm: mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 dgmsweeper.f90 dgmsolver.f90 dgm.f90 ./test/test_dgm.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgm.so $^ 
 	@./test/test_dgm.so
 	
 dgmsweeper: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-test_dgmsweeper: mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 sweeper.f90 solver.f90 ./test/test_dgmsweeper.f90
+test_dgmsweeper: mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 dgmsweeper.f90 dgmsolver.f90 ./test/test_dgmsweeper.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgmsweeper.so $^ 
 	@./test/test_dgmsweeper.so
 	
-test_dgmsolver: mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 sweeper.f90 solver.f90 ./test/test_dgmsolver.f90
+dgmsolver: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+
+test_dgmsolver: mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 sweeper.f90 dgmsolver.f90 ./test/test_dgmsolver.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgmsolver.so $^ 
 	@./test/test_dgmsolver.so
 	
 mesh: mesh.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
 	
 test_mesh: mesh.f90 ./test/test_mesh.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_mesh.so $^ 
 	@./test/test_mesh.so
 	
 material: material.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
 test_material: material.f90 ./test/test_material.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_material.so $^ 
 	@./test/test_material.so
 	
 state: material.f90 mesh.f90 angle.f90 state.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
 test_state: mesh.f90 material.f90 angle.f90 state.f90 ./test/test_state.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_state.so $^ 
 	@./test/test_state.so
 	
 sweeper: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
 test_sweeper: mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 ./test/test_sweeper.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_sweeper.so $^ 
 	@./test/test_sweeper.so
 
-main: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 dgmsweeper.f90 solver.f90 main.f90
+main: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 dgmsweeper.f90 solver.f90 dgmsolver.f90 main.f90
 	$(F90) $(OMPFLAG) $(LIBBLAS) -o main.exe $^ 
 	
 solver: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 dgmsweeper.f90 solver.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-test_main: mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 ./test/test_main.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_main.so $^ 
-	@./test/test_main.so
-
-test: test_angle test_mesh test_material test_state test_dgm test_dgmsweeper test_dgmsolver test_main
+test_solver: mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 dgm.f90 dgmsweeper.f90 solver.f90 ./test/test_solver.f90
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_solver.so $^ 
+	@./test/test_solver.so
+	
+test: test_angle test_mesh test_material test_state test_dgm test_dgmsweeper test_dgmsolver test_solver
 
 # Remove objects, module files, and exectables
 clean:
-	@rm -f *.o *.mod *-x *wrap.cxx *.so
+	@rm -f *.o *.mod *-x *wrap.cxx *.so test/*.so
 
 # Same, but leave the executable
 neat:

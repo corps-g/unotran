@@ -1,6 +1,6 @@
 program test_dgmsweeper
 
-  use solver, only : initialize_solver
+  use dgmsolver, only : initialize_dgmsolver
   use dgmsweeper
 
   implicit none
@@ -8,7 +8,7 @@ program test_dgmsweeper
   ! initialize types
   integer :: testCond, t1=1, t2=1, o, a, an, amin, amax, astep
   logical :: octant
-  double precision :: source_test(7,4), phi_test(0:7,7,1), psi_test(7,4,1), S(7,4), Q(1,7)
+  double precision :: source_test(7,4), phi_test(0:7,7,1), psi_test(7,4,1), S(7,4)
 
   source_test = reshape((/1.4263751 ,  2.91220996,  1.55883166,  1.50108595,  1.37433726,  1.33575837,  1.34199138,&
                           1.50712586,  2.98306927,  1.55970132,  1.50111222,  1.3745595 ,  1.33587244,  1.34058049,&
@@ -42,8 +42,9 @@ program test_dgmsweeper
                        /), shape(psi_test))
 
   ! initialize the variables necessary to solve the problem
-  call initialize_solver(fineMesh=[1], courseMesh=[0.0_8,1.0_8], materialMap=[1], fileName='test.anlxs', &
-                         store=.true., angle_order=2, angle_option=1, energyMap=[1,2,3,4,5,6], basisName='deltaBasis')
+  call initialize_dgmsolver(fineMesh=[1], courseMesh=[0.0_8,1.0_8], materialMap=[1], fileName='test.anlxs', &
+                         store=.true., angle_order=2, angle_option=1, boundary=[0.0_8, 0.0_8], &
+                         energyMap=[1,2,3,4,5,6], basisName='deltaBasis')
 
 
   ! set source
@@ -54,24 +55,25 @@ program test_dgmsweeper
   psi = psi_test
 
   ! compute the moments
-  call compute_moments()
+  call compute_flux_moments()
+  call compute_xs_moments(0)
 
   do o = 1, 2  ! Sweep over octants
     ! Sweep in the correct direction in the octant
-    octant = o .eq. 1
+    octant = o == 1
     amin = merge(1, number_angles, octant)
     amax = merge(number_angles, 1, octant)
     astep = merge(1, -1, octant)
     do a = amin, amax, astep
       an = merge(a, 2 * number_angles - a + 1, octant)
-      Q = updateSource(1, an)
-      S(:,an) = Q(1,:)
+      S(:,an) = updateSource(7, source_moment(:, an, 1), phi_0_moment(:,:,1), an, &
+                         sig_s_moment(:,:,:,1), nu_sig_f_moment(:,1), chi_moment(:,1))
     end do
   end do
 
-  t1 = testCond(norm2(S - source_test) .lt. 1e-6)
+  t1 = testCond(norm2(S - source_test) < 1e-6)
 
-  if (t1 .eq. 0) then
+  if (t1 == 0) then
     print *, 'DGM sweeper: update source failed'
   else
     print *, 'all tests passed for DGM sweeper'
