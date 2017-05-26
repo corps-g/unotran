@@ -6,6 +6,7 @@ end program test_dgm
 
 ! Test that the DGM moments are correctly computed for a flux of one
 subroutine test1()
+  use control
   use material, only : create_material
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
@@ -16,40 +17,38 @@ subroutine test1()
   implicit none
 
   ! initialize types
-  integer :: fineMesh(1), materialMap(1), testCond, em(1), l, i, c, cg, cgp,g,gp
+  integer :: testCond, l, i, c, cg, cgp,g,gp
   integer :: t1=1, t2=1, t3=1, t4=1, t5=1, t6=1, t7=1, t8=1, t9=1, t10=1, t11=1, t12=1, t13=1
-  double precision :: courseMesh(2), norm, error, basis_test(7,4), boundary(2)
+  double precision :: norm, error, basis_test(7,4)
   double precision :: phi_m_test(0:7,2,1), psi_m_test(2,4,1),source_m_test(0:3,2,4,1)
   double precision :: sig_t_m_test(2,1), delta_m_test(0:3,2,4,1), sig_s_m_test(8,0:3,2,2,1)
   double precision :: nu_sig_f_m_test(2,1), chi_m_test(0:3,2,1)
   integer :: order_test(2), energyMesh_test(7), eo_test, ncg_test
+
   ! Define problem parameters
-  character(len=10) :: filename = 'test.anlxs'
-  character(len=5) :: basisName = 'basis'
+  call initialize_control('test/dgm_test_options3', .true.)
+  xs_name = 'test.anlxs'
+  allow_fission = .true.
 
   phi_m_test = 0
   psi_m_test = 0
   source_m_test = 0
-  fineMesh = [1]
-  materialMap = [1]
-  courseMesh = [0.0, 1.0]
 
-  em = [4]
   order_test = [3, 2]
   energyMesh_test = [1,1,1,1,2,2,2]
   eo_test = 3
   ncg_test = 2
 
   ! setup problem
-  call create_mesh(fineMesh, courseMesh, materialMap, boundary)
-  call create_material(filename, .true.)
-  call initialize_angle(2, 1)
+  call create_mesh()
+  call create_material()
+  call initialize_angle()
   call initialize_polynomials(number_legendre)
-  call initialize_state(.true., 'dd')
+  call initialize_state()
   source = 1.0
 
   ! test the moment construction
-  call initialize_moments(em)
+  call initialize_moments()
 
   t1 = testCond(all(order == order_test))
   t2 = testCond(all(energyMesh == energyMesh_test))
@@ -57,7 +56,7 @@ subroutine test1()
   t4 = testCond(number_course_groups-ncg_test == 0)
 
   ! Test reading the basis set from the file
-  call initialize_basis(basisName)
+  call initialize_basis()
 
   basis_test = reshape([ 0.5       ,  0.5       ,  0.5       ,  0.5       ,  0.57735027,  0.57735027,  0.57735027,&
                         -0.67082039, -0.2236068 ,  0.2236068 ,  0.67082039,  0.70710678,  0.        , -0.70710678,&
@@ -197,10 +196,12 @@ subroutine test1()
   end if
 
   call finalize_dgmsolver()
+  call finalize_control()
 end subroutine test1
 
 ! Test that the DO method is matched if using the delta basis and 1 fine per course energy group
 subroutine test2()
+  use control
   use material
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
@@ -211,39 +212,34 @@ subroutine test2()
   implicit none
 
   ! initialize types
-  integer :: fineMesh(1), materialMap(1), testCond, em(6), l, i, c, cg, cgp,g,gp
+  integer :: testCond, l, i, c, cg, cgp,g,gp
   integer :: t1=1, t2=1, t3=1, t4=1, t5=1, t6=1, t7=1, t8=1, t9=1, t10=1, t11=1, t12=1, t13=1
-  double precision :: courseMesh(2), norm, error, basis_test(7,1), boundary(2)
+  double precision :: norm, error, basis_test(7,1)
   double precision :: phi_m_test(0:7,7,1), psi_m_test(7,1,1),source_m_test(7,4,1)
   double precision :: phi_test(0:7,7,1), psi_test(7,4,1)
   double precision :: sig_t_m_test(2,1), delta_m_test(7,4,1), sig_s_m_test(8,4,2,2,1)
   double precision :: nu_sig_f_m_test(7,1), chi_m_test(1,7,1)
   integer :: order_test(7), energyMesh_test(7), eo_test, ncg_test
+
   ! Define problem parameters
-  character(len=10) :: filename = 'test.anlxs'
-  character(len=10) :: basisName = 'deltaBasis'
+  call initialize_control('test/dgm_test_options4', .true.)
 
   phi_m_test = 0
   psi_m_test = 0
   source_m_test = 0
-  fineMesh = [1]
-  materialMap = [1]
-  courseMesh = [0.0, 1.0]
-  boundary = [0.0, 0.0]
 
-  em = [1,2,3,4,5,6]
   order_test = [0,0,0,0,0,0,0]
   energyMesh_test = [1,2,3,4,5,6,7]
   eo_test = 0
   ncg_test = 7
 
   ! setup problem
-  call create_mesh(fineMesh, courseMesh, materialMap, boundary)
-  call create_material(filename, .true.)
-  call initialize_angle(2, 1)
+  call create_mesh()
+  call create_material()
+  call initialize_angle()
   call initialize_polynomials(number_legendre)
-  call initialize_state(.true., 'dd')
-  source = 1.0
+  call initialize_state()
+
   phi_m_test = reshape((/1.05033726e+00,  -1.38777878e-17,  -1.57267763e-01,   1.00000000e-08,&
                          1.43689742e-17,   1.00000000e-08,   9.88540222e-02,   6.93889390e-18,&
                          6.32597614e-02,  -8.67361738e-19,  -8.69286487e-03,   1.00000000e-08,&
@@ -270,7 +266,7 @@ subroutine test2()
                        /), shape(psi_m_test))
 
   ! test the moment construction
-  call initialize_moments(em)
+  call initialize_moments()
 
   t1 = testCond(all(order == order_test))
   t2 = testCond(all(energyMesh == energyMesh_test))
@@ -283,7 +279,7 @@ subroutine test2()
 
 
   ! Test reading the basis set from the file
-  call initialize_basis(basisName)
+  call initialize_basis()
 
   basis_test = reshape((/1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0/), &
                          shape(basis_test))
@@ -355,11 +351,13 @@ subroutine test2()
   end if
 
   call finalize_dgmsolver()
+  call finalize_control()
 
 end subroutine test2
 
 ! Test that providing truncation works as expected
 subroutine test3()
+  use control
   use material
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
@@ -370,35 +368,27 @@ subroutine test3()
   implicit none
 
   ! initialize types
-  integer :: fineMesh(1), materialMap(1), testCond, em(1)
+  integer :: testCond
   integer :: t1=1, t2=1, t3=1, t4=1
-  double precision :: courseMesh(2), boundary(2)
   integer :: order_test(2), energyMesh_test(7), eo_test, ncg_test
+
   ! Define problem parameters
-  character(len=10) :: filename = 'test.anlxs'
-  character(len=5) :: basisName = 'basis'
+  call initialize_control('test/dgm_test_options5', .true.)
 
-  fineMesh = [1]
-  materialMap = [1]
-  courseMesh = [0.0, 1.0]
-  boundary = [0.0, 0.0]
-
-  em = [4]
   order_test = [2,1]
   energyMesh_test = [1,1,1,1,2,2,2]
   eo_test = 2
   ncg_test = 2
 
   ! setup problem
-  call create_mesh(fineMesh, courseMesh, materialMap, boundary)
-  call create_material(filename, .true.)
-  call initialize_angle(2, 1)
+  call create_mesh()
+  call create_material()
+  call initialize_angle()
   call initialize_polynomials(number_legendre)
-  call initialize_state(.true., 'dd')
-  source = 1.0
+  call initialize_state()
 
   ! test the moment construction
-  call initialize_moments(em, [2,1])
+  call initialize_moments()
 
   t1 = testCond(all(order == order_test))
   t2 = testCond(all(energyMesh == energyMesh_test))

@@ -5,6 +5,7 @@ end program test_solver
 
 ! Test against detran with vacuum conditions
 subroutine test1()
+  use control
   use solver
 
   implicit none
@@ -14,18 +15,13 @@ subroutine test1()
   double precision :: courseMesh(4), norm, error, phi_test(7,28), boundary(2)
   
   ! Define problem parameters
-  character(len=17) :: filename = 'test/testXS.anlxs'
-  fineMesh = [3, 22, 3]
-  materialMap = [6,1,6]
-  courseMesh = [0.0, 0.09, 1.17, 1.26]
-  boundary = [0.0, 0.0]
+  call initialize_control('test/reg_test_options', .true.)
+  xs_name = 'test/testXS.anlxs'
+  allow_fission = .true.
   
-  call initialize_solver(fineMesh=fineMesh, courseMesh=courseMesh, materialMap=materialMap, fileName=filename, &
-                         angle_order=10, angle_option=1, boundary=boundary, print_level=.false.)
+  call initialize_solver()
 
-  source = 1.0
-
-  call solve(1e-8_8)
+  call solve()
 
   phi_test = reshape((/ 2.43576516357,  4.58369841267,  1.5626711117,  1.31245374786,  1.12046360588,  &
                         0.867236739559,  0.595606769942,  2.47769600029,  4.77942918468,  1.71039214967,  &
@@ -70,6 +66,8 @@ subroutine test1()
                  
   t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-5)
   
+  print *, phi(0,:,:) - phi_test
+
   if (t1 == 0) then
     print *, 'solver: vacuum test failed'
   else
@@ -77,11 +75,13 @@ subroutine test1()
   end if
 
   call finalize_solver()
+  call finalize_control()
 
 end subroutine test1
 
 ! test against detran with reflective conditions
 subroutine test2()
+  use control
   use solver
 
   implicit none
@@ -91,18 +91,13 @@ subroutine test2()
   double precision :: courseMesh(4), norm, error, phi_test(7,28), boundary(2)
 
   ! Define problem parameters
-  character(len=17) :: filename = 'test/testXS.anlxs'
-  fineMesh = [3, 22, 3]
-  materialMap = [1,1,1]
-  courseMesh = [0.0, 0.09, 1.17, 1.26]
-  boundary = [1.0, 1.0]
+  call initialize_control('test/reg_test_options', .true.)
+  xs_name = 'test/testXS.anlxs'
+  boundary_type = [1.0, 1.0]
 
-  call initialize_solver(fineMesh=fineMesh, courseMesh=courseMesh, materialMap=materialMap, fileName=filename, &
-                         angle_order=10, angle_option=1, boundary=boundary, print_level=.false., fission_option=.false.)
+  call initialize_solver()
 
-  source = 1.0
-
-  call solve(1e-8_8)
+  call solve()
 
   phi_test = reshape((/ 94.51265887,  106.66371692,   75.39710228,   17.95365148,&
                          6.2855009 ,    3.01584797,    1.21327705,   94.51265887,&
@@ -164,6 +159,7 @@ subroutine test2()
   end if
 
   call finalize_solver()
+  call finalize_control
 
 end subroutine test2
 

@@ -1,18 +1,20 @@
 program test_material
+  use control
+  use material
 
-use material
+  implicit none
 
-implicit none
-
-! initialize types
+  ! initialize types
   integer :: number_materials_test, number_groups_test, number_legendre_test, debugFlag_test
   double precision :: ebounds_test(8), velocity_test(7)
   double precision :: sig_t_test(7,6), sig_f_test(7,6), nu_sig_f_test(7,6), chi_test(7,6), sig_s_test(0:7,7,7)
   integer :: t1=1, t2=1, t3=1, t4=1, t5=1, testCond
   
-  character(len=10) :: filename = 'test.anlxs'
-  
-  call create_material(filename, .true.)
+  call initialize_control('test/reg_test_options', .true.)
+  xs_name = 'test.anlxs'
+  allow_fission = .true.
+
+  call create_material()
   
   number_materials_test = 7
   number_groups_test = 7
@@ -137,6 +139,9 @@ implicit none
     print *, ' all tests passed for material'
   end if
   
+  call finalize_material()
+  call finalize_control()
+
 end program test_material
 
 integer function testCond(condition)

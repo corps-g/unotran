@@ -8,6 +8,7 @@ end program test_dgmsolver
 
 ! Test the 2 group dgm solution
 subroutine test1()
+  use control
   use dgmsolver
 
   implicit none
@@ -17,6 +18,8 @@ subroutine test1()
   double precision :: phi_test(0:0,2,1), psi_test(2,4,1)
   double precision :: phi_new(0:0,2,1), psi_new(2,4,1)
 
+  call initialize_control('test/dgm_test_options1', .true.)
+
   phi_test = reshape([1.1420149990909008,0.37464706668551212], shape(phi_test))
 
   psi_test = reshape([0.81304488744042813,0.29884810509581583,1.31748796916478740,0.41507830480599001,&
@@ -24,10 +27,7 @@ subroutine test1()
                       ], shape(psi_test))
 
   ! initialize the variables necessary to solve the problem
-  call initialize_dgmsolver(fineMesh=[1], courseMesh=[0.0_8,1.0_8], materialMap=[1], fileName='2gXS.anlxs', &
-                         store=.true., angle_order=2, angle_option=1, boundary=[0.0_8, 0.0_8], &
-                         energyMap=[1], basisName='2gbasis')
-
+  call initialize_dgmsolver()
 
   ! set source
   source(:,:,:) = 1.0
@@ -36,7 +36,7 @@ subroutine test1()
   phi = phi_test
   psi = psi_test
 
-  call sweep(phi_new, psi_new, incoming, 1e-8_8, .false., .false., 1.0_8)
+  call sweep(phi_new, psi_new, incoming)
 
   t1 = testCond(norm2(phi - phi_test) < 1e-6)
   t2 = testCond(norm2(psi - psi_test) < 1e-6)
@@ -50,31 +50,24 @@ subroutine test1()
   end if
 
   call finalize_dgmsolver()
+  call finalize_control()
 
 end subroutine test1
 
 ! Test against detran with vacuum conditions
 subroutine test2()
+  use control
   use dgmsolver
 
   implicit none
 
   ! initialize types
-  integer :: fineMesh(3), materialMap(3), l, c, a, g, counter, testCond, t1, t2
-  double precision :: courseMesh(4), norm, error, phi_test(7,28), boundary(2)
+  integer :: l, c, a, g, counter, testCond, t1, t2
+  double precision :: norm, error, phi_test(7,28)
 
   ! Define problem parameters
-  character(len=17) :: filename = 'test/testXS.anlxs'
-  fineMesh = [3, 22, 3]
-  materialMap = [6,1,6]
-  courseMesh = [0.0, 0.09, 1.17, 1.26]
-  boundary = [0.0, 0.0]
-
-  call initialize_dgmsolver(fineMesh=fineMesh, courseMesh=courseMesh, materialMap=materialMap, fileName=filename, &
-                         angle_order=10, angle_option=1, boundary=boundary, print_level=.false., &
-                         energyMap=[4], basisName='basis')
-
-  source = 1.0
+  call initialize_control('test/dgm_test_options2', .true.)
+  call initialize_dgmsolver()
 
   phi_test = reshape([  2.43576516357,  4.58369841267,  1.5626711117,  1.31245374786,  1.12046360588,  &
                         0.867236739559,  0.595606769942,  2.47769600029,  4.77942918468,  1.71039214967,  &
@@ -119,7 +112,7 @@ subroutine test2()
 
   phi(0,:,:) = phi_test
 
-  call dgmsolve(1e-8_8, 1.0_8)
+  call dgmsolve()
 
   t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-5)
 
@@ -130,35 +123,31 @@ subroutine test2()
   end if
 
   call finalize_dgmsolver()
+  call finalize_control()
 
 end subroutine test2
 
 ! test against detran with reflective conditions
 subroutine test3()
+  use control
   use dgmsolver
 
   implicit none
 
   ! initialize types
-  integer :: fineMesh(3), materialMap(3), l, c, a, g, counter, testCond, t1, t2
-  double precision :: courseMesh(4), norm, error, phi_test(7,28), boundary(2)
+  integer :: l, c, a, g, counter, testCond, t1, t2
+  double precision :: norm, error, phi_test(7,28)
 
   ! Define problem parameters
-  character(len=17) :: filename = 'test/testXS.anlxs'
-  fineMesh = [3, 22, 3]
-  materialMap = [1,1,1]
-  courseMesh = [0.0, 0.09, 1.17, 1.26]
-  boundary = [1.0, 1.0]
-
-  call initialize_dgmsolver(fineMesh=fineMesh, courseMesh=courseMesh, materialMap=materialMap, fileName=filename, &
-                         angle_order=10, angle_option=1, boundary=boundary, print_level=.false., fission_option=.false.,&
-                         energyMap=[4], basisName='basis')
+  call initialize_control('test/dgm_test_options2', .true.)
+  material_map = [1, 1, 1]
+  boundary_type = [1.0, 1.0]
+  allow_fission = .false.
+  call initialize_dgmsolver()
 
   source = 1.0
 
-  call dgmsolve(1e-8_8, 0.5_8)
-
-  phi_test = reshape((/ 94.51265887,  106.66371692,   75.39710228,   17.95365148,&
+  phi_test = reshape([  94.51265887,  106.66371692,   75.39710228,   17.95365148,&
                          6.2855009 ,    3.01584797,    1.21327705,   94.51265887,&
                        106.66371692,   75.39710228,   17.95365148,    6.2855009 ,&
                          3.01584797,    1.21327705,   94.51265887,  106.66371692,&
@@ -207,7 +196,11 @@ subroutine test3()
                         75.39710228,   17.95365148,    6.2855009 ,    3.01584797,&
                          1.21327705,   94.51265887,  106.66371692,   75.39710228,&
                         17.95365148,    6.2855009 ,    3.01584797,    1.21327705 &
-                       /),shape(phi_test))
+                       ],shape(phi_test))
+
+  phi(0,:,:) = phi_test
+
+  call dgmsolve()
 
   t1 = testCond(all(abs(phi(0,:,:) - phi_test) < 1e-5))
 
@@ -218,11 +211,13 @@ subroutine test3()
   end if
 
   call finalize_dgmsolver()
+  call finalize_control()
 
 end subroutine test3
 
 ! Test against detran with vacuum conditions and 1 spatial cell
 subroutine test4()
+  use control
   use dgmsolver
 
   implicit none
@@ -231,16 +226,8 @@ subroutine test4()
   integer :: fineMesh(1), materialMap(1), l, c, a, g, counter, testCond, t1, t2
   double precision :: courseMesh(2), norm, error, phi_test(7,1), boundary(2), psi_test(7,4,1)
 
-  ! Define problem parameters
-  character(len=17) :: filename = 'test/testXS.anlxs'
-  fineMesh = [1]
-  materialMap = [1]
-  courseMesh = [0.0, 1.0]
-  boundary = [0.0, 0.0]
-
-  call initialize_dgmsolver(fineMesh=fineMesh, courseMesh=courseMesh, materialMap=materialMap, fileName=filename, &
-                         angle_order=2, angle_option=1, boundary=boundary, print_level=.false., fission_option=.false., &
-                         energyMap=[4], basisName='basis')
+  call initialize_control('test/dgm_test_options3', .true.)
+  call initialize_dgmsolver()
 
   phi_test = reshape([  1.1076512516190389,1.1095892550819531,1.0914913168898499,1.0358809957845283,&
                         0.93405352272848619,0.79552760081182894,0.48995843862242699 ],shape(phi_test))
@@ -257,7 +244,7 @@ subroutine test4()
   psi(:,:,:) = psi_test
   source(:,:,:) = 1.0
 
-  call dgmsolve(1e-8_8, 0.1_8)
+  call dgmsolve()
 
   t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-5)
 
@@ -268,11 +255,13 @@ subroutine test4()
   end if
 
   call finalize_dgmsolver()
+  call finalize_control()
 
 end subroutine test4
 
 ! test against detran with reflective conditions
 subroutine test5()
+  use control
   use dgmsolver
 
   implicit none
@@ -281,16 +270,9 @@ subroutine test5()
   integer :: fineMesh(1), materialMap(1), l, c, a, g, counter, testCond, t1, t2
   double precision :: courseMesh(2), norm, error, phi_test(7,1), psi_test(7,4,1), boundary(2)
 
-  ! Define problem parameters
-  character(len=17) :: filename = 'test/testXS.anlxs'
-  fineMesh = [1]
-  materialMap = [1]
-  courseMesh = [0.0, 1.0]
-  boundary = [1.0, 1.0]
-
-  call initialize_dgmsolver(fineMesh=fineMesh, courseMesh=courseMesh, materialMap=materialMap, fileName=filename, &
-                         angle_order=2, angle_option=1, boundary=boundary, print_level=.false., fission_option=.false.,&
-                         energyMap=[4], basisName='basis')
+  call initialize_control('test/dgm_test_options3', .true.)
+  boundary_type = [1.0, 1.0]
+  call initialize_dgmsolver()
 
   source = 1.0
 
@@ -309,7 +291,7 @@ subroutine test5()
   psi(:,:,:) = psi_test
   source(:,:,:) = 1.0
 
-  call dgmsolve(1e-8_8, 0.1_8)
+  call dgmsolve()
 
   t1 = testCond(all(abs(phi(0,:,:) - phi_test) < 1e-5))
 
@@ -320,6 +302,7 @@ subroutine test5()
   end if
 
   call finalize_dgmsolver()
+  call finalize_control()
 
 end subroutine test5
 

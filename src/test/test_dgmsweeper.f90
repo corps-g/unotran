@@ -1,6 +1,6 @@
 program test_dgmsweeper
-
-  use dgmsolver, only : initialize_dgmsolver
+  use control
+  use dgmsolver, only : initialize_dgmsolver, finalize_dgmsolver
   use dgmsweeper
 
   implicit none
@@ -41,14 +41,10 @@ program test_dgmsweeper
                        0.66469264,  0.60404633,  0.59856738,  0.31047097&
                        /), shape(psi_test))
 
+  call initialize_control('test/dgm_test_options4', .true.)
+
   ! initialize the variables necessary to solve the problem
-  call initialize_dgmsolver(fineMesh=[1], courseMesh=[0.0_8,1.0_8], materialMap=[1], fileName='test.anlxs', &
-                         store=.true., angle_order=2, angle_option=1, boundary=[0.0_8, 0.0_8], &
-                         energyMap=[1,2,3,4,5,6], basisName='deltaBasis')
-
-
-  ! set source
-  source = 1.0
+  call initialize_dgmsolver()
 
   ! set phi and psi to the converged solution
   phi = phi_test
@@ -78,6 +74,9 @@ program test_dgmsweeper
   else
     print *, 'all tests passed for DGM sweeper'
   end if
+
+  call finalize_dgmsolver()
+  call finalize_control()
 
 end program test_dgmsweeper
 
