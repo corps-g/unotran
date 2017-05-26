@@ -1,8 +1,8 @@
 module dgmsweeper
-  use material, only: number_groups, number_legendre
-  use mesh, only: dx, number_cells, mMap, bounds
-  use angle, only: number_angles, p_leg, wt, mu
-  use state, only: store_psi, equation
+  use control, only : boundary_type, inner_print, inner_tolerance, lambda, use_recondensation
+  use material, only : number_groups, number_legendre
+  use mesh, only : dx, number_cells, mMap
+  use angle, only : number_angles, p_leg, wt, mu
   use sweeper, only : computeEQ, updateSource
   use dgm
 
@@ -10,22 +10,12 @@ module dgmsweeper
   
   contains
 
-  subroutine sweep(phi_new, psi_new, incoming, eps, print_option, recondensation, lambda)
-    double precision, intent(in) :: eps, lambda
+  subroutine sweep(phi_new, psi_new, incoming)
     double precision, intent(inout) :: incoming(number_course_groups,2 * number_angles,0:expansion_order)
     double precision, intent(inout) :: phi_new(:,:,:), psi_new(:,:,:)
-    logical, intent(in) :: print_option
-    logical, intent(in), optional :: recondensation
-    logical :: recon_option
     double precision :: norm, inner_error, hold
     double precision, allocatable :: phi_m(:,:,:), psi_m(:,:,:)
     integer :: counter, i
-
-    if (present(recondensation)) then
-      recon_option = recondensation
-    else
-      recon_option = .false.
-    end if
 
     allocate(phi_m(0:number_legendre,number_course_groups,number_cells))
     allocate(psi_m(number_course_groups,number_angles*2,number_cells))
@@ -47,11 +37,11 @@ module dgmsweeper
       call compute_xs_moments(order=i)
 
       ! Converge the 0th order flux moments
-      do while (inner_error > eps)  ! Interate to convergance tolerance
+      do while (inner_error > inner_tolerance)  ! Interate to convergance tolerance
         ! Sweep through the mesh
 
         ! If recondensation is active, use it
-        if (recon_option) then
+        if (use_recondensation) then
           call compute_xs_moments(order=i)
         end if
 
@@ -65,8 +55,8 @@ module dgmsweeper
         ! Keep the norm for the next iteration
         hold = norm
         ! output the current error and iteration number
-        if (print_option) then
-          print *, '####', inner_error, counter, i, phi_m
+        if (inner_print) then
+          print *, '####', inner_error, counter, i!, phi_m
         end if
         ! increment the iteration
         counter = counter + 1
@@ -129,7 +119,7 @@ module dgmsweeper
       astep = merge(1, -1, octant)
 
       ! set boundary conditions
-      incoming = bounds(o) * incoming  ! Set albedo conditions
+      incoming = boundary_type(o) * incoming  ! Set albedo conditions
 
       do c = cmin, cmax, cstep  ! Sweep over cells
         do a = amin, amax, astep  ! Sweep over angle
@@ -142,7 +132,6 @@ module dgmsweeper
           M = 0.5 * wt(a) * p_leg(:, an)
 
           source(:) = source_moment(:,an,c) - delta_moment(:,an,c) * psi_0_moment(:,an,c)
-
           ! Update the right hand side
           Q = updateSource(number_course_groups, source(:), phi_0_moment(:,:,c), an, &
                            sig_s_moment(:,:,:,c), nu_sig_f_moment(:,c), chi_moment(:,c))

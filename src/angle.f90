@@ -1,4 +1,6 @@
 module angle
+  use control, only : angle_order, angle_option
+
   implicit none
 
   ! number angles per *half space*
@@ -17,14 +19,13 @@ module angle
   contains
 
   ! Allocate quadrature arrays
-  subroutine initialize_angle(n, option)
-    integer, intent(in) :: n, option
+  subroutine initialize_angle()
     integer :: i
-    number_angles = n
+    number_angles = angle_order
     allocate(mu(number_angles), wt(number_angles))
-    if (option == GL) then
+    if (angle_option == GL) then
       call generate_gl_parameters(2*number_angles, mu, wt)
-    else if (option == DGL) then
+    else if (angle_option == DGL) then
       call generate_gl_parameters(number_angles, mu, wt)
       mu = 0.5*mu + 0.5
       wt = 0.5*wt

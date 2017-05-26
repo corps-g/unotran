@@ -1,4 +1,5 @@
 module dgm
+  use control, only : energy_group_map, truncation_map, dgm_basis_name
   use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t, nu_sig_f, chi
   use mesh, only: number_cells, mMap
   use angle, only: number_angles
@@ -16,15 +17,13 @@ module dgm
   contains
 
   ! Initialize the container for the cross section and flux moments
-  subroutine initialize_moments(energyMap, truncation_order)
-    integer, intent(in) :: energyMap(:)
-    integer, intent(in), optional :: truncation_order(:)
+  subroutine initialize_moments()
     integer :: g, gp, cg
 
     phi = 1.0
     psi = 1.0
     ! Get the number of course groups
-    number_course_groups = size(energyMap) + 1
+    number_course_groups = size(energy_group_map) + 1
 
     ! Create the map of course groups and default to full expansion order
     allocate(energyMesh(number_groups))
@@ -34,21 +33,21 @@ module dgm
     do gp = 1, number_groups
       energyMesh(gp) = g
       order(g) = order(g) + 1
-      if (gp == energyMap(g)) then
+      if (gp == energy_group_map(g)) then
         g = g + 1
       end if
     end do
 
     ! Check if the optional argument for the truncation is present
-    if (present(truncation_order)) then
+    if (allocated(truncation_map)) then
       ! Check if the truncation array has the right number of entries
-      if (size(truncation_order) /= number_course_groups) then
+      if (size(truncation_map) /= number_course_groups) then
         error stop "Incorrect number of entries in truncation array"
       end if
       ! Update the order array with the truncated value if sensible
       do cg = 1, number_course_groups
-        if ((truncation_order(cg) < order(cg)) .and. (truncation_order(cg) >= 0)) then
-          order(cg) = truncation_order(cg)
+        if ((truncation_map(cg) < order(cg)) .and. (truncation_map(cg) >= 0)) then
+          order(cg) = truncation_map(cg)
         end if
       end do
     end if
@@ -68,8 +67,7 @@ module dgm
   end subroutine initialize_moments
 
   ! Load basis set from file
-  subroutine initialize_basis(fileName)
-    character(len=*), intent(in) :: fileName
+  subroutine initialize_basis()
     double precision, allocatable, dimension(:) :: array1
     integer, allocatable :: cumsum(:)
     integer :: g, cg, i
@@ -92,7 +90,7 @@ module dgm
     cumsum = cumsum - order
 
     ! open the file and read into the basis container
-    open(unit=5, file=fileName)
+    open(unit=5, file=dgm_basis_name)
     do g = 1, number_groups
       cg = energyMesh(g)
       array1(:) = 0.0
@@ -176,6 +174,7 @@ module dgm
   subroutine compute_xs_moments(order)
     integer :: a, c, cg, cgp, g, gp, l, i, mat
     integer, intent(in) :: order
+    double precision :: num
     ! initialize all moments to zero
     sig_s_moment = 0.0
     source_moment = 0.0
@@ -209,9 +208,13 @@ module dgm
           ! Source moment
           source_moment(cg, a, c) = source_moment(cg, a, c) + basis(g, order) * source(g, a, c)
 
+          if (psi_0_moment(cg, a, c) == 0.0) then
+            num = 0.0
+          else
+            num = basis(g, order) * (sig_t(g, mat) - sig_t_moment(cg, c)) * psi(g, a, c) / psi_0_moment(cg, a, c)
+          end if
           ! angular total cross section moment (delta)
-          delta_moment(cg, a, c) = delta_moment(cg, a, c) + &
-                                   basis(g, order) * (sig_t(g, mat) - sig_t_moment(cg, c)) * psi(g, a, c) / psi_0_moment(cg, a, c)
+          delta_moment(cg, a, c) = delta_moment(cg, a, c) + num
         end do
       end do
     end do

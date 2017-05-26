@@ -1,8 +1,9 @@
 module sweeper
-  use material, only: number_groups, sig_s, sig_t, nu_sig_f, chi, number_legendre
-  use mesh, only: dx, number_cells, mMap, bounds
-  use angle, only: number_angles, p_leg, wt, mu
-  use state, only: store_psi, equation, source
+  use control, only : boundary_type, store_psi, equation_type
+  use material, only : number_groups, sig_s, sig_t, nu_sig_f, chi, number_legendre
+  use mesh, only : dx, number_cells, mMap
+  use angle, only : number_angles, p_leg, wt, mu
+  use state, only : source
 
   implicit none
   
@@ -13,8 +14,7 @@ module sweeper
     double precision :: Q(number_groups), Ps, invmu, fiss
     double precision :: phi_old(0:number_legendre,number_groups,number_cells)
     double precision :: M(0:number_legendre)
-    double precision, intent(inout) :: phi(:,:,:), incoming(:,:)
-    double precision, optional, intent(inout) :: psi(:,:,:)
+    double precision, intent(inout) :: phi(:,:,:), incoming(:,:), psi(:,:,:)
     logical :: octant
     
     phi_old = phi
@@ -30,7 +30,7 @@ module sweeper
       astep = merge(1, -1, octant)
       
       ! set boundary conditions
-      incoming = bounds(o) * incoming  ! Set albedo conditions
+      incoming = boundary_type(o) * incoming  ! Set albedo conditions
 
       do c = cmin, cmax, cstep  ! Sweep over cells
         do a = amin, amax, astep  ! Sweep over angle
@@ -52,7 +52,6 @@ module sweeper
             if (store_psi) then
               psi(g,an,c) = Ps
             end if
-            
             ! Increment the legendre expansions of the scalar flux
             phi(:,g,c) = phi(:,g,c) + M(:) * Ps
           end do
@@ -66,8 +65,7 @@ module sweeper
     double precision, intent(inout) :: incoming
     double precision, intent(in) :: S, sig, invmu
     double precision, intent(out) :: cellPsi
-    
-    if (equation == 'DD') then
+    if (equation_type == 'DD') then
       ! Diamond Difference relationship
       cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
       incoming = 2 * cellPsi - incoming

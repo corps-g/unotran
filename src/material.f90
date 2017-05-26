@@ -1,4 +1,6 @@
 module material
+  use control, only : xs_name, allow_fission
+
   implicit none
 
   integer :: number_materials, number_groups, debugFlag, number_legendre
@@ -9,21 +11,19 @@ module material
   contains
 
   ! Read the cross section data from the file
-  subroutine create_material(fileName, use_fission)
+  subroutine create_material()
     ! Inputs :
-    !   fileName : file where cross sections are stored
-    !   use_fission : boolian for setting fission to zero or not
+    !   xs_name : file where cross sections are stored
+    !   allow_fission : boolian for setting fission to zero or not
 
     ! Read a file that is stored in the proteus format
-    character(len=*), intent(in) :: fileName
-    logical, intent(in) :: use_fission
-    character(1000) :: materialName
+    character(256) :: materialName
     integer :: mat, g, gp, L, dataPresent
     double precision :: t, f, vf, c, energyFission, energyCapture, gramAtomWeight
     double precision, allocatable, dimension(:) :: array1
     
     ! Read the file parameters
-    open(unit=5, file=fileName)
+    open(unit=5, file=xs_name)
     read(5,*) number_materials, number_groups, debugFlag
     allocate(ebounds(number_groups + 1))
     read(5,*) ebounds
@@ -79,7 +79,7 @@ module material
     close(unit=5)
     deallocate(array1)
 
-    if (.not. use_fission) then
+    if (.not. allow_fission) then
       sig_f = 0.0
       nu_sig_f = 0.0
     end if
