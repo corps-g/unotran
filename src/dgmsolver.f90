@@ -3,7 +3,7 @@ module dgmsolver
   use material, only : create_material, number_legendre, number_groups, finalize_material
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
-  use state, only : initialize_state, phi, source, psi, finalize_state
+  use state, only : initialize_state, phi, source, psi, finalize_state, output_state
   use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order
   use dgmsweeper, only : sweep
 
@@ -73,14 +73,9 @@ module dgmsolver
   end subroutine dgmsolve
 
   subroutine dgmoutput()
-    ! output the resulting scalar flux
-    print *, phi(0,:,:)
 
-    ! output angular flux
-    if (store_psi) then
-      print *
-      print *, psi(:,:,:)
-    end if
+    call output_state()
+
   end subroutine dgmoutput
 
   subroutine finalize_dgmsolver()

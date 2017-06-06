@@ -12,11 +12,6 @@ module mesh
 
   ! Compute the cell size and material map for the problem
   subroutine create_mesh()
-    ! Inputs :
-    !   fineMesh : vector of int for number of fine mesh divisions per cell
-    !   courseMap : vector of float with bounds for course mesh regions
-    !   materialMap : vector of int with material index for each course region
-
     double precision :: width  ! Total width of problem
     double precision :: ddx  ! Temporary variable
     integer :: n, c, i, j

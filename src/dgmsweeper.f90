@@ -40,11 +40,6 @@ module dgmsweeper
       do while (inner_error > inner_tolerance)  ! Interate to convergance tolerance
         ! Sweep through the mesh
 
-        ! If recondensation is active, use it
-        if (use_recondensation) then
-          call compute_xs_moments(order=i)
-        end if
-
         ! Use discrete ordinates to sweep over the moment equation
         call moment_sweep(phi_m, psi_m, incoming(:,:,i))
 
@@ -56,16 +51,28 @@ module dgmsweeper
         hold = norm
         ! output the current error and iteration number
         if (inner_print) then
-          print *, '####', inner_error, counter, i!, phi_m
+          print *, '    ', 'eps = ', inner_error, ' counter = ', counter, ' order = ', i, phi_m(0,:,1)
         end if
         ! increment the iteration
         counter = counter + 1
 
         ! Update the 0th order moments if working on converging zeroth moment
         if (i == 0) then
-          phi_0_moment = (1.0 - lambda) * phi_0_moment + lambda * phi_m
-          psi_0_moment = (1.0 - lambda) * psi_0_moment + lambda * psi_m
+          !phi_0_moment = (1.0 - lambda) * phi_0_moment + lambda * phi_m
+          !psi_0_moment = (1.0 - lambda) * psi_0_moment + lambda * psi_m
+          phi_0_moment = phi_m
+          psi_0_moment = psi_m
         end if
+
+        if (i > 0) then
+          exit
+        end if
+
+        ! If recondensation is active, break out of loop early
+        if (use_recondensation) then
+          call compute_xs_moments(order=i)
+        end if
+
       end do
 
       ! Unfold 0th order flux

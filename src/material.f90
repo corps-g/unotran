@@ -12,10 +12,6 @@ module material
 
   ! Read the cross section data from the file
   subroutine create_material()
-    ! Inputs :
-    !   xs_name : file where cross sections are stored
-    !   allow_fission : boolian for setting fission to zero or not
-
     ! Read a file that is stored in the proteus format
     character(256) :: materialName
     integer :: mat, g, gp, L, dataPresent

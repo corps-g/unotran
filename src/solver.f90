@@ -4,7 +4,7 @@ module solver
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
-  use state, only : initialize_state, phi, psi, source, finalize_state
+  use state, only : initialize_state, phi, psi, source, finalize_state, output_state
   use sweeper, only : sweep
 
   implicit none
@@ -68,13 +68,7 @@ module solver
 
   subroutine output()
 
-    ! output the resulting scalar flux
-    print *, phi(0,:,:)
-    ! output angular flux
-    if (store_psi) then
-      print *
-      print *, psi(:,:,:)
-    end if
+    call output_state()
 
   end subroutine output
 

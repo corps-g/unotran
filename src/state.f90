@@ -1,5 +1,5 @@
 module state
-  use control, only : store_psi, source_value
+  use control, only : store_psi, source_value, file_name
   use material, only : number_groups, number_legendre
   use mesh, only : number_cells
   use angle, only : number_angles
@@ -43,4 +43,23 @@ module state
     end if
   end subroutine finalize_state
   
+  subroutine output_state()
+    character(:), allocatable :: fname
+
+    fname = trim(file_name) // "_phi.bin"
+
+    open(unit = 10, status='replace',file=fname,form='unformatted')  ! create a new file, or overwrite an existing on
+    write(10) phi ! write the data in array x to the file
+    close(10) ! close the file
+
+    if (store_psi) then
+      fname = trim(file_name) // "_psi.bin"
+
+      open(unit = 10, status='replace',file=fname,form='unformatted')  ! create a new file, or overwrite an existing on
+      write(10) psi ! write the data in array x to the file
+      close(10) ! close the file
+    end if
+
+  end subroutine output_state
+
 end module state

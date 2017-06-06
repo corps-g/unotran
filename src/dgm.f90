@@ -1,5 +1,5 @@
 module dgm
-  use control, only : energy_group_map, truncation_map, dgm_basis_name
+  use control, only : energy_group_map, truncation_map, dgm_basis_name, dgm_expansion_order
   use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t, nu_sig_f, chi
   use mesh, only: number_cells, mMap
   use angle, only: number_angles
@@ -12,7 +12,7 @@ module dgm
   double precision, allocatable :: psi_0_moment(:,:,:), chi_moment(:,:)
   double precision, allocatable :: sig_t_moment(:,:), basis(:,:), nu_sig_f_moment(:,:)
   integer :: expansion_order, number_course_groups
-  integer, allocatable :: energyMesh(:), order(:)
+  integer, allocatable :: energyMesh(:), order(:), basismap(:)
 
   contains
 
@@ -20,14 +20,23 @@ module dgm
   subroutine initialize_moments()
     integer :: g, gp, cg
 
-    phi = 1.0
-    psi = 1.0
+    open(unit = 10, status='old',file='10pinreference_phi.bin',form='unformatted')  ! create a new file, or overwrite an existing on
+    read(10) phi ! read the data in array x to the file
+    close(10) ! close the file
+
+    open(unit = 10, status='old',file='10pinreference_psi.bin',form='unformatted')  ! create a new file, or overwrite an existing on
+    read(10) psi ! read the data in array x to the file
+    close(10) ! close the file
+
+    !phi = 1.0
+    !psi = 1.0
     ! Get the number of course groups
     number_course_groups = size(energy_group_map) + 1
 
     ! Create the map of course groups and default to full expansion order
     allocate(energyMesh(number_groups))
     allocate(order(number_course_groups))
+    allocate(basismap(number_course_groups))
     order = -1
     g = 1
     do gp = 1, number_groups
@@ -37,6 +46,7 @@ module dgm
         g = g + 1
       end if
     end do
+    basismap(:) = order(:)
 
     ! Check if the optional argument for the truncation is present
     if (allocated(truncation_map)) then
@@ -79,7 +89,7 @@ module dgm
     ! initialize the basis to zero
     basis = 0.0
 
-    cumsum = order + 1
+    cumsum = basismap + 1
 
     do cg = 1, number_course_groups
       if (cg == 1) then
@@ -87,7 +97,7 @@ module dgm
       end if
       cumsum(cg) = cumsum(cg - 1) + cumsum(cg)
     end do
-    cumsum = cumsum - order
+    cumsum = cumsum - basismap
 
     ! open the file and read into the basis container
     open(unit=5, file=dgm_basis_name)
@@ -101,6 +111,7 @@ module dgm
     end do
     ! clean up
     close(unit=5)
+
     deallocate(array1, cumsum)
 
   end subroutine initialize_basis
@@ -139,6 +150,9 @@ module dgm
     end if
     if (allocated(energyMesh)) then
       deallocate(energyMesh)
+    end if
+    if (allocated(basismap)) then
+      deallocate(basismap)
     end if
   end subroutine finalize_moments
 

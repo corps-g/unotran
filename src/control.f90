@@ -5,8 +5,8 @@ module control
   double precision, allocatable :: course_mesh(:)
   integer, allocatable :: fine_mesh(:), material_map(:), energy_group_map(:), truncation_map(:)
   double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lambda=1.0, source_value=0.0
-  character(:), allocatable :: xs_name, dgm_basis_name, equation_type
-  integer :: angle_order, angle_option
+  character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name
+  integer :: angle_order, angle_option, dgm_expansion_order=-1
   logical :: allow_fission=.false., outer_print=.true., inner_print=.false.
   logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false.
 
@@ -29,7 +29,9 @@ module control
       no_print = .false.
     end if
 
-    open(fh, file=fname, action='read', iostat=ios)
+    file_name = trim(adjustl(fname))
+
+    open(fh, file=file_name, action='read', iostat=ios)
     if (ios > 0) stop "*** ERROR: user input file not found ***"
 
     ! ios is negative if an end of record condition is encountered or if
@@ -184,7 +186,6 @@ module control
       ! indicating there is another item in the line
       do
         if (k <= 0) exit
-
         if (line(k:k) == ' ') then
           k = k - 1
           cycle
@@ -192,25 +193,19 @@ module control
           nitems = nitems + 1
           exit
         end if
-
       end do
 
       ! once a non-space character is found,
       ! skip all adjacent non-space character
       do
         if ( k<=0 ) exit
-
         if (line(k:k) /= ' ') then
           k = k - 1
           cycle
         end if
-
         exit
-
       end do
-
       if (k <= 0) exit
-
     end do
   end function nitems
 
