@@ -5,7 +5,7 @@ module control
   double precision, allocatable :: course_mesh(:)
   integer, allocatable :: fine_mesh(:), material_map(:), energy_group_map(:), truncation_map(:)
   double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lambda=1.0, source_value=0.0
-  character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name, initial_phi, initial_psi
+  character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name, initial_phi, initial_psi, solver_type
   integer :: angle_order, angle_option, dgm_expansion_order=-1
   logical :: allow_fission=.false., outer_print=.true., inner_print=.false.
   logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false.
@@ -97,6 +97,8 @@ module control
           read(buffer, *, iostat=ios) use_recondensation
         case ('equation_type')
           equation_type=trim(adjustl(buffer))
+        case ('solver_type')
+          solver_type=trim(adjustl(buffer))
         case ('source')
           read(buffer, *, iostat=ios) source_value
         case default
@@ -128,6 +130,7 @@ module control
       print *, 'SOURCE'
       print *, '  constant source    = ', source_value
       print *, 'OPTIONS'
+      print *, '  solver_type        = "', solver_type, '"'
       print *, '  equation_type      = "', equation_type, '"'
       print *, '  store_psi          = ', store_psi
       print *, '  allow_fission      = ', allow_fission
