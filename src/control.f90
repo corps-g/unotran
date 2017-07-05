@@ -5,7 +5,7 @@ module control
   double precision, allocatable :: course_mesh(:)
   integer, allocatable :: fine_mesh(:), material_map(:), energy_group_map(:), truncation_map(:)
   double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lambda=1.0, source_value=0.0
-  character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name
+  character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name, initial_phi, initial_psi
   integer :: angle_order, angle_option, dgm_expansion_order=-1
   logical :: allow_fission=.false., outer_print=.true., inner_print=.false.
   logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false.
@@ -59,6 +59,10 @@ module control
           read(buffer, *, iostat=ios) material_map
         case ('xs_file')
           xs_name=trim(adjustl(buffer))
+        case ('initial_phi')
+          initial_phi=trim(adjustl(buffer))
+        case ('initial_psi')
+          initial_psi=trim(adjustl(buffer))
         case ('angle_order')
           read(buffer, *, iostat=ios) angle_order
         case ('angle_option')
