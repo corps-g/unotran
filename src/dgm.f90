@@ -1,5 +1,5 @@
 module dgm
-  use control, only : energy_group_map, truncation_map, dgm_basis_name, dgm_expansion_order, initial_phi, initial_psi
+  use control, only : energy_group_map, truncation_map, dgm_basis_name, dgm_expansion_order
   use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t, nu_sig_f, chi
   use mesh, only: number_cells, mMap
   use angle, only: number_angles
@@ -18,30 +18,8 @@ module dgm
 
   ! Initialize the container for the cross section and flux moments
   subroutine initialize_moments()
-    integer :: g, gp, cg, ios = 0
+    integer :: g, gp, cg
 
-    ! Attempt to read file or use default if file does not exist
-    open(unit = 10, status='old',file=initial_phi,form='unformatted', iostat=ios)
-    if (ios > 0) then
-      print *, "initial phi file, ", initial_phi, " is missing, using default value"
-      phi = 1.0  ! default value
-    else
-      read(10) phi ! read the data in array x to the file
-    end if
-    close(10) ! close the file
-
-    ! Attempt to read file or use default if file does not exist
-    open(unit = 10, status='old',file=initial_psi,form='unformatted', iostat=ios)
-    if (ios > 0) then
-      print *, "initial psi file, ", initial_psi, " is missing, using default value"
-      psi = 1.0  ! default value
-    else
-      read(10) psi ! read the data in array x to the file
-    end if
-    close(10) ! close the file
-
-    !phi = 1.0
-    !psi = 1.0
     ! Get the number of course groups
     number_course_groups = size(energy_group_map) + 1
 
