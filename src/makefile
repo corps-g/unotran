@@ -27,7 +27,7 @@ LIBMKLTHREAD   = -I$(MKLROOT)/include  -Wl,--start-group      \
 # BLAS defines a generic set of functions with vendor-specific
 # implementations; here, we use the blas implementation from the 
 # software repository.
-LIBBLAS        = -L/usr/lib -lblas -llapack
+LIBBLAS        = -L/usr/lib -lblas -llapack -ffree-line-length-none
 
 #===============================================================================
 # Compiler Definitions
