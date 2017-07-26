@@ -11,8 +11,8 @@ subroutine test1()
   implicit none
   
   ! initialize types
-  integer :: fineMesh(3), materialMap(3), l, c, a, g, counter, testCond, t1, t2
-  double precision :: courseMesh(4), norm, error, phi_test(7,28), boundary(2)
+  integer :: testCond, t1
+  double precision :: phi_test(7,28)
   
   ! Define problem parameters
   call initialize_control('test/reg_test_options', .true.)
@@ -21,9 +21,7 @@ subroutine test1()
   
   call initialize_solver()
 
-  call solve()
-
-  phi_test = reshape((/ 2.43576516357,  4.58369841267,  1.5626711117,  1.31245374786,  1.12046360588,  &
+  phi_test = reshape([  2.43576516357,  4.58369841267,  1.5626711117,  1.31245374786,  1.12046360588,  &
                         0.867236739559,  0.595606769942,  2.47769600029,  4.77942918468,  1.71039214967,  &
                         1.45482285016,  1.2432932006,  1.00395695756,  0.752760077886,  2.51693149995,  &
                         4.97587877605,  1.84928362206,  1.58461198915,  1.35194171606,  1.11805871638,  &
@@ -62,12 +60,12 @@ subroutine test1()
                         1.11805871638,  0.810409774028,  2.47769600029,  4.77942918468,  1.71039214967,  &
                         1.45482285016,  1.2432932006,  1.00395695756,  0.752760077886,  2.43576516357,  &
                         4.58369841267,  1.5626711117,  1.31245374786,  1.12046360588,  0.867236739559,  &
-                        0.595606769942 /),shape(phi_test))
+                        0.595606769942 ],shape(phi_test))
                  
+  call solve()
+
   t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-5)
   
-  print *, phi(0,:,:) - phi_test
-
   if (t1 == 0) then
     print *, 'solver: vacuum test failed'
   else
@@ -87,13 +85,14 @@ subroutine test2()
   implicit none
 
   ! initialize types
-  integer :: fineMesh(3), materialMap(3), l, c, a, g, counter, testCond, t1, t2
-  double precision :: courseMesh(4), norm, error, phi_test(7,28), boundary(2)
+  integer :: testCond, t1
+  double precision :: phi_test(7,28)
 
   ! Define problem parameters
   call initialize_control('test/reg_test_options', .true.)
   xs_name = 'test/testXS.anlxs'
   boundary_type = [1.0, 1.0]
+  material_map = [1, 1, 1]
 
   call initialize_solver()
 
