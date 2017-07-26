@@ -38,24 +38,20 @@ module solver
     !   eps : error tolerance for convergance
     !   lambda_arg (optional) : value of lambda for Krasnoselskii iteration
 
-    double precision :: norm, error, hold
+    double precision :: norm, error, hold, phi_old(0:number_legendre,number_groups,number_cells)
     integer :: counter
 
     ! Error of current iteration
     error = 1.0
-    ! 2 norm of the scalar flux
-    norm = norm2(phi)
     ! interation number
     counter = 1
     do while (error > outer_tolerance)  ! Interate to convergance tolerance
+      ! save phi from previous iteration
+      phi_old = phi
       ! Sweep through the mesh
       call sweep(phi, psi, incoming)
-      ! Store norm of scalar flux
-      hold = norm2(phi)
       ! error is the difference in the norm of phi for successive iterations
-      error = abs(norm - hold)
-      ! Keep the norm for the next iteration
-      norm = hold
+      error = sum(abs(phi - phi_old))
       ! output the current error and iteration number
       if (outer_print) then
         print *, error, counter
