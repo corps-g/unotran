@@ -46,20 +46,6 @@ module state
       close(10) ! close the file
     end if
 
-    ! Initialize phi
-    ! Attempt to read file or use default if file does not exist
-    open(unit = 10, status='old',file=initial_phi,form='unformatted', iostat=ios)
-    if (ios > 0) then
-      print *, "initial phi file, ", initial_phi, " is missing, using default value"
-      phi = 1.0  ! default value
-    else
-      read(10) phi ! read the data in array x to the file
-    end if
-    close(10) ! close the file
-
-    ! Initialize source
-    source = source_value
-    
   end subroutine initialize_state
   
   ! Deallocate the variable containers
