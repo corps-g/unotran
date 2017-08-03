@@ -12,8 +12,8 @@ program test_state
   double precision :: courseMesh(2), norm, error, boundary(2)
   double precision :: phi_test(7,1), psi_test(7,4,1),source_test(7,4,1)
   
-  phi_test = 0
-  psi_test = 0
+  phi_test = 1
+  psi_test = 1
   source_test = 0
 
   call initialize_control('test/state_test_options', .true.)
