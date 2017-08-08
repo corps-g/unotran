@@ -15,7 +15,7 @@ subroutine test1()
   double precision :: phi_test(7,28)
   
   ! Define problem parameters
-  call initialize_control('test/reg_test_options', .false.)
+  call initialize_control('test/reg_test_options', .true.)
   xs_name = 'test/testXS.anlxs'
   allow_fission = .true.
   
