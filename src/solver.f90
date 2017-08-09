@@ -3,8 +3,9 @@ module solver
   use material, only : create_material, number_legendre, number_groups, finalize_material, &
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
-  use mesh, only : create_mesh, number_cells, finalize_mesh
-  use state, only : initialize_state, phi, psi, source, finalize_state, output_state
+  use mesh, only : create_mesh, number_cells, finalize_mesh, mMap
+  use state, only : initialize_state, phi, psi, source, finalize_state, output_state, &
+                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s
   use sweeper, only : sweep
 
   implicit none
@@ -16,6 +17,8 @@ module solver
   
   ! Initialize all of the variables and solvers
   subroutine initialize_solver()
+    integer :: c
+
     ! initialize the mesh
     call create_mesh()
     ! read the material cross sections
@@ -27,6 +30,17 @@ module solver
     ! allocate the solutions variables
     call initialize_state()
 
+    ! Fill container arrays
+    do c = 1, number_cells
+      d_nu_sig_f(:, c) = nu_sig_f(:, mMap(c))
+      d_chi(:, c) = chi(:, mMap(c))
+      d_sig_s(:, :, :, c) = sig_s(:, :, :, mMap(c))
+    end do
+    d_source(:, :, :) = source(:, :, :)
+    d_delta(:, :, :) = 0.0
+    d_phi(:, :, :) = phi(:, :, :)
+
+    ! todo: move to state
     allocate(incoming(number_groups, number_angles * 2))
     incoming = 0.0
 

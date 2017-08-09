@@ -26,8 +26,7 @@ module dgmsolver
     call initialize_polynomials(number_legendre)
     ! allocate the solutions variables
     call initialize_state()
-
-    ! Pass the truncation array to dgm if provided
+    ! Initialize DGM moments
     call initialize_moments()
     call initialize_basis()
 

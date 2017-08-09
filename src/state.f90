@@ -1,5 +1,5 @@
 module state
-  use control, only : store_psi, source_value, file_name, initial_phi, initial_psi
+  use control, only : store_psi, source_value, file_name, initial_phi, initial_psi, use_dgm
   use material, only : number_groups, number_legendre
   use mesh, only : number_cells
   use angle, only : number_angles
@@ -7,6 +7,8 @@ module state
   implicit none
 
   double precision, allocatable :: psi(:,:,:), source(:,:,:), phi(:,:,:)
+  double precision, allocatable :: d_source(:,:,:), d_nu_sig_f(:,:), d_delta(:,:,:)
+  double precision, allocatable :: d_phi(:,:,:), d_chi(:,:), d_sig_s(:,:,:,:)
   
   contains
   
@@ -46,6 +48,8 @@ module state
       close(10) ! close the file
     end if
 
+    call reallocate_states(number_groups)
+
   end subroutine initialize_state
   
   ! Deallocate the variable containers
@@ -59,7 +63,58 @@ module state
     if (allocated(psi)) then
       deallocate(psi)
     end if
+    if (allocated(d_source)) then
+      deallocate(d_source)
+    end if
+    if (allocated(d_nu_sig_f)) then
+      deallocate(d_nu_sig_f)
+    end if
+    if (allocated(d_delta)) then
+      deallocate(d_delta)
+    end if
+    if (allocated(d_phi)) then
+      deallocate(d_phi)
+    end if
+    if (allocated(d_chi)) then
+      deallocate(d_chi)
+    end if
+    if (allocated(d_sig_s)) then
+      deallocate(d_sig_s)
+    end if
   end subroutine finalize_state
+
+  ! Resize the container arrays to number of energy groups, nG
+  subroutine reallocate_states(nG)
+    integer, intent(in) :: nG
+
+    ! Deallocate arrays if needed
+    if (allocated(d_source)) then
+      deallocate(d_source)
+    end if
+    if (allocated(d_nu_sig_f)) then
+      deallocate(d_nu_sig_f)
+    end if
+    if (allocated(d_delta)) then
+      deallocate(d_delta)
+    end if
+    if (allocated(d_phi)) then
+      deallocate(d_phi)
+    end if
+    if (allocated(d_chi)) then
+      deallocate(d_chi)
+    end if
+    if (allocated(d_sig_s)) then
+      deallocate(d_sig_s)
+    end if
+
+    ! Reallocate with the specified number of groups, nG
+    allocate(d_source(nG, number_angles * 2, number_cells))
+    allocate(d_nu_sig_f(nG, number_cells))
+    allocate(d_delta(nG, number_angles * 2, number_cells))
+    allocate(d_phi(0:number_legendre, nG, number_cells))
+    allocate(d_chi(nG, number_cells))
+    allocate(d_sig_s(0:number_legendre, nG, nG, number_cells))
+  end subroutine
   
   subroutine output_state()
     character(:), allocatable :: fname

@@ -1,6 +1,7 @@
 program test_dgmsweeper
   use control
   use dgmsolver, only : initialize_dgmsolver, finalize_dgmsolver
+  use state, only : phi, psi
   use dgmsweeper
 
   implicit none
@@ -62,8 +63,8 @@ program test_dgmsweeper
     astep = merge(1, -1, octant)
     do a = amin, amax, astep
       an = merge(a, 2 * number_angles - a + 1, octant)
-      S(:,an) = updateSource(7, source_moment(:, an, 1), phi_0_moment(:,:,1), an, &
-                         sig_s_moment(:,:,:,1), nu_sig_f_moment(:,1), chi_moment(:,1))
+      S(:,an) = updateSource(7, d_source(:, an, 1), phi_0_moment(:,:,1), an, &
+                         d_sig_s(:,:,:,1), d_nu_sig_f(:,1), d_chi(:,1))
     end do
   end do
 

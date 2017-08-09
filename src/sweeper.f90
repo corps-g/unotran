@@ -1,9 +1,9 @@
 module sweeper
   use control, only : boundary_type, store_psi, equation_type
-  use material, only : number_groups, sig_s, sig_t, nu_sig_f, chi, number_legendre
+  use material, only : number_groups, sig_t, number_legendre
   use mesh, only : dx, number_cells, mMap
   use angle, only : number_angles, p_leg, wt, mu
-  use state, only : source
+  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta
 
   implicit none
   
@@ -16,7 +16,7 @@ module sweeper
     double precision :: M(0:number_legendre)
     double precision, intent(inout) :: phi(:,:,:), incoming(:,:), psi(:,:,:)
     logical :: octant
-    
+
     phi_old = phi
     phi = 0.0  ! Reset phi
     do o = 1, 2  ! Sweep over octants
@@ -43,8 +43,8 @@ module sweeper
           M = 0.5 * wt(a) * p_leg(:,an)
 
           ! Update the right hand side
-          Q = updateSource(number_groups, source(:,an,c), phi_old(:,:,c), an, &
-                           sig_s(:,:,:,mMap(c)), nu_sig_f(:,mMap(c)), chi(:,mMap(c)))
+          Q = updateSource(number_groups, d_source(:,an,c), phi_old(:,:,c), an, &
+                           d_sig_s(:,:,:,c), d_nu_sig_f(:,c), d_chi(:,c))
           
           do g = 1, number_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD

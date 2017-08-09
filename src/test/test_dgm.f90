@@ -7,12 +7,15 @@ end program test_dgm
 ! Test that the DGM moments are correctly computed for a flux of one
 subroutine test1()
   use control
-  use material, only : create_material
+  use material, only : create_material, number_legendre
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
-  use state, only : initialize_state, source
+  use state, only : initialize_state, source, d_source, d_nu_sig_f, d_delta, d_phi, &
+                    d_chi, d_sig_s
   use dgmsolver, only : finalize_dgmsolver
-  use dgm
+  use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
+                  phi_0_moment, psi_0_moment, sig_t_moment, initialize_moments, &
+                  initialize_basis, compute_flux_moments, compute_xs_moments
 
   implicit none
 
@@ -151,17 +154,17 @@ subroutine test1()
 
   do i = 0, expansion_order
     call compute_xs_moments(i)
-    source_m_test(i,:,:,:) = source_m_test(i,:,:,:) - source_moment
-    delta_m_test(i,:,:,:) = delta_m_test(i,:,:,:) - delta_moment
-    sig_s_m_test(:,i,:,:,:) = sig_s_m_test(:,i,:,:,:) - sig_s_moment
-    chi_m_test(i,:,:) = chi_m_test(i,:,:) - chi_moment
+    source_m_test(i,:,:,:) = source_m_test(i,:,:,:) - d_source
+    delta_m_test(i,:,:,:) = delta_m_test(i,:,:,:) - d_delta
+    sig_s_m_test(:,i,:,:,:) = sig_s_m_test(:,i,:,:,:) - d_sig_s
+    chi_m_test(i,:,:) = chi_m_test(i,:,:) - d_chi
   end do
 
   t8 = testCond(all(abs(source_m_test) < 1e-6))
   t9 = testCond(all(abs(sig_t_moment - sig_t_m_test) < 1e-6))
   t10 = testCond(all(abs(delta_m_test) < 1e-6))
   t11 = testCond(all(abs(sig_s_m_test) < 1e-6))
-  t12 = testCond(all(abs(nu_sig_f_moment - nu_sig_f_m_test) < 1e-6))
+  t12 = testCond(all(abs(d_nu_sig_f - nu_sig_f_m_test) < 1e-6))
   t13 = testCond(all(abs(chi_m_test) < 1e-6))
 
 
@@ -205,9 +208,12 @@ subroutine test2()
   use material
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
-  use state, only : initialize_state, source
+  use state, only : initialize_state, source, d_source, d_nu_sig_f, d_delta, d_phi, &
+                    d_chi, d_sig_s, phi, psi
   use dgmsolver, only : finalize_dgmsolver
-  use dgm
+  use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
+                  phi_0_moment, psi_0_moment, sig_t_moment, initialize_moments, &
+                  initialize_basis, compute_flux_moments, compute_xs_moments
 
   implicit none
 
@@ -301,7 +307,7 @@ subroutine test2()
   ! test source moments
   source_m_test = 1.0
 
-  t8 = testCond(all(abs(source_moment - source_m_test) < 1e-6))
+  t8 = testCond(all(abs(d_source - source_m_test) < 1e-6))
 
   ! test total cross section moments
   t9 = testCond(all(abs(sig_t_moment - sig_t) < 1e-6))
@@ -309,16 +315,16 @@ subroutine test2()
   ! test angular cross section moments (delta)
   delta_m_test = 0.0
 
-  t10 = testCond(all(abs(delta_moment - delta_m_test) < 1e-6))
+  t10 = testCond(all(abs(d_delta - delta_m_test) < 1e-6))
 
   ! test scattering cross section moments
-  t11 = testCond(all(abs(sig_s_moment(:,:,:,1) - sig_s(:,:,:,1)) < 1e-7))
+  t11 = testCond(all(abs(d_sig_s(:,:,:,1) - sig_s(:,:,:,1)) < 1e-7))
 
   ! test fission cross section moments
-  t12 = testCond(all(abs(nu_sig_f_moment(:,1) - nu_sig_f(:,1) * phi(0,:,1) / phi_0_moment(0,:,1)) < 1e-6))
+  t12 = testCond(all(abs(d_nu_sig_f(:,1) - nu_sig_f(:,1) * phi(0,:,1) / phi_0_moment(0,:,1)) < 1e-6))
 
   ! test chi moments
-  t13 = testCond(all(abs(chi_moment(:,1) - chi(:,1)) < 1e-6))
+  t13 = testCond(all(abs(d_chi(:,1) - chi(:,1)) < 1e-6))
 
   if (t1 == 0) then
     print *, 'DGM2: order failed'
@@ -363,7 +369,9 @@ subroutine test3()
   use mesh, only : create_mesh
   use state, only : initialize_state, source
   use dgmsolver, only : finalize_dgmsolver
-  use dgm
+  use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
+                  phi_0_moment, psi_0_moment, sig_t_moment, initialize_moments, &
+                  initialize_basis, compute_flux_moments, compute_xs_moments
 
   implicit none
 

@@ -4,7 +4,9 @@ module dgmsweeper
   use mesh, only : dx, number_cells, mMap
   use angle, only : number_angles, p_leg, wt, mu
   use sweeper, only : computeEQ, updateSource
-  use dgm
+  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta
+  use dgm, only : phi_0_moment, psi_0_moment, number_course_groups, expansion_order, sig_t_moment, &
+                  energymesh, basis, compute_xs_moments, compute_flux_moments
 
   implicit none
   
@@ -138,10 +140,10 @@ module dgmsweeper
           ! legendre polynomial integration vector
           M = 0.5 * wt(a) * p_leg(:, an)
 
-          source(:) = source_moment(:,an,c) - delta_moment(:,an,c) * psi_0_moment(:,an,c)
+          source(:) = d_source(:,an,c) - d_delta(:,an,c) * psi_0_moment(:,an,c)
           ! Update the right hand side
           Q = updateSource(number_course_groups, source(:), phi_0_moment(:,:,c), an, &
-                           sig_s_moment(:,:,:,c), nu_sig_f_moment(:,c), chi_moment(:,c))
+                           d_sig_s(:,:,:,c), d_nu_sig_f(:,c), d_chi(:,c))
 
           do cg = 1, number_course_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD
