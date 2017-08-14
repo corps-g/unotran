@@ -6,6 +6,8 @@ program test_dgmsweeper
 
   implicit none
 
+  ! TODO : Write a better test.  This test seems useless
+
   ! initialize types
   integer :: testCond, t1=1, t2=1, o, a, an, amin, amax, astep
   logical :: octant
@@ -55,18 +57,18 @@ program test_dgmsweeper
   call compute_flux_moments()
   call compute_xs_moments(0)
 
-  do o = 1, 2  ! Sweep over octants
-    ! Sweep in the correct direction in the octant
-    octant = o == 1
-    amin = merge(1, number_angles, octant)
-    amax = merge(number_angles, 1, octant)
-    astep = merge(1, -1, octant)
-    do a = amin, amax, astep
-      an = merge(a, 2 * number_angles - a + 1, octant)
-      S(:,an) = updateSource(7, d_source(:, an, 1), d_phi(:,:,1), an, &
-                         d_sig_s(:,:,:,1), d_nu_sig_f(:,1), d_chi(:,1))
-    end do
-  end do
+!  do o = 1, 2  ! Sweep over octants
+!    ! Sweep in the correct direction in the octant
+!    octant = o == 1
+!    amin = merge(1, number_angles, octant)
+!    amax = merge(number_angles, 1, octant)
+!    astep = merge(1, -1, octant)
+!    do a = amin, amax, astep
+!      an = merge(a, 2 * number_angles - a + 1, octant)
+!      S(:,an) = updateSource(7, d_source(:, an, 1), d_phi(:,:,1), an, &
+!                         d_sig_s(:,:,:,1), d_nu_sig_f(:,1), d_chi(:,1))
+!    end do
+!  end do
 
   t1 = testCond(norm2(S - source_test) < 1e-6)
 

@@ -2,8 +2,8 @@ module dgmsweeper
   use control, only : boundary_type, inner_print, inner_tolerance, lambda, use_recondensation, store_psi
   use material, only : number_groups, number_legendre
   use mesh, only : dx, number_cells, mMap
-  use angle, only : number_angles, p_leg, wt, mu
-  use sweeper, only : computeEQ, updateSource, sweep
+  use angle, only : number_angles
+  use sweeper, only : sweep
   use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi
   use dgm, only : number_course_groups, expansion_order, &
                   energymesh, basis, compute_xs_moments, compute_flux_moments
