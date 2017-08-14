@@ -5,7 +5,7 @@ module dgmsolver
   use mesh, only : create_mesh, number_cells, finalize_mesh
   use state, only : initialize_state, phi, source, psi, finalize_state, output_state
   use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order, compute_source_moments
-  use dgmsweeper, only : sweep
+  use dgmsweeper, only : dgmsweep
 
   implicit none
   
@@ -51,7 +51,7 @@ module dgmsolver
     counter = 1
     do while (outer_error > outer_tolerance)  ! Interate to convergance tolerance
       ! Sweep through the mesh
-      call sweep(phi_new, psi_new, incoming)
+      call dgmsweep(phi_new, psi_new, incoming)
       ! Store norm of scalar flux
       hold = norm2(phi_new)
       ! error is the difference in the norm of phi for successive iterations

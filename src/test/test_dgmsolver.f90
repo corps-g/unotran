@@ -36,7 +36,7 @@ subroutine test1()
   phi = phi_test
   psi = psi_test
 
-  call sweep(phi_new, psi_new, incoming)
+  call dgmsweep(phi_new, psi_new, incoming)
 
   t1 = testCond(norm2(phi - phi_test) < 1e-6)
   t2 = testCond(norm2(psi - psi_test) < 1e-6)

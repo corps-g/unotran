@@ -1,9 +1,9 @@
 module dgmsweeper
-  use control, only : boundary_type, inner_print, inner_tolerance, lambda, use_recondensation
+  use control, only : boundary_type, inner_print, inner_tolerance, lambda, use_recondensation, store_psi
   use material, only : number_groups, number_legendre
   use mesh, only : dx, number_cells, mMap
   use angle, only : number_angles, p_leg, wt, mu
-  use sweeper, only : computeEQ, updateSource
+  use sweeper, only : computeEQ, updateSource, sweep
   use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi
   use dgm, only : number_course_groups, expansion_order, &
                   energymesh, basis, compute_xs_moments, compute_flux_moments
@@ -12,7 +12,7 @@ module dgmsweeper
   
   contains
 
-  subroutine sweep(phi_new, psi_new, incoming)
+  subroutine dgmsweep(phi_new, psi_new, incoming)
     double precision, intent(inout) :: incoming(number_course_groups,2 * number_angles,0:expansion_order)
     double precision, intent(inout) :: phi_new(:,:,:), psi_new(:,:,:)
     double precision :: norm, inner_error, hold
@@ -43,7 +43,7 @@ module dgmsweeper
         ! Sweep through the mesh
 
         ! Use discrete ordinates to sweep over the moment equation
-        call moment_sweep(phi_m, psi_m, incoming(:,:,i))
+        call sweep(number_course_groups, phi_m, psi_m, incoming(:,:,i))
 
         ! Store norm of scalar flux
         norm = norm2(phi_m)
@@ -83,7 +83,7 @@ module dgmsweeper
     end do
 
     deallocate(phi_m, psi_m)
-  end subroutine sweep
+  end subroutine dgmsweep
 
   ! Unfold the flux moments
   subroutine unfold_flux_moments(order, phi_moment, psi_moment, phi_new, psi_new)
@@ -106,58 +106,5 @@ module dgmsweeper
       end do
     end do
   end subroutine unfold_flux_moments
-  
-  subroutine moment_sweep(phi_m, psi_m, incoming)
-    integer :: o, c, a, cg, cgp, l, an, cmin, cmax, cstep, amin, amax, astep
-    double precision :: Q(number_course_groups), Ps, invmu, fiss
-    double precision :: M(0:number_legendre), source(number_course_groups)
-    double precision, intent(inout) :: phi_m(:,:,:), incoming(:,:), psi_m(:,:,:)
-    logical :: octant
-
-    phi_m = 0.0  ! Reset phi
-    psi_m = 0.0  ! Reset psi
-
-    do o = 1, 2  ! Sweep over octants
-      ! Sweep in the correct direction in the octant
-      octant = o == 1
-      cmin = merge(1, number_cells, octant)
-      cmax = merge(number_cells, 1, octant)
-      cstep = merge(1, -1, octant)
-      amin = merge(1, number_angles, octant)
-      amax = merge(number_angles, 1, octant)
-      astep = merge(1, -1, octant)
-
-      ! set boundary conditions
-      incoming = boundary_type(o) * incoming  ! Set albedo conditions
-
-      do c = cmin, cmax, cstep  ! Sweep over cells
-        do a = amin, amax, astep  ! Sweep over angle
-          ! Get the correct angle index
-          an = merge(a, 2 * number_angles - a + 1, octant)
-          ! get a common fraction
-          invmu = dx(c) / (2 * abs(mu(a)))
-
-          ! legendre polynomial integration vector
-          M = 0.5 * wt(a) * p_leg(:, an)
-
-          source(:) = d_source(:,an,c) - d_delta(:,an,c) * d_psi(:,an,c)
-          ! Update the right hand side
-          Q = updateSource(number_course_groups, source(:), d_phi(:,:,c), an, &
-                           d_sig_s(:,:,:,c), d_nu_sig_f(:,c), d_chi(:,c))
-
-          do cg = 1, number_course_groups  ! Sweep over group
-            ! Use the specified equation.  Defaults to DD
-            call computeEQ(Q(cg), incoming(cg, an), d_sig_t(cg, c), invmu, Ps)
-
-            psi_m(cg,an,c) = Ps
-
-            ! Increment the legendre expansions of the scalar flux
-            phi_m(:,cg,c) = phi_m(:,cg,c) + M(:) * Ps
-          end do
-        end do
-      end do
-    end do
-
-  end subroutine moment_sweep
   
 end module dgmsweeper

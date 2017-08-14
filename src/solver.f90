@@ -67,7 +67,7 @@ module solver
       ! save phi from previous iteration
       d_phi = phi
       ! Sweep through the mesh
-      call sweep(phi, psi, incoming)
+      call sweep(number_groups, phi, psi, incoming)
       ! error is the difference in the norm of phi for successive iterations
       error = sum(abs(phi - d_phi))
       ! output the current error and iteration number
