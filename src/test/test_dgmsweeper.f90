@@ -63,7 +63,7 @@ program test_dgmsweeper
     astep = merge(1, -1, octant)
     do a = amin, amax, astep
       an = merge(a, 2 * number_angles - a + 1, octant)
-      S(:,an) = updateSource(7, d_source(:, an, 1), phi_0_moment(:,:,1), an, &
+      S(:,an) = updateSource(7, d_source(:, an, 1), d_phi(:,:,1), an, &
                          d_sig_s(:,:,:,1), d_nu_sig_f(:,1), d_chi(:,1))
     end do
   end do

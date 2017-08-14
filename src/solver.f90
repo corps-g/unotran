@@ -5,7 +5,7 @@ module solver
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh, mMap
   use state, only : initialize_state, phi, psi, source, finalize_state, output_state, &
-                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s
+                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi
   use sweeper, only : sweep
 
   implicit none
@@ -35,10 +35,14 @@ module solver
       d_nu_sig_f(:, c) = nu_sig_f(:, mMap(c))
       d_chi(:, c) = chi(:, mMap(c))
       d_sig_s(:, :, :, c) = sig_s(:, :, :, mMap(c))
+      d_sig_t(:, c) = sig_t(:, mMap(c))
     end do
     d_source(:, :, :) = source(:, :, :)
     d_delta(:, :, :) = 0.0
     d_phi(:, :, :) = phi(:, :, :)
+    if (store_psi) then
+      d_psi(:, :, :) = psi(:, :, :)
+    end if
 
     ! todo: move to state
     allocate(incoming(number_groups, number_angles * 2))
@@ -52,7 +56,7 @@ module solver
     !   eps : error tolerance for convergance
     !   lambda_arg (optional) : value of lambda for Krasnoselskii iteration
 
-    double precision :: norm, error, hold, phi_old(0:number_legendre,number_groups,number_cells)
+    double precision :: norm, error, hold
     integer :: counter
 
     ! Error of current iteration
@@ -61,11 +65,11 @@ module solver
     counter = 1
     do while (error > outer_tolerance)  ! Interate to convergance tolerance
       ! save phi from previous iteration
-      phi_old = phi
+      d_phi = phi
       ! Sweep through the mesh
       call sweep(phi, psi, incoming)
       ! error is the difference in the norm of phi for successive iterations
-      error = sum(abs(phi - phi_old))
+      error = sum(abs(phi - d_phi))
       ! output the current error and iteration number
       if (outer_print) then
         print *, error, counter

@@ -3,7 +3,7 @@ module sweeper
   use material, only : number_groups, sig_t, number_legendre
   use mesh, only : dx, number_cells, mMap
   use angle, only : number_angles, p_leg, wt, mu
-  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta
+  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi
 
   implicit none
   
@@ -12,12 +12,10 @@ module sweeper
   subroutine sweep(phi, psi, incoming)
     integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep
     double precision :: Q(number_groups), Ps, invmu, fiss
-    double precision :: phi_old(0:number_legendre,number_groups,number_cells)
     double precision :: M(0:number_legendre)
     double precision, intent(inout) :: phi(:,:,:), incoming(:,:), psi(:,:,:)
     logical :: octant
 
-    phi_old = phi
     phi = 0.0  ! Reset phi
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction in the octant
@@ -43,12 +41,13 @@ module sweeper
           M = 0.5 * wt(a) * p_leg(:,an)
 
           ! Update the right hand side
-          Q = updateSource(number_groups, d_source(:,an,c), phi_old(:,:,c), an, &
+          Q = updateSource(number_groups, d_source(:,an,c) - d_delta(:,an,c), d_phi(:,:,c), an, &
                            d_sig_s(:,:,:,c), d_nu_sig_f(:,c), d_chi(:,c))
           
           do g = 1, number_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD
-            call computeEQ(Q(g), incoming(g,an), sig_t(g, mMap(c)), invmu, Ps)
+            call computeEQ(Q(g), incoming(g,an), d_sig_t(g, c), invmu, Ps)
+
             if (store_psi) then
               psi(g,an,c) = Ps
             end if

@@ -11,11 +11,10 @@ subroutine test1()
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
   use state, only : initialize_state, source, d_source, d_nu_sig_f, d_delta, d_phi, &
-                    d_chi, d_sig_s
+                    d_chi, d_sig_s, d_sig_t, d_psi
   use dgmsolver, only : finalize_dgmsolver
   use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
-                  phi_0_moment, psi_0_moment, sig_t_moment, initialize_moments, &
-                  initialize_basis, compute_flux_moments, compute_xs_moments
+                  initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments
 
   implicit none
 
@@ -78,7 +77,7 @@ subroutine test1()
                          1.732050807, 1.732050807, 1.732050807, 1.732050807], &
                         shape(phi_m_test))
 
-  t6 = testCond(all(abs(phi_0_moment - phi_m_test) < 1e-6))
+  t6 = testCond(all(abs(d_phi - phi_m_test) < 1e-6))
 
   ! test angular flux moments
   psi_m_test = reshape([2.0, 1.732050807, &
@@ -87,7 +86,7 @@ subroutine test1()
                          2.0, 1.732050807], &
                         shape(psi_m_test))
   
-  t7 = testCond(all(abs(psi_0_moment - psi_m_test) < 1e-6))
+  t7 = testCond(all(abs(d_psi - psi_m_test) < 1e-6))
 
   ! test source moments
   source_m_test = reshape([2.0, 0.0, 0.0, 0.0, 1.732050807, 0.0, 0.0, 0.0, &
@@ -161,7 +160,7 @@ subroutine test1()
   end do
 
   t8 = testCond(all(abs(source_m_test) < 1e-6))
-  t9 = testCond(all(abs(sig_t_moment - sig_t_m_test) < 1e-6))
+  t9 = testCond(all(abs(d_sig_t - sig_t_m_test) < 1e-6))
   t10 = testCond(all(abs(delta_m_test) < 1e-6))
   t11 = testCond(all(abs(sig_s_m_test) < 1e-6))
   t12 = testCond(all(abs(d_nu_sig_f - nu_sig_f_m_test) < 1e-6))
@@ -209,11 +208,10 @@ subroutine test2()
   use angle, only : initialize_angle, initialize_polynomials
   use mesh, only : create_mesh
   use state, only : initialize_state, source, d_source, d_nu_sig_f, d_delta, d_phi, &
-                    d_chi, d_sig_s, phi, psi
+                    d_chi, d_sig_s, phi, psi, d_sig_t, d_psi
   use dgmsolver, only : finalize_dgmsolver
   use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
-                  phi_0_moment, psi_0_moment, sig_t_moment, initialize_moments, &
-                  initialize_basis, compute_flux_moments, compute_xs_moments
+                  initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments
 
   implicit none
 
@@ -296,10 +294,10 @@ subroutine test2()
   call compute_flux_moments()
 
   ! test scalar flux moments
-  t6 = testCond(all(abs(phi_0_moment - phi_m_test) < 1e-6))
+  t6 = testCond(all(abs(d_phi - phi_m_test) < 1e-6))
 
   ! test angular flux moments
-  t7 = testCond(all(abs(psi_0_moment - psi_m_test) < 1e-6))
+  t7 = testCond(all(abs(d_psi - psi_m_test) < 1e-6))
 
   ! Get the cross section moments for order 0
   call compute_xs_moments(0)
@@ -310,7 +308,7 @@ subroutine test2()
   t8 = testCond(all(abs(d_source - source_m_test) < 1e-6))
 
   ! test total cross section moments
-  t9 = testCond(all(abs(sig_t_moment - sig_t) < 1e-6))
+  t9 = testCond(all(abs(d_sig_t - sig_t) < 1e-6))
 
   ! test angular cross section moments (delta)
   delta_m_test = 0.0
@@ -321,7 +319,7 @@ subroutine test2()
   t11 = testCond(all(abs(d_sig_s(:,:,:,1) - sig_s(:,:,:,1)) < 1e-7))
 
   ! test fission cross section moments
-  t12 = testCond(all(abs(d_nu_sig_f(:,1) - nu_sig_f(:,1) * phi(0,:,1) / phi_0_moment(0,:,1)) < 1e-6))
+  t12 = testCond(all(abs(d_nu_sig_f(:,1) - nu_sig_f(:,1) * phi(0,:,1) / d_phi(0,:,1)) < 1e-6))
 
   ! test chi moments
   t13 = testCond(all(abs(d_chi(:,1) - chi(:,1)) < 1e-6))
@@ -370,8 +368,7 @@ subroutine test3()
   use state, only : initialize_state, source
   use dgmsolver, only : finalize_dgmsolver
   use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
-                  phi_0_moment, psi_0_moment, sig_t_moment, initialize_moments, &
-                  initialize_basis, compute_flux_moments, compute_xs_moments
+                  initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments
 
   implicit none
 

@@ -9,6 +9,7 @@ module state
   double precision, allocatable :: psi(:,:,:), source(:,:,:), phi(:,:,:)
   double precision, allocatable :: d_source(:,:,:), d_nu_sig_f(:,:), d_delta(:,:,:)
   double precision, allocatable :: d_phi(:,:,:), d_chi(:,:), d_sig_s(:,:,:,:)
+  double precision, allocatable :: d_psi(:,:,:), d_sig_t(:,:)
   
   contains
   
@@ -100,20 +101,30 @@ module state
     if (allocated(d_phi)) then
       deallocate(d_phi)
     end if
+    if (allocated(d_psi)) then
+      deallocate(d_psi)
+    end if
     if (allocated(d_chi)) then
       deallocate(d_chi)
     end if
     if (allocated(d_sig_s)) then
       deallocate(d_sig_s)
     end if
+    if (allocated(d_sig_t)) then
+      deallocate(d_sig_t)
+    end if
 
     ! Reallocate with the specified number of groups, nG
     allocate(d_source(nG, number_angles * 2, number_cells))
     allocate(d_nu_sig_f(nG, number_cells))
+    allocate(d_sig_t(nG, number_cells))
     allocate(d_delta(nG, number_angles * 2, number_cells))
     allocate(d_phi(0:number_legendre, nG, number_cells))
     allocate(d_chi(nG, number_cells))
     allocate(d_sig_s(0:number_legendre, nG, nG, number_cells))
+    if (store_psi) then
+      allocate(d_psi(nG,number_angles*2,number_cells))
+    end if
   end subroutine
   
   subroutine output_state()

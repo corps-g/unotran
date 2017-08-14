@@ -67,8 +67,6 @@ module dgmsolver
       psi = (1.0 - lambda) * psi + lambda * psi_new
     end do
 
-
-
   end subroutine dgmsolve
 
   subroutine dgmoutput()

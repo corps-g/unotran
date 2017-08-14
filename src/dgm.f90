@@ -4,14 +4,11 @@ module dgm
   use mesh, only: number_cells, mMap
   use angle, only: number_angles
   use state, only: phi, psi, source, reallocate_states, d_source, d_nu_sig_f, d_sig_s, &
-                   d_chi, d_phi, d_delta
+                   d_chi, d_phi, d_delta, d_sig_t, d_psi
 
   implicit none
 
-  double precision, allocatable :: sig_s_moment(:,:,:,:)
-  double precision, allocatable :: phi_0_moment(:,:,:), source_moment(:,:,:), delta_moment(:,:,:)
-  double precision, allocatable :: psi_0_moment(:,:,:), chi_moment(:,:)
-  double precision, allocatable :: sig_t_moment(:,:), basis(:,:), nu_sig_f_moment(:,:)
+  double precision, allocatable :: basis(:,:)
   integer :: expansion_order, number_course_groups
   integer, allocatable :: energyMesh(:), order(:), basismap(:)
 
@@ -58,11 +55,6 @@ module dgm
     ! reallocate container arrays to number_course_groups
     call reallocate_states(number_course_groups)
 
-    ! Allocate the moment containers
-    allocate(phi_0_moment(0:number_legendre, number_course_groups, number_cells))
-    allocate(psi_0_moment(number_course_groups, 2*number_angles, number_cells))
-    allocate(sig_t_moment(number_course_groups, number_cells))
-
   end subroutine initialize_moments
 
   ! Load basis set from file
@@ -107,15 +99,6 @@ module dgm
 
   ! Deallocate the variable containers
   subroutine finalize_moments()
-    if (allocated(phi_0_moment)) then
-      deallocate(phi_0_moment)
-    end if
-    if (allocated(psi_0_moment)) then
-      deallocate(psi_0_moment)
-    end if
-    if (allocated(sig_t_moment)) then
-      deallocate(sig_t_moment)
-    end if
     if (allocated(basis)) then
       deallocate(basis)
     end if
@@ -136,8 +119,8 @@ module dgm
     double precision :: num
 
     ! initialize all moments to zero
-    phi_0_moment = 0.0
-    psi_0_moment = 0.0
+    d_phi = 0.0
+    d_psi = 0.0
 
     ! Get moments for the fluxes
     do c = 1, number_cells
@@ -149,10 +132,10 @@ module dgm
           cg = energyMesh(g)
           ! Scalar flux
           if (a == 1) then
-            phi_0_moment(:, cg, c) = phi_0_moment(:, cg, c) + basis(g, 0) * phi(:, g, c)
+            d_phi(:, cg, c) = d_phi(:, cg, c) + basis(g, 0) * phi(:, g, c)
           end if
           ! Angular flux
-          psi_0_moment(cg, a, c) = psi_0_moment(cg, a, c) +  basis(g, 0) * psi(g, a, c)
+          d_psi(cg, a, c) = d_psi(cg, a, c) +  basis(g, 0) * psi(g, a, c)
         end do
       end do
     end do
@@ -167,7 +150,7 @@ module dgm
     d_sig_s = 0.0
     d_source = 0.0
     d_delta = 0.0
-    sig_t_moment = 0.0
+    d_sig_t = 0.0
     d_nu_sig_f = 0.0
     d_chi = 0.0
 
@@ -177,16 +160,16 @@ module dgm
       do g = 1, number_groups
         cg = energyMesh(g)
         ! total cross section moment
-        sig_t_moment(cg, c) = sig_t_moment(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / phi_0_moment(0, cg, c)
+        d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
         ! fission cross section moment
-        d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / phi_0_moment(0, cg, c)
+        d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
         ! chi moment
         d_chi(cg, c) = d_chi(cg, c) + basis(g, order) * chi(g, mat)
         ! Scattering cross section moment
         do gp = 1, number_groups
           cgp = energyMesh(gp)
-          d_sig_s(:, cgp, cg, c) = d_sig_s(:, cgp, cg, c) + &
-                                        basis(g, order) * sig_s(:, gp, g, mat) * phi(:, gp, c) / phi_0_moment(:, cgp, c)
+          d_sig_s(:, cgp, cg, c) = d_sig_s(:, cgp, cg, c) &
+                                   + basis(g, order) * sig_s(:, gp, g, mat) * phi(:, gp, c) / d_phi(:, cgp, c)
         end do
       end do
 
@@ -196,10 +179,10 @@ module dgm
           ! Source moment
           d_source(cg, a, c) = d_source(cg, a, c) + basis(g, order) * source(g, a, c)
 
-          if (psi_0_moment(cg, a, c) == 0.0) then
+          if (d_psi(cg, a, c) == 0.0) then
             num = 0.0
           else
-            num = basis(g, order) * (sig_t(g, mat) - sig_t_moment(cg, c)) * psi(g, a, c) / psi_0_moment(cg, a, c)
+            num = basis(g, order) * (sig_t(g, mat) - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
           end if
           ! angular total cross section moment (delta)
           d_delta(cg, a, c) = d_delta(cg, a, c) + num
