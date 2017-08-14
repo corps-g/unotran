@@ -14,7 +14,8 @@ subroutine test1()
                     d_chi, d_sig_s, d_sig_t, d_psi
   use dgmsolver, only : finalize_dgmsolver
   use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
-                  initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments
+                  initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments, &
+                  compute_source_moments
 
   implicit none
 
@@ -59,6 +60,7 @@ subroutine test1()
 
   ! Test reading the basis set from the file
   call initialize_basis()
+  call compute_source_moments()
 
   basis_test = reshape([ 0.5       ,  0.5       ,  0.5       ,  0.5       ,  0.57735027,  0.57735027,  0.57735027,&
                         -0.67082039, -0.2236068 ,  0.2236068 ,  0.67082039,  0.70710678,  0.        , -0.70710678,&
@@ -211,7 +213,8 @@ subroutine test2()
                     d_chi, d_sig_s, phi, psi, d_sig_t, d_psi
   use dgmsolver, only : finalize_dgmsolver
   use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
-                  initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments
+                  initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments, &
+                  compute_source_moments
 
   implicit none
 
@@ -284,6 +287,7 @@ subroutine test2()
 
   ! Test reading the basis set from the file
   call initialize_basis()
+  call compute_source_moments()
 
   basis_test = reshape((/1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0/), &
                          shape(basis_test))

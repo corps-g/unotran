@@ -4,7 +4,7 @@ module dgmsolver
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
   use state, only : initialize_state, phi, source, psi, finalize_state, output_state
-  use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order
+  use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order, compute_source_moments
   use dgmsweeper, only : sweep
 
   implicit none
@@ -29,10 +29,11 @@ module dgmsolver
     ! Initialize DGM moments
     call initialize_moments()
     call initialize_basis()
+    call compute_source_moments()
 
     allocate(incoming(number_course_groups, number_angles * 2, 0:expansion_order))
 
-    incoming  = 0.0
+    incoming = 0.0
 
   end subroutine initialize_dgmsolver
 

@@ -8,7 +8,7 @@ module dgm
 
   implicit none
 
-  double precision, allocatable :: basis(:,:)
+  double precision, allocatable :: basis(:,:), chi_m(:,:,:), source_m(:,:,:,:)
   integer :: expansion_order, number_course_groups
   integer, allocatable :: energyMesh(:), order(:), basismap(:)
 
@@ -111,6 +111,12 @@ module dgm
     if (allocated(basismap)) then
       deallocate(basismap)
     end if
+    if (allocated(chi_m)) then
+      deallocate(chi_m)
+    end if
+    if (allocated(source_m)) then
+      deallocate(source_m)
+    end if
   end subroutine finalize_moments
 
   ! Expand the flux moments using the basis functions
@@ -148,11 +154,11 @@ module dgm
     double precision :: num
     ! initialize all moments to zero
     d_sig_s = 0.0
-    d_source = 0.0
+    d_source(:, :, :) = source_m(:, :, :, order)
     d_delta = 0.0
     d_sig_t = 0.0
     d_nu_sig_f = 0.0
-    d_chi = 0.0
+    d_chi(:, :) = chi_m(:, :, order)
 
     do c = 1, number_cells
       ! get the material for the current cell
@@ -163,8 +169,6 @@ module dgm
         d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
         ! fission cross section moment
         d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
-        ! chi moment
-        d_chi(cg, c) = d_chi(cg, c) + basis(g, order) * chi(g, mat)
         ! Scattering cross section moment
         do gp = 1, number_groups
           cgp = energyMesh(gp)
@@ -176,9 +180,6 @@ module dgm
       do a = 1, number_angles * 2
         do g = 1, number_groups
           cg = energyMesh(g)
-          ! Source moment
-          d_source(cg, a, c) = d_source(cg, a, c) + basis(g, order) * source(g, a, c)
-
           if (d_psi(cg, a, c) == 0.0) then
             num = 0.0
           else
@@ -191,5 +192,35 @@ module dgm
     end do
 
   end subroutine compute_xs_moments
+
+  ! Expand the source and chi using the basis functions
+  subroutine compute_source_moments()
+    integer :: order, c, a, g, cg, mat
+    allocate(chi_m(number_course_groups, number_cells, 0:expansion_order))
+    allocate(source_m(number_course_groups, number_angles * 2, number_cells, 0:expansion_order))
+
+    chi_m = 0.0
+    source_m = 0.0
+
+    do order = 0, expansion_order
+      do c = 1, number_cells
+        mat = mMap(c)
+        do a = 1, number_angles * 2
+          do g = 1, number_groups
+            cg = energyMesh(g)
+            if (a == 1) then
+              ! chi moment
+              chi_m(cg, c, order) = chi_m(cg, c, order) + basis(g, order) * chi(g, mat)
+            end if
+
+            ! Source moment
+            source_m(cg, a, c, order) = source_m(cg, a, c, order) + basis(g, order) * source(g, a, c)
+          end do
+        end do
+      end do
+    end do
+
+
+  end subroutine compute_source_moments
 
 end module dgm
