@@ -4,8 +4,8 @@ module dgmsolver
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
   use state, only : initialize_state, phi, source, psi, finalize_state, output_state
-  use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order
-  use dgmsweeper, only : sweep
+  use dgm, only : number_course_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order, compute_source_moments
+  use dgmsweeper, only : dgmsweep
 
   implicit none
   
@@ -26,14 +26,14 @@ module dgmsolver
     call initialize_polynomials(number_legendre)
     ! allocate the solutions variables
     call initialize_state()
-
-    ! Pass the truncation array to dgm if provided
+    ! Initialize DGM moments
     call initialize_moments()
     call initialize_basis()
+    call compute_source_moments()
 
     allocate(incoming(number_course_groups, number_angles * 2, 0:expansion_order))
 
-    incoming  = 0.0
+    incoming = 0.0
 
   end subroutine initialize_dgmsolver
 
@@ -51,7 +51,7 @@ module dgmsolver
     counter = 1
     do while (outer_error > outer_tolerance)  ! Interate to convergance tolerance
       ! Sweep through the mesh
-      call sweep(phi_new, psi_new, incoming)
+      call dgmsweep(phi_new, psi_new, incoming)
       ! Store norm of scalar flux
       hold = norm2(phi_new)
       ! error is the difference in the norm of phi for successive iterations
@@ -67,8 +67,6 @@ module dgmsolver
       phi = (1.0 - lambda) * phi + lambda * phi_new
       psi = (1.0 - lambda) * psi + lambda * psi_new
     end do
-
-
 
   end subroutine dgmsolve
 
