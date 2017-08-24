@@ -17,3 +17,4 @@ use_DGM            T
 store_psi          T
 use_recondensation F
 source             1
+solver_type        fixed

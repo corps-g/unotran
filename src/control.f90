@@ -152,6 +152,17 @@ module control
         print *, '  use_dgm            = ', use_dgm
       end if
     end if
+
+    ! Kill the program if an invalid solver_type is selected
+    if (solver_type == 'eigen') then
+      continue
+    else if (solver_type == 'fixed') then
+      continue
+    else
+      print *, 'FATAL ERROR : Invalid solver type'
+      stop
+    end if
+
   end subroutine initialize_control
 
   subroutine finalize_control()

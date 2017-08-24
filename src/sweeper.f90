@@ -3,7 +3,7 @@ module sweeper
   use material, only : number_groups, sig_t, number_legendre
   use mesh, only : dx, number_cells, mMap
   use angle, only : number_angles, p_leg, wt, mu
-  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi
+  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi, d_keff
 
   implicit none
   
@@ -120,7 +120,7 @@ module sweeper
           end if
 
           ! Include the external source and the fission source
-          Q(:,an,c) = source(:) + d_chi(:,c) * dot_product(d_nu_sig_f(:,c), d_phi(0,:,c))
+          Q(:,an,c) = source(:) + d_chi(:,c) / d_keff * dot_product(d_nu_sig_f(:,c), d_phi(0,:,c))
 
           ! Add the scattering source for each legendre moment
           do l = 0, number_legendre

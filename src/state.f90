@@ -1,5 +1,5 @@
 module state
-  use control, only : store_psi, source_value, file_name, initial_phi, initial_psi, use_dgm
+  use control, only : store_psi, source_value, file_name, initial_phi, initial_psi, use_dgm, solver_type
   use material, only : number_groups, number_legendre
   use mesh, only : number_cells
   use angle, only : number_angles
@@ -10,6 +10,7 @@ module state
   double precision, allocatable :: d_source(:,:,:), d_nu_sig_f(:,:), d_delta(:,:,:)
   double precision, allocatable :: d_phi(:,:,:), d_chi(:,:), d_sig_s(:,:,:,:)
   double precision, allocatable :: d_psi(:,:,:), d_sig_t(:,:)
+  double precision :: d_keff
   
   contains
   
@@ -47,6 +48,17 @@ module state
         read(10) psi ! read the data in array x to the file
       end if
       close(10) ! close the file
+    end if
+
+    ! Initialize the eigenvalue to unity
+    d_keff = 1.0
+
+    ! Set external source to zero if eigen problem
+    if (solver_type == 'eigen') then
+      if (norm2(source) > 0.0) then
+        print *, "WARNING : Eigen solver is setting external source to zero"
+      end if
+      source = 0.0
     end if
 
     call reallocate_states(number_groups)
