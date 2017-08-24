@@ -12,12 +12,15 @@ module sweeper
   subroutine sweep(number_energy_groups, phi, psi, incoming)
     integer :: o, c, a, g, l, an, cmin, cmax, cstep, amin, amax, astep
     integer, intent(in) :: number_energy_groups
-    double precision :: Q(number_energy_groups), Ps, invmu, fiss
-    double precision :: M(0:number_legendre), source(number_energy_groups)
+    double precision :: Q(number_energy_groups, number_angles * 2, number_cells), Ps, invmu, fiss
+    double precision :: M(0:number_legendre)
     double precision, intent(inout) :: phi(:,:,:), incoming(:,:), psi(:,:,:)
     logical :: octant
 
     phi = 0.0  ! Reset phi
+
+    ! Update the right hand side
+    call updateRHS(Q, number_energy_groups)
 
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction in the octant
@@ -38,23 +41,13 @@ module sweeper
           an = merge(a, 2 * number_angles - a + 1, octant)
           ! get a common fraction
           invmu = dx(c) / (2 * abs(mu(a)))
-          
+
           ! legendre polynomial integration vector
           M = 0.5 * wt(a) * p_leg(:,an)
 
-          if (allocated(d_psi)) then
-            source(:) = d_source(:,an,c) - d_delta(:,an,c)  * d_psi(:,an,c)
-          else
-            source(:) = d_source(:,an,c)
-          end if
-
-          ! Update the right hand side
-          Q = updateSource(number_energy_groups, source(:), d_phi(:,:,c), an, &
-                           d_sig_s(:,:,:,c), d_nu_sig_f(:,c), d_chi(:,c))
-          
           do g = 1, number_energy_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD
-            call computeEQ(Q(g), incoming(g,an), d_sig_t(g, c), invmu, Ps)
+            call computeEQ(Q(g,an,c), incoming(g,an), d_sig_t(g, c), invmu, Ps)
 
             if (store_psi) then
               psi(g,an,c) = Ps
@@ -83,24 +76,48 @@ module sweeper
   
   end subroutine computeEQ
   
-  function updateSource(number_groups, Sg, Phig, angle, sig_s, nu_sig_f, chi)
-    integer, intent(in) :: number_groups
-    double precision :: updateSource(number_groups)
-    double precision, intent(in) :: Sg(:), Phig(0:number_legendre, number_groups), nu_sig_f(:), chi(:)
-    double precision, intent(in) :: sig_s(0:number_legendre,number_groups,number_groups)
-    double precision :: scat(number_groups)
-    integer, intent(in) :: angle
-    integer :: l
-    
-    ! Include the external source and the fission source
-    updateSource(:) = Sg(:) + chi(:) * dot_product(nu_sig_f(:), phig(0,:))
+  subroutine updateRHS(Q, number_groups)
 
-    ! Add the scattering source for each legendre moment
-    do l = 0, number_legendre
-      scat(:) = (2 * l + 1) * p_leg(l, angle) * matmul(transpose(sig_s(l, :, :)), phig(l,:))
-      updateSource(:) = updateSource(:) + scat(:)
+    integer, intent(in) :: number_groups
+    double precision, intent(inout) :: Q(:, :, :)
+    double precision :: source(number_groups), scat(number_groups)
+    integer :: o, c, a, g, l, an, cmin, cmax, cstep, amin, amax, astep
+    logical :: octant
+
+    Q = 0.0
+
+    do o = 1, 2  ! Sweep over octants
+      ! Sweep in the correct direction in the octant
+      octant = o == 1
+      cmin = merge(1, number_cells, octant)
+      cmax = merge(number_cells, 1, octant)
+      cstep = merge(1, -1, octant)
+      amin = merge(1, number_angles, octant)
+      amax = merge(number_angles, 1, octant)
+      astep = merge(1, -1, octant)
+      do c = cmin, cmax, cstep  ! Sweep over cells
+        do a = amin, amax, astep  ! Sweep over angle
+          ! Get the correct angle index
+          an = merge(a, 2 * number_angles - a + 1, octant)
+
+          if (allocated(d_psi)) then
+            source(:) = d_source(:,an,c) - d_delta(:,an,c)  * d_psi(:,an,c)
+          else
+            source(:) = d_source(:,an,c)
+          end if
+
+          ! Include the external source and the fission source
+          Q(:,an,c) = source(:) + d_chi(:,c) * dot_product(d_nu_sig_f(:,c), d_phi(0,:,c))
+
+          ! Add the scattering source for each legendre moment
+          do l = 0, number_legendre
+            scat(:) = (2 * l + 1) * p_leg(l, an) * matmul(transpose(d_sig_s(l, :, :, c)), d_phi(l,:,c))
+            Q(:,an,c) = Q(:,an,c) + scat(:)
+          end do
+        end do
+      end do
     end do
-    
-  end function updateSource
+
+  end subroutine updateRHS
   
 end module sweeper
