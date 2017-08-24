@@ -39,25 +39,19 @@ module dgmsolver
 
   ! Interate equations until convergance
   subroutine dgmsolve()
-    double precision :: norm, outer_error, hold
+    double precision :: outer_error
     double precision :: phi_new(0:number_legendre,number_groups,number_cells), psi_new(number_groups,2*number_angles,number_cells)
     integer :: counter
 
     ! Error of current iteration
     outer_error = 1.0
-    ! 2 norm of the scalar flux
-    norm = norm2(phi)
     ! interation number
     counter = 1
     do while (outer_error > outer_tolerance)  ! Interate to convergance tolerance
       ! Sweep through the mesh
       call dgmsweep(phi_new, psi_new, incoming)
-      ! Store norm of scalar flux
-      hold = norm2(phi_new)
       ! error is the difference in the norm of phi for successive iterations
-      outer_error = abs(norm - hold)
-      ! Keep the norm for the next iteration
-      norm = hold
+      outer_error = sum(abs(phi - phi_new))
       ! output the current error and iteration number
       if (outer_print) then
         print *, outer_error, counter
