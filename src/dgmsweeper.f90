@@ -15,7 +15,7 @@ module dgmsweeper
   subroutine dgmsweep(phi_new, psi_new, incoming)
     double precision, intent(inout) :: incoming(number_course_groups,2 * number_angles,0:expansion_order)
     double precision, intent(inout) :: phi_new(:,:,:), psi_new(:,:,:)
-    double precision :: norm, inner_error, hold
+    double precision :: inner_error
     double precision, allocatable :: phi_m(:,:,:), psi_m(:,:,:)
     integer :: counter, i
 
@@ -32,7 +32,6 @@ module dgmsweeper
     do i = 0, expansion_order
       ! Initialize iteration variables
       inner_error = 1.0
-      hold = 0.0
       counter = 1
 
       ! Compute the order=0 cross section moments
@@ -45,12 +44,8 @@ module dgmsweeper
         ! Use discrete ordinates to sweep over the moment equation
         call sweep(number_course_groups, phi_m, psi_m, incoming(:,:,i))
 
-        ! Store norm of scalar flux
-        norm = norm2(phi_m)
         ! error is the difference in the norm of phi for successive iterations
-        inner_error = abs(norm - hold)
-        ! Keep the norm for the next iteration
-        hold = norm
+        inner_error = sum(abs(d_phi - phi_m))
         ! output the current error and iteration number
         if (inner_print) then
           print *, '    ', 'eps = ', inner_error, ' counter = ', counter, ' order = ', i, phi_m(0,:,1)
@@ -64,9 +59,7 @@ module dgmsweeper
           !d_psi = (1.0 - lambda) * d_psi + lambda * psi_m
           d_phi = phi_m
           d_psi = psi_m
-        end if
-
-        if (i > 0) then
+        else
           exit
         end if
 
