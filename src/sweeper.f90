@@ -47,7 +47,7 @@ module sweeper
 
           do g = 1, number_energy_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD
-            call computeEQ(Q(g,an,c), incoming(g,an), d_sig_t(g, c), invmu, Ps)
+            call computeEQ(Q(g,an,c), incoming(g,an), d_sig_t(g, c), invmu, dx(c), mu(a), Ps)
 
             if (store_psi) then
               psi(g,an,c) = Ps
@@ -61,18 +61,31 @@ module sweeper
     end do
   end subroutine sweep
   
-  subroutine computeEQ(S, incoming, sig, invmu, cellPsi)
+  subroutine computeEQ(S, incoming, sig, invmu, dx, mu, cellPsi)
     implicit none
+
     double precision, intent(inout) :: incoming
-    double precision, intent(in) :: S, sig, invmu
+    double precision, intent(in) :: S, sig, invmu, dx, mu
     double precision, intent(out) :: cellPsi
-    if (equation_type == 'DD') then
+    double precision :: tau, A
+
+    select case (equation_type)
+    case ('DD')
       ! Diamond Difference relationship
       cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
       incoming = 2 * cellPsi - incoming
-    else
+    case ('SC')
+      ! Step Characteristics relationship
+      tau = sig * dx / mu
+      A = exp(-tau)
+      cellPsi = incoming * (1.0 - A) / tau + S * (sig * dx + mu * (A - 1.0)) / (sig ** 2 * dx)
+      incoming = A * incoming + S * (1.0 - A) / sig
+    case ('SD')
+      cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
+      incoming = cellPsi
+    case default
       print *, 'ERROR : Equation not implemented'
-    end if
+    end select
   
   end subroutine computeEQ
   

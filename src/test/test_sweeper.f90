@@ -1,63 +1,61 @@
 program test_sweeper
-
-  use material, only: create_material, sig_s, sig_t, vsig_f, chi, number_groups, number_legendre
-  use mesh, only: create_mesh, dx, number_cells, mMap
-  use angle, only: initialize_angle, initialize_polynomials, number_angles, p_leg, wt, mu
-  use state, only: initialize_state, phi, psi, source
+  use control
+  use mesh, only : dx
+  use angle, only : mu
+  use state, only : d_psi, d_phi
+  use solver, only : initialize_solver, finalize_solver
   use sweeper
 
   implicit none
 
-  ! initialize types
-  integer :: fineMesh(1), materialMap(1), t1=1, t2=1, t3=1, t4=1, testCond
-  double precision :: courseMesh(2), norm, error
-  double precision :: psi_test(1,4,7),source_test(1,4,7),phi_test(1,0:7,7)
+  ! Test DD Equation
+
+  integer :: testCond, t1, t2, t3, t4
+  double precision :: Ps=0.0, incoming=0.0
+
   ! Define problem parameters
-  character(len=10) :: filename = 'test.anlxs'
-  
-  phi_test = 0
-  psi_test = 0
-  source_test = 0
-  fineMesh = [1]
-  materialMap = [1]
-  courseMesh = [0.0, 1.0]
-  
-  ! Make the mesh
-  call create_mesh(fineMesh, courseMesh, materialMap)
-  
-  ! Read the material cross sections
-  call create_material(filename)
-  
-  ! Create the cosines and angle space
-  call initialize_angle(2, 1)
-  ! Create the set of polynomials used for the anisotropic expansion
-  call initialize_polynomials(number_legendre)
-    
-  ! Create the state variable containers
-  call initialize_state()
-  
-  phi = 1.0
-  psi = 1.0
-  source = 1.0
-  
-  t1 = testCond(number_cells == 1)
-  t1 = testCond(number_angles == 2)
-  t1 = testCond(number_groups == 7)
-  t1 = testCond(number_legendre == 7)
-  
-  psi = 1
-  
+  call initialize_control('test/equation_test_options', .true.)
+
+  call initialize_solver()
+
+  call computeEQ(1.0_8, incoming, 1.0_8, dx(1) / (2 * abs(mu(1))), dx(1), mu(1), Ps)
+
+  t1 = testCond(abs(incoming - 0.734680275209795978) < 1e-6)
+  t2 = testCond(abs(Ps - 0.367340137604897989) < 1e-6)
+
+  call finalize_solver()
+  call finalize_control()
+
+  ! Test SC Equation
+  PS = 0.0
+  incoming = 0.0
+
+  ! Define problem parameters
+  call initialize_control('test/equation_test_options', .true.)
+
+  equation_type = 'SC'
+
+  call initialize_solver()
+
+  call computeEQ(1.0_8, incoming, 1.0_8, dx(1) / (2 * abs(mu(1))), dx(1), mu(1), Ps)
+
+  t3 = testCond(abs(incoming - 0.686907416523104323) < 1e-6)
+  t4 = testCond(abs(Ps - 0.408479080928661801) < 1e-6)
+
   if (t1 == 0) then
-    print *, 'sweeper: phistar update failed'
+    print *, 'sweeper: DD test (outgoing) Failed'
   else if (t2 == 0) then
-    print *, 'sweeper: source update failed'
+    print *, 'sweeper: DD test (cell) Failed'
   else if (t3 == 0) then
-    print *, 'sweeper: source initialization failed'
+    print *, 'sweeper: SC test (outgoing) Failed'
   else if (t4 == 0) then
-    print *, 'sweeper: phistar initialization failed'
+    print *, 'sweeper: SC test (cell) Failed'
   else
     print *, 'all tests passed for sweeper'
   end if
+
+  call finalize_solver()
+  call finalize_control()
 
 end program test_sweeper
 

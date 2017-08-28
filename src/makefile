@@ -109,7 +109,7 @@ test_state: control.f90 mesh.f90 material.f90 angle.f90 state.f90 ./test/test_st
 sweeper: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-test_sweeper: control.f90 mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 ./test/test_sweeper.f90
+test_sweeper: control.f90 mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 solver.f90 ./test/test_sweeper.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_sweeper.so $^ 
 	@./test/test_sweeper.so
 
@@ -123,7 +123,7 @@ test_solver: control.f90 mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 d
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_solver.so $^ 
 	@./test/test_solver.so
 	
-test: test_angle test_mesh test_material test_state test_dgm test_dgmsolver test_solver
+test: test_angle test_mesh test_material test_state test_sweeper test_solver test_dgm test_dgmsolver
 
 # Remove objects, module files, and exectables
 clean:
