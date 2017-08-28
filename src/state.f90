@@ -9,7 +9,7 @@ module state
   double precision, allocatable :: psi(:,:,:), source(:,:,:), phi(:,:,:)
   double precision, allocatable :: d_source(:,:,:), d_nu_sig_f(:,:), d_delta(:,:,:)
   double precision, allocatable :: d_phi(:,:,:), d_chi(:,:), d_sig_s(:,:,:,:)
-  double precision, allocatable :: d_psi(:,:,:), d_sig_t(:,:)
+  double precision, allocatable :: d_psi(:,:,:), d_sig_t(:,:), d_density(:)
   double precision :: d_keff
   
   contains
@@ -33,6 +33,10 @@ module state
     allocate(source(number_groups,number_angles*2,number_cells))
     ! Initialize source
     source = source_value
+
+    ! Allocate space for the fission density
+    allocate(d_density(number_cells))
+    call update_density()
 
     ! Only allocate psi if the option is to store psi    
     if (store_psi) then
@@ -94,6 +98,9 @@ module state
     if (allocated(d_sig_s)) then
       deallocate(d_sig_s)
     end if
+    if (allocated(d_density)) then
+      deallocate(d_density)
+    end if
   end subroutine finalize_state
 
   ! Resize the container arrays to number of energy groups, nG
@@ -139,6 +146,21 @@ module state
     end if
   end subroutine
   
+  subroutine update_density()
+    use material, only : nu_sig_f
+    use mesh, only : mMap
+
+    integer :: c, g
+
+    d_density = 0
+    do c = 1, number_cells
+      do g = 1, number_groups
+        d_density(c) = d_density(c) + phi(0, g, c) * nu_sig_f(g, mMap(c))
+      end do
+    end do
+
+  end subroutine update_density
+
   subroutine output_state()
     character(:), allocatable :: fname
 

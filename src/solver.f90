@@ -4,8 +4,8 @@ module solver
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh, mMap
-  use state, only : initialize_state, phi, psi, source, finalize_state, output_state, &
-                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi, d_keff
+  use state, only : initialize_state, phi, psi, source, finalize_state, output_state, update_density, &
+                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi, d_keff, d_density
   use sweeper, only : sweep
 
   implicit none
@@ -52,7 +52,7 @@ module solver
 
   ! Interate equations until convergance
   subroutine solve()
-    double precision :: norm, error, hold
+    double precision :: norm, error, hold, fd_old(number_cells), keff_1
     integer :: counter
 
     ! Error of current iteration
@@ -64,17 +64,23 @@ module solver
     do while (error > outer_tolerance)  ! Interate to convergance tolerance
       ! save phi from previous iteration
       d_phi = phi
+      fd_old(:) = d_density(:)
 
       ! Sweep through the mesh
       call sweep(number_groups, phi, psi, incoming)
 
+      call update_density()
+
+      ! Store old keff
+      keff_1 = d_keff
+
+      if (solver_type == 'eigen') then
+        ! Compute new eigenvalue if eigen problem
+        d_keff = d_keff * sum(abs(d_density)) / sum(abs(fd_old))
+      end if
+
       ! error is the difference in phi between successive iterations
       error = sum(abs(phi - d_phi))
-
-      ! Compute new eigenvalue if eigen problem
-      if (solver_type == 'eigen') then
-        d_keff = d_keff * sum(abs(phi)) / sum(abs(d_phi))
-      end if
 
       ! output the current error and iteration number
       if (outer_print) then
@@ -83,6 +89,12 @@ module solver
         else if (solver_type == 'fixed') then
           print *, 'Error = ', error, 'Iteration = ', counter
         end if
+      end if
+
+      if (solver_type == 'eigen') then
+        ! normalize phi
+        phi = phi / d_keff * keff_1
+        d_density = d_density / d_keff * keff_1
       end if
 
       ! increment the iteration
