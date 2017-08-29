@@ -53,7 +53,7 @@ module solver
   ! Interate equations until convergance
   subroutine solve()
     double precision :: norm, error, hold, fd_old(number_cells), keff_1
-    integer :: counter
+    integer :: counter, a
 
     ! Error of current iteration
     error = 1.0
@@ -69,14 +69,12 @@ module solver
       ! Sweep through the mesh
       call sweep(number_groups, phi, psi, incoming)
 
-      call update_density()
-
       ! Store old keff
       keff_1 = d_keff
 
       if (solver_type == 'eigen') then
         ! Compute new eigenvalue if eigen problem
-        d_keff = d_keff * sum(abs(d_density)) / sum(abs(fd_old))
+        d_keff = d_keff * sum(abs(phi)) / sum(abs(d_phi))
       end if
 
       ! error is the difference in phi between successive iterations
@@ -93,8 +91,14 @@ module solver
 
       if (solver_type == 'eigen') then
         ! normalize phi
-        phi = phi / d_keff * keff_1
-        d_density = d_density / d_keff * keff_1
+        phi = phi / sum(abs(phi)) * 2 * d_keff
+
+        ! normalize psi
+        if (store_psi) then
+          do a = 1, number_angles * 2
+            psi(:,a,:) = psi(:,a,:) / sum(abs(psi(:,a,:))) * d_keff
+          end do
+        end if
       end if
 
       ! increment the iteration

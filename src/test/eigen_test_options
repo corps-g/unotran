@@ -1,16 +1,16 @@
 fine_mesh          10
 course_mesh        0.0 10.0
 material_map       1
-xs_file            test.anlxs
+xs_file            test/1gXS.anlxs
 angle_order        2
 angle_option       1
-boundary_type      0.0 0.0
-allow_fission      F
+boundary_type      1.0 1.0
+allow_fission      T
 outer_print        F
 inner_print        F
 outer_tolerance    1e-12
 inner_tolerance    1e-12
 lambda             1.0
-store_psi          F
-source             1
-solver_type        fixed
+store_psi          T
+source             0
+solver_type        eigen

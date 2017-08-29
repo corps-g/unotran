@@ -3,6 +3,8 @@ program test_solver
   call test2()
   call test3()
   call test4()
+  call test5()
+  call test6()
 end program test_solver
 
 ! Test against detran with vacuum conditions
@@ -173,64 +175,37 @@ subroutine test3()
 
   ! initialize types
   integer :: testCond, t1, t2
-  double precision :: phi_test(7,28), keff_test
+  double precision :: phi_test(7,10), keff_test
 
   ! Define problem parameters
-  call initialize_control('test/reg_test_options', .true.)
-  solver_type = 'eigen'
+  call initialize_control('test/eigen_test_options', .true.)
   source_value = 0.0
   xs_name = 'test/testXS.anlxs'
-  allow_fission = .true.
+  boundary_type = [0.0, 0.0]
+  outer_print = .true.
 
   call initialize_solver()
 
   keff_test = 0.034011456
 
-  phi_test = reshape([0.019468485445, 0.114484628249, 0.0189399888717, 5.68465508138e-05, 1.320655296e-11, &
-                      4.28120461389e-14, 3.76630388955e-14, 0.0198081509491, 0.119352290566, 0.02073589425, &
-                      6.30233384112e-05, 1.43398441783e-11, 4.97531642031e-14, 4.71341084306e-14, 0.02013449027, &
-                      0.124248883836, 0.0224456263891, 6.86610584387e-05, 1.4144007892e-11, 5.57401672e-14, &
-                      4.5935783118e-14, 0.0207904639055, 0.130715920325, 0.0239624342499, 7.342855619e-05, &
-                      1.30892315553e-11, 6.00699634681e-14, 3.93532150133e-14, 0.021735974735, 0.1382939657, &
-                      0.025236168392, 7.72903383727e-05, 1.20327258044e-11, 6.25482745304e-14, 3.493249165e-14, &
-                      0.0225875339335, 0.145013824629, 0.0263538290388, 8.06719096617e-05, 1.124416892e-11, &
-                      6.4277505571e-14, 3.27750312927e-14, 0.0233448934223, 0.150912088221, 0.0273270282, &
-                      8.36144637144e-05, 1.06527765854e-11, 6.55191927185e-14, 3.148881753e-14, 0.02400787061, &
-                      0.156018466289, 0.0281645580972, 8.61474935123e-05, 1.02080558137e-11, 6.643388458e-14, &
-                      3.06203707837e-14, 0.024576330559, 0.160356863154, 0.028873027789, 8.829194174e-05, &
-                      9.87403902131e-12, 6.71198512894e-14, 2.99994664492e-14, 0.0250501733033, 0.1639462662, &
-                      0.0294573559913, 9.00625243986e-05, 9.62519752004e-12, 6.7637060863e-14, 2.954826573e-14, &
-                      0.025429324972, 0.166801469857, 0.0299211493749, 9.14694350718e-05, 9.443557118e-12, &
-                      6.80219585368e-14, 2.92238323283e-14, 0.0257137317963, 0.168933652711, 0.03026698873, &
-                      9.2519581545e-05, 9.31667919543e-12, 6.82965133872e-14, 2.89995807112e-14, 0.02590335617, &
-                      0.170350823154, 0.0304966399397, 9.32174647038e-05, 9.23627173798e-12, 6.847369053e-14, &
-                      2.88585247088e-14, 0.0259981741716, 0.171058143874, 0.0306112021874, 9.356577758e-05, &
-                      9.19726842003e-12, 6.85606795736e-14, 2.8790418574e-14, 0.0259981741716, 0.1710581439, &
-                      0.0306112021874, 9.35657775845e-05, 9.19726842003e-12, 6.85606795736e-14, 2.879041857e-14, &
-                      0.0259033561676, 0.170350823154, 0.0304966399397, 9.32174647038e-05, 9.236271738e-12, &
-                      6.84736905303e-14, 2.88585247088e-14, 0.0257137317963, 0.168933652711, 0.03026698873, &
-                      9.2519581545e-05, 9.31667919543e-12, 6.82965133872e-14, 2.89995807112e-14, 0.02542932497, &
-                      0.166801469857, 0.0299211493749, 9.14694350718e-05, 9.44355711849e-12, 6.802195854e-14, &
-                      2.92238323283e-14, 0.0250501733033, 0.163946266225, 0.0294573559913, 9.00625244e-05, &
-                      9.62519752004e-12, 6.7637060863e-14, 2.95482657312e-14, 0.024576330559, 0.1603568632, &
-                      0.028873027789, 8.82919417383e-05, 9.87403902131e-12, 6.71198512894e-14, 2.999946645e-14, &
-                      0.0240078706077, 0.156018466289, 0.0281645580972, 8.61474935123e-05, 1.020805581e-11, &
-                      6.64338845809e-14, 3.06203707837e-14, 0.0233448934223, 0.150912088221, 0.0273270282, &
-                      8.36144637144e-05, 1.06527765854e-11, 6.55191927185e-14, 3.148881753e-14, 0.02258753393, &
-                      0.145013824629, 0.0263538290388, 8.06719096617e-05, 1.12441689164e-11, 6.427750557e-14, &
-                      3.27750312927e-14, 0.021735974735, 0.138293965686, 0.025236168392, 7.729033837e-05, &
-                      1.20327258044e-11, 6.25482745304e-14, 3.49324916547e-14, 0.0207904639055, 0.1307159203, &
-                      0.0239624342499, 7.34285561909e-05, 1.30892315553e-11, 6.00699634681e-14, 3.935321501e-14, &
-                      0.0201344902696, 0.124248883836, 0.0224456263891, 6.86610584387e-05, 1.414400789e-11, &
-                      5.57401671993e-14, 4.5935783118e-14, 0.0198081509491, 0.119352290566, 0.02073589425, &
-                      6.30233384112e-05, 1.43398441783e-11, 4.97531642031e-14, 4.71341084306e-14, 0.01946848544, &
-                      0.114484628249, 0.0189399888717, 5.68465508138e-05, 1.32065529558e-11, 4.281204614e-14, &
-                      3.76630388955e-14],shape(phi_test))
+  phi_test = reshape([0.000962111160119, 0.00507059397278, 0.000204973381238, 3.71770054415e-07,          0.0, &
+                      0.0, 0.0, 0.00100474244796, 0.00538313118299, 0.0002228086194, &
+                      4.10015457546e-07, 0.0, 0.0, 0.0, 0.001037208163, &
+                      0.0056207710964, 0.000236346938805, 4.38985068221e-07, 0.0,          0.0, &
+                      0.0, 0.00105908804368, 0.0057807505412, 0.000245450209592, 4.584355529e-07, &
+                      0.0, 0.0, 0.0, 0.00107009913943, 0.005861208405, &
+                      0.000250025289558, 4.68202305486e-07, 0.0, 0.0,          0.0, &
+                      0.00107009913943, 0.0058612084051, 0.000250025289558, 4.68202305486e-07,          0.0, &
+                      0.0, 0.0, 0.00105908804368, 0.0057807505412, 0.0002454502096, &
+                      4.58435552887e-07, 0.0, 0.0, 0.0, 0.001037208163, &
+                      0.0056207710964, 0.000236346938805, 4.38985068221e-07, 0.0,          0.0, &
+                      0.0, 0.00100474244796, 0.00538313118299, 0.000222808619351, 4.100154575e-07, &
+                      0.0, 0.0, 0.0, 0.000962111160119, 0.005070593973, &
+                      0.000204973381238, 3.71770054415e-07, 0.0, 0.0,          0.0],shape(phi_test))
 
   call solve()
 
-  print *, phi(0,:,1)
-  print *, phi_test(:,1) * norm2(phi(0,:,1)) / norm2(phi_test(:,1))
+  print *, phi(0,:,:)
 
   t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-5)
   t2 = testCond(abs(d_keff - keff_test) < 1e-6)
@@ -248,7 +223,7 @@ subroutine test3()
 
 end subroutine test3
 
-! Eigenvalue test with reflective conditions
+! Eigenvalue test with reflective conditions for 1 group
 subroutine test4()
   use control
   use solver
@@ -256,72 +231,33 @@ subroutine test4()
   implicit none
 
   ! initialize types
-  integer :: testCond, t1, t2
-  double precision :: phi_test(7,28), keff_test
+  integer :: testCond, t1, t2, t3
+  double precision :: phi_test, keff_test, psi_test
 
   ! Define problem parameters
-  call initialize_control('test/reg_test_options', .true.)
-  solver_type = 'eigen'
-  xs_name = 'test/testXS.anlxs'
-  boundary_type = [1.0, 1.0]
-  material_map = [1, 1, 1]
+  call initialize_control('test/eigen_test_options', .true.)
 
   call initialize_solver()
 
   call solve()
 
-  keff_test = 2.424946538
+  keff_test = 0.714285714
 
-  phi_test = reshape([1.42745585782, 1.8984087901, 0.0860967990197, 4.10529602673e-05,          0.0, &
-                      0.0, 0.0, 1.42745585782, 1.8984087901, 0.08609679902, &
-                      4.10529602673e-05, 0.0, 0.0, 0.0,  1.427455858, &
-                      1.8984087901, 0.0860967990197, 4.10529602673e-05, 0.0,          0.0, &
-                      0.0, 1.42745585782, 1.8984087901, 0.0860967990197, 4.105296027e-05, &
-                      0.0, 0.0, 0.0, 1.42745585782,   1.89840879, &
-                      0.0860967990197, 4.10529602673e-05, 0.0, 0.0,          0.0, &
-                      1.42745585782, 1.8984087901, 0.0860967990197, 4.10529602673e-05,          0.0, &
-                      0.0, 0.0, 1.42745585782, 1.8984087901, 0.08609679902, &
-                      4.10529602673e-05, 0.0, 0.0, 0.0,  1.427455858, &
-                      1.8984087901, 0.0860967990198, 4.10529602673e-05, 0.0,          0.0, &
-                      0.0, 1.42745585782, 1.8984087901, 0.0860967990198, 4.105296027e-05, &
-                      0.0, 0.0, 0.0, 1.42745585782,   1.89840879, &
-                      0.0860967990198, 4.10529602673e-05, 0.0, 0.0,          0.0, &
-                      1.42745585782, 1.8984087901, 0.0860967990198, 4.10529602673e-05,          0.0, &
-                      0.0, 0.0, 1.42745585782, 1.8984087901, 0.08609679902, &
-                      4.10529602673e-05, 0.0, 0.0, 0.0,  1.427455858, &
-                      1.8984087901, 0.0860967990198, 4.10529602673e-05, 0.0,          0.0, &
-                      0.0, 1.42745585782, 1.8984087901, 0.0860967990198, 4.105296027e-05, &
-                      0.0, 0.0, 0.0, 1.42745585782,   1.89840879, &
-                      0.0860967990198, 4.10529602673e-05, 0.0, 0.0,          0.0, &
-                      1.42745585782, 1.8984087901, 0.0860967990198, 4.10529602673e-05,          0.0, &
-                      0.0, 0.0, 1.42745585782, 1.8984087901, 0.08609679902, &
-                      4.10529602673e-05, 0.0, 0.0, 0.0,  1.427455858, &
-                      1.8984087901, 0.0860967990198, 4.10529602673e-05, 0.0,          0.0, &
-                      0.0, 1.42745585782, 1.8984087901, 0.0860967990198, 4.105296027e-05, &
-                      0.0, 0.0, 0.0, 1.42745585782,   1.89840879, &
-                      0.0860967990198, 4.10529602673e-05, 0.0, 0.0,          0.0, &
-                      1.42745585782, 1.8984087901, 0.0860967990198, 4.10529602673e-05,          0.0, &
-                      0.0, 0.0, 1.42745585782, 1.8984087901, 0.08609679902, &
-                      4.10529602673e-05, 0.0, 0.0, 0.0,  1.427455858, &
-                      1.8984087901, 0.0860967990198, 4.10529602673e-05, 0.0,          0.0, &
-                      0.0, 1.42745585782, 1.8984087901, 0.0860967990198, 4.105296027e-05, &
-                      0.0, 0.0, 0.0, 1.42745585782,   1.89840879, &
-                      0.0860967990198, 4.10529602673e-05, 0.0, 0.0,          0.0, &
-                      1.42745585782, 1.8984087901, 0.0860967990198, 4.10529602673e-05,          0.0, &
-                      0.0, 0.0, 1.42745585782, 1.8984087901, 0.08609679902, &
-                      4.10529602673e-05, 0.0, 0.0, 0.0,  1.427455858, &
-                      1.8984087901, 0.0860967990198, 4.10529602673e-05, 0.0,          0.0, &
-                      0.0],shape(phi_test))
+  phi_test = 0.14285714
+  psi_test = 0.07142857
 
-  t1 = testCond(all(abs(phi(0,:,:) - phi_test) < 1e-5))
-  t2 = testCond(abs(d_keff - keff_test) < 1e-6)
+  t1 = testCond(all(abs(phi(0,:,:) - phi_test) < 1e-6))
+  t2 = testCond(all(abs(psi(:,:,:) - psi_test) < 1e-6))
+  t3 = testCond(abs(d_keff - keff_test) < 1e-6)
 
   if (t1 == 0) then
-    print *, 'solver: eigen reflection solver phi failed'
+    print *, 'solver: eigen 1g reflection solver phi failed'
   else if (t2 == 0) then
-    print *, 'solver: eigen reflection solver keff failed'
+    print *, 'solver: eigen 1g reflection solver psi failed'
+  else if (t3 == 0) then
+    print *, 'solver: eigen 1g reflection solver keff failed'
   else
-    print *, 'all tests passed for eigen solver reflection'
+    print *, 'all tests passed for eigen 1g reflection solver'
   end if
 
   call finalize_solver()
@@ -329,7 +265,103 @@ subroutine test4()
 
 end subroutine test4
 
+! Eigenvalue test with reflective conditions for 2 groups
+subroutine test5()
+  use control
+  use solver
 
+  implicit none
+
+  ! initialize types
+  integer :: testCond, t1, t2, t3, g
+  double precision :: phi_test(2), keff_test, psi_test(2)
+
+  ! Define problem parameters
+  call initialize_control('test/eigen_test_options', .true.)
+  xs_name = 'test/2gXS.anlxs'
+
+  call initialize_solver()
+
+  call solve()
+
+  keff_test = 0.840336134
+
+  phi_test = [0.14285714, 0.02521008]
+  psi_test = [0.07142857, 0.01260504]
+
+  do g = 1, 2
+    phi(0,g,:) = phi(0,g,:) - phi_test(g)
+    psi(g,:,:) = psi(g,:,:) - psi_test(g)
+  end do
+
+
+  t1 = testCond(all(abs(phi) < 1e-6))
+  t2 = testCond(all(abs(psi) < 1e-6))
+  t3 = testCond(abs(d_keff - keff_test) < 1e-6)
+
+  if (t1 == 0) then
+    print *, 'solver: eigen 2g reflection solver phi failed'
+  else if (t2 == 0) then
+    print *, 'solver: eigen 2g reflection solver psi failed'
+  else if (t3 == 0) then
+    print *, 'solver: eigen 2g reflection solver keff failed'
+  else
+    print *, 'all tests passed for eigen 2g reflection solver'
+  end if
+
+  call finalize_solver()
+  call finalize_control
+
+end subroutine test5
+
+! Eigenvalue test with reflective conditions
+subroutine test6()
+  use control
+  use solver
+
+  implicit none
+
+  ! initialize types
+  integer :: testCond, t1, t2, t3, g
+  double precision :: phi_test(7), keff_test, psi_test(7)
+
+  ! Define problem parameters
+  call initialize_control('test/eigen_test_options', .true.)
+  xs_name = 'test/testXS.anlxs'
+
+  call initialize_solver()
+
+  call solve()
+
+  keff_test = 2.424946538
+
+  phi_test = [2.02901618e-01, 2.69843872e-01, 1.22379825e-02, 5.83535529e-06, 0.0, 0.0, 0.0]
+  psi_test = [1.01450809e-01, 1.34921936e-01, 6.11899126e-03, 2.91767764e-06, 0.0, 0.0, 0.0]
+
+  do g = 1, 7
+    phi(0,g,:) = phi(0,g,:) - phi_test(g)
+    psi(g,:,:) = psi(g,:,:) - psi_test(g)
+  end do
+
+
+  t1 = testCond(all(abs(phi(0,:,:)) < 1e-6))
+  t2 = testCond(all(abs(psi) < 1e-6))
+  t3 = testCond(abs(d_keff - keff_test) < 1e-6)
+
+  if (t1 == 0) then
+    print *, 'solver: eigen 7g reflection solver phi failed'
+  else if (t2 == 0) then
+    print *, 'solver: eigen 7g reflection solver psi failed'
+  else if (t3 == 0) then
+    print *, 'solver: eigen 7g reflection solver keff failed'
+  else
+    print *, 'all tests passed for eigen 7g reflection solver'
+  end if
+
+  call finalize_solver()
+  call finalize_control
+
+end subroutine test6
 
 integer function testCond(condition)
   logical, intent(in) :: condition
