@@ -1,26 +1,30 @@
 module sweeper
-  ! Uses diamond difference
-  ! Assumes only vacuum conditions
-  use material, only: sig_s, sig_t, vsig_f, chi, number_groups, number_legendre
-  use mesh, only: dx, number_cells, mMap
-  use angle, only: number_angles, p_leg, wt, mu
-  use state, only: phi, psi, source, store_psi, equation
+  use control, only : boundary_type, store_psi, equation_type
+  use material, only : number_groups, sig_t, number_legendre
+  use mesh, only : dx, number_cells, mMap
+  use angle, only : number_angles, p_leg, wt, mu
+  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi
+
   implicit none
   
   contains
-  ! Define source
   
-  subroutine sweep()
-    integer :: o, c, a, g, gp, l, an, cmin, cmax, cstep, amin, amax, astep
-    double precision :: incoming(number_groups,2*number_angles), Q(number_groups), Ps, invmu, fiss
-    double precision :: phi_old(0:number_legendre,number_groups,number_cells)
+  subroutine sweep(number_energy_groups, phi, psi, incoming)
+    integer :: o, c, a, g, l, an, cmin, cmax, cstep, amin, amax, astep
+    integer, intent(in) :: number_energy_groups
+    double precision :: Q(number_energy_groups, number_angles * 2, number_cells), Ps, invmu, fiss
+    double precision :: M(0:number_legendre)
+    double precision, intent(inout) :: phi(:,:,:), incoming(:,:), psi(:,:,:)
     logical :: octant
-    
-    phi_old = phi
+
     phi = 0.0  ! Reset phi
+
+    ! Update the right hand side
+    call updateRHS(Q, number_energy_groups)
+
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction in the octant
-      octant = o .eq. 1
+      octant = o == 1
       cmin = merge(1, number_cells, octant)
       cmax = merge(number_cells, 1, octant)
       cstep = merge(1, -1, octant)
@@ -28,63 +32,105 @@ module sweeper
       amax = merge(number_angles, 1, octant)
       astep = merge(1, -1, octant)
       
-      
-      incoming = 0.0  ! Set vacuum conditions for both faces
+      ! set boundary conditions
+      incoming = boundary_type(o) * incoming  ! Set albedo conditions
+
       do c = cmin, cmax, cstep  ! Sweep over cells
         do a = amin, amax, astep  ! Sweep over angle
           ! Get the correct angle index
           an = merge(a, 2 * number_angles - a + 1, octant)
           ! get a common fraction
           invmu = dx(c) / (2 * abs(mu(a)))
-          
-          ! Update the right hand side
-          Q = updateSource(source(:,an,c), phi_old(:,:,c), c, an)
-          
-          do g = 1, number_groups  ! Sweep over group
+
+          ! legendre polynomial integration vector
+          M = 0.5 * wt(a) * p_leg(:,an)
+
+          do g = 1, number_energy_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD
-            call computeEQ(Q(g), incoming(g,an), sig_t(g, mMap(c)), invmu, incoming(g,an), Ps)
-            
+            call computeEQ(Q(g,an,c), incoming(g,an), d_sig_t(g, c), invmu, dx(c), mu(a), Ps)
+
             if (store_psi) then
               psi(g,an,c) = Ps
             end if
-            
+
             ! Increment the legendre expansions of the scalar flux
-            phi(:,g,c) = phi(:,g,c) + 0.5 * wt(a) * p_leg(:, an) * Ps
+            phi(:,g,c) = phi(:,g,c) + M(:) * Ps
           end do
         end do
       end do
     end do
   end subroutine sweep
   
-  subroutine computeEQ(Qg, incoming, sig, invmu, outgoing, Ps)
+  subroutine computeEQ(S, incoming, sig, invmu, dx, mu, cellPsi)
     implicit none
-    double precision, intent(in) :: Qg, incoming, sig, invmu
-    double precision, intent(out) :: outgoing, Ps
-    
-    if (equation .eq. 'DD') then
+
+    double precision, intent(inout) :: incoming
+    double precision, intent(in) :: S, sig, invmu, dx, mu
+    double precision, intent(out) :: cellPsi
+    double precision :: tau, A
+
+    select case (equation_type)
+    case ('DD')
       ! Diamond Difference relationship
-      Ps = (incoming + invmu * Qg) / (1 + invmu * sig)
-      outgoing = 2 * Ps - incoming
-    end if
+      cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
+      incoming = 2 * cellPsi - incoming
+    case ('SC')
+      ! Step Characteristics relationship
+      tau = sig * dx / mu
+      A = exp(-tau)
+      cellPsi = incoming * (1.0 - A) / tau + S * (sig * dx + mu * (A - 1.0)) / (sig ** 2 * dx)
+      incoming = A * incoming + S * (1.0 - A) / sig
+    case ('SD')
+      cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
+      incoming = cellPsi
+    case default
+      print *, 'ERROR : Equation not implemented'
+    end select
   
   end subroutine computeEQ
   
-  function updateSource(Sg, Phig, cell, angle)
-    double precision :: updateSource(number_groups)
-    double precision, intent(in) :: Sg(number_groups), Phig(0:number_legendre, number_groups)
-    double precision :: scat(number_groups)
-    integer, intent(in) :: cell, angle
-    integer :: l
-    
-    ! Include the external source and the fission source
-    updateSource(:) = Sg(:) + chi(:, mMap(cell)) * dot_product(vsig_f(:, mMap(cell)), phig(0,:))
-    
-    ! Add the scattering source for each legendre moment
-    do l = 0, number_legendre
-      scat(:) = (2 * l + 1) * p_leg(l, angle) * matmul(sig_s(l, :, :, mMap(cell)), phig(l,:))
-      updateSource(:) = updateSource(:) + scat(:)
+  subroutine updateRHS(Q, number_groups)
+
+    integer, intent(in) :: number_groups
+    double precision, intent(inout) :: Q(:, :, :)
+    double precision :: source(number_groups), scat(number_groups)
+    integer :: o, c, a, g, l, an, cmin, cmax, cstep, amin, amax, astep
+    logical :: octant
+
+    Q = 0.0
+
+    do o = 1, 2  ! Sweep over octants
+      ! Sweep in the correct direction in the octant
+      octant = o == 1
+      cmin = merge(1, number_cells, octant)
+      cmax = merge(number_cells, 1, octant)
+      cstep = merge(1, -1, octant)
+      amin = merge(1, number_angles, octant)
+      amax = merge(number_angles, 1, octant)
+      astep = merge(1, -1, octant)
+      do c = cmin, cmax, cstep  ! Sweep over cells
+        do a = amin, amax, astep  ! Sweep over angle
+          ! Get the correct angle index
+          an = merge(a, 2 * number_angles - a + 1, octant)
+
+          if (allocated(d_psi)) then
+            source(:) = d_source(:,an,c) - d_delta(:,an,c)  * d_psi(:,an,c)
+          else
+            source(:) = d_source(:,an,c)
+          end if
+
+          ! Include the external source and the fission source
+          Q(:,an,c) = source(:) + d_chi(:,c) * dot_product(d_nu_sig_f(:,c), d_phi(0,:,c))
+
+          ! Add the scattering source for each legendre moment
+          do l = 0, number_legendre
+            scat(:) = (2 * l + 1) * p_leg(l, an) * matmul(transpose(d_sig_s(l, :, :, c)), d_phi(l,:,c))
+            Q(:,an,c) = Q(:,an,c) + scat(:)
+          end do
+        end do
+      end do
     end do
-    
-  end function updateSource
+
+  end subroutine updateRHS
   
 end module sweeper

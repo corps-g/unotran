@@ -27,7 +27,7 @@ LIBMKLTHREAD   = -I$(MKLROOT)/include  -Wl,--start-group      \
 # BLAS defines a generic set of functions with vendor-specific
 # implementations; here, we use the blas implementation from the 
 # software repository.
-LIBBLAS        = -L/usr/lib -lblas -llapack
+LIBBLAS        = -L/usr/lib -lblas -llapack -ffree-line-length-none
 
 #===============================================================================
 # Compiler Definitions
@@ -62,55 +62,72 @@ all: $(objects) main
 
 # Use the repository's BLAS implementation
 angle: angle.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
 	
-test_angle: angle.f90 ./test/test_angle.f90
+test_angle: control.f90 angle.f90 ./test/test_angle.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_angle.so $^ 
 	@./test/test_angle.so
 	
-mesh: mesh.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
+dgm: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-test_mesh: mesh.f90 ./test/test_mesh.f90
+test_dgm: control.f90 mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90 ./test/test_dgm.f90
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgm.so $^ 
+	@./test/test_dgm.so
+	
+dgmsweeper: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	
+dgmsolver: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+
+test_dgmsolver: control.f90 mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 sweeper.f90 dgmsolver.f90 ./test/test_dgmsolver.f90
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgmsolver.so $^ 
+	@./test/test_dgmsolver.so
+	
+mesh: mesh.f90
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
+	
+test_mesh: control.f90 mesh.f90 ./test/test_mesh.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_mesh.so $^ 
 	@./test/test_mesh.so
 	
 material: material.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-test_material: material.f90 ./test/test_material.f90
+test_material: control.f90 material.f90 ./test/test_material.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_material.so $^ 
 	@./test/test_material.so
 	
 state: material.f90 mesh.f90 angle.f90 state.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-test_state: mesh.f90 material.f90 angle.f90 state.f90 ./test/test_state.f90
+test_state: control.f90 mesh.f90 material.f90 angle.f90 state.f90 ./test/test_state.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_state.so $^ 
 	@./test/test_state.so
 	
 sweeper: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-test_sweeper: mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 ./test/test_sweeper.f90
+test_sweeper: control.f90 mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 solver.f90 ./test/test_sweeper.f90
 	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_sweeper.so $^ 
 	@./test/test_sweeper.so
 
-main: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90 solver.f90 main.f90
+main: control.f90 material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 dgmsweeper.f90 solver.f90 dgmsolver.f90 main.f90
 	$(F90) $(OMPFLAG) $(LIBBLAS) -o main.exe $^ 
 	
-solver: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90 solver.f90
-	f2py2.7 --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
+solver: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 dgmsweeper.f90 solver.f90
+	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
-test_main: mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 ./test/test_main.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_main.so $^ 
-	@./test/test_main.so
-
-test: test_angle test_mesh test_material test_state test_main
+test_solver: control.f90 mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 dgm.f90 dgmsweeper.f90 solver.f90 ./test/test_solver.f90
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_solver.so $^ 
+	@./test/test_solver.so
+	
+test: test_angle test_mesh test_material test_state test_sweeper test_solver test_dgm test_dgmsolver
 
 # Remove objects, module files, and exectables
 clean:
-	@rm -f *.o *.mod *-x *wrap.cxx *.so
+	@rm -f *.o *.mod *-x *wrap.cxx *.so test/*.so
 
 # Same, but leave the executable
 neat:

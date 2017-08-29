@@ -1,91 +1,99 @@
 module solver
-  use material, only : create_material, number_legendre, number_groups
-  use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials
-  use mesh, only : create_mesh, number_cells
-  use state, only : initialize_state, phi, source
+  use control, only : lambda, outer_print, outer_tolerance, store_psi
+  use material, only : create_material, number_legendre, number_groups, finalize_material, &
+                       sig_t, sig_s, nu_sig_f, chi
+  use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
+  use mesh, only : create_mesh, number_cells, finalize_mesh, mMap
+  use state, only : initialize_state, phi, psi, source, finalize_state, output_state, &
+                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi
   use sweeper, only : sweep
+
   implicit none
   
+  logical :: printOption, use_fission
+  double precision, allocatable :: incoming(:,:)
+
   contains
   
   ! Initialize all of the variables and solvers
-  subroutine initialize_solver(fineMesh, courseMesh, materialMap, fileName, angle_order, &
-                               angle_option, store, EQ)
-    ! Inputs :
-    !   fineMesh : vector of int for number of fine mesh divisions per cell
-    !   courseMap : vector of float with bounds for course mesh regions
-    !   materialMap : vector of int with material index for each course region
-    !   fileName : file where cross sections are stored
-    !   angle_order : number of angles per octant
-    !   angle_option : type of quadrature, defined in angle.f90
-    !   store (optional) : boolian for option to store angular flux
-    !   EQ (optional) : Define the type of closure relation used.  default is DD
+  subroutine initialize_solver()
+    integer :: c
 
-    integer, intent(in) :: fineMesh(:), materialMap(:), angle_order, angle_option
-    double precision, intent(in) :: courseMesh(:)
-    character(len=*), intent(in) :: fileName
-    logical, intent(in), optional :: store
-    character(len=2), intent(in), optional :: EQ
-    logical :: store_psi
-    character(len=2) :: equation
-    
-    ! Check if the optional argument store is given
-    if (present(store)) then
-      store_psi = store  ! Set the option to the given parameter
-    else
-      store_psi = .false.  ! Default to not storing the angular flux
-    end if
-    
-    ! Check if the optional argument EQ is given
-    if (present(EQ)) then
-      equation = EQ  ! Set the option to the given parameter
-    else
-      equation = 'DD'  ! Default to diamond difference
-    end if
-    
     ! initialize the mesh
-    call create_mesh(fineMesh, courseMesh, materialMap)
+    call create_mesh()
     ! read the material cross sections
-    call create_material(filename)
+    call create_material()
     ! initialize the angle quadrature
-    call initialize_angle(angle_order, angle_option)
+    call initialize_angle()
     ! get the basis vectors
     call initialize_polynomials(number_legendre)
     ! allocate the solutions variables
-    call initialize_state(store_psi, equation)
-  
+    call initialize_state()
+
+    ! Fill container arrays
+    do c = 1, number_cells
+      d_nu_sig_f(:, c) = nu_sig_f(:, mMap(c))
+      d_chi(:, c) = chi(:, mMap(c))
+      d_sig_s(:, :, :, c) = sig_s(:, :, :, mMap(c))
+      d_sig_t(:, c) = sig_t(:, mMap(c))
+    end do
+    d_source(:, :, :) = source(:, :, :)
+    d_delta(:, :, :) = 0.0
+    d_phi(:, :, :) = phi(:, :, :)
+    if (store_psi) then
+      d_psi(:, :, :) = psi(:, :, :)
+    end if
+
+    ! todo: move to state
+    allocate(incoming(number_groups, number_angles * 2))
+    incoming = 0.0
+
   end subroutine initialize_solver
 
   ! Interate equations until convergance
-  subroutine solve(eps)
+  subroutine solve()
     ! Inputs
     !   eps : error tolerance for convergance
+    !   lambda_arg (optional) : value of lambda for Krasnoselskii iteration
 
-    double precision, intent(in) :: eps
     double precision :: norm, error, hold
     integer :: counter
 
     ! Error of current iteration
     error = 1.0
-    ! 2 norm of the scalar flux
-    norm = 0.0
     ! interation number
     counter = 1
-    do while (error .gt. eps)  ! Interate to convergance tolerance
+    do while (error > outer_tolerance)  ! Interate to convergance tolerance
+      ! save phi from previous iteration
+      d_phi = phi
       ! Sweep through the mesh
-      call sweep()
-      ! Store norm of scalar flux
-      hold = norm2(phi)
+      call sweep(number_groups, phi, psi, incoming)
       ! error is the difference in the norm of phi for successive iterations
-      error = abs(norm - hold)
-      ! Keep the norm for the next iteration
-      norm = hold
+      error = sum(abs(phi - d_phi))
       ! output the current error and iteration number
-      print *, error, counter
+      if (outer_print) then
+        print *, error, counter
+      end if
       ! increment the iteration
       counter = counter + 1
     end do
 
   end subroutine solve
+
+  subroutine output()
+
+    call output_state()
+
+  end subroutine output
+
+  subroutine finalize_solver()
+    call finalize_angle()
+    call finalize_mesh()
+    call finalize_material()
+    call finalize_state()
+    if (allocated(incoming)) then
+      deallocate(incoming)
+    end if
+  end subroutine
 
 end module solver
