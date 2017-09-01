@@ -31,7 +31,7 @@ module dgmsolver
     call initialize_basis()
     call compute_source_moments()
 
-    allocate(incoming(number_course_groups, number_angles * 2, 0:expansion_order))
+    allocate(incoming(number_course_groups, number_angles, 0:expansion_order))
 
     incoming = 0.0
 

@@ -45,7 +45,7 @@ module solver
     end if
 
     ! todo: move to state
-    allocate(incoming(number_groups, number_angles * 2))
+    allocate(incoming(number_groups, number_angles))
     incoming = 0.0
 
   end subroutine initialize_solver

@@ -38,7 +38,7 @@ module sweeper
       do c = cmin, cmax, cstep  ! Sweep over cells
         do a = amin, amax, astep  ! Sweep over angle
           ! Get the correct angle index
-          an = merge(a, 2 * number_angles - a + 1, octant)
+          an = merge(a, number_angles + a, octant)
           ! get a common fraction
           invmu = dx(c) / (2 * abs(mu(a)))
 
@@ -47,7 +47,7 @@ module sweeper
 
           do g = 1, number_energy_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD
-            call computeEQ(Q(g,an,c), incoming(g,an), d_sig_t(g, c), invmu, dx(c), mu(a), Ps)
+            call computeEQ(Q(g,an,c), incoming(g,a), d_sig_t(g, c), invmu, dx(c), mu(a), Ps)
 
             if (store_psi) then
               psi(g,an,c) = Ps
@@ -61,11 +61,11 @@ module sweeper
     end do
   end subroutine sweep
   
-  subroutine computeEQ(S, incoming, sig, invmu, dx, mu, cellPsi)
+  subroutine computeEQ(S, incoming, sig, invmu, dx, mua, cellPsi)
     implicit none
 
     double precision, intent(inout) :: incoming
-    double precision, intent(in) :: S, sig, invmu, dx, mu
+    double precision, intent(in) :: S, sig, invmu, dx, mua
     double precision, intent(out) :: cellPsi
     double precision :: tau, A
 
@@ -76,9 +76,9 @@ module sweeper
       incoming = 2 * cellPsi - incoming
     case ('SC')
       ! Step Characteristics relationship
-      tau = sig * dx / mu
+      tau = sig * dx / mua
       A = exp(-tau)
-      cellPsi = incoming * (1.0 - A) / tau + S * (sig * dx + mu * (A - 1.0)) / (sig ** 2 * dx)
+      cellPsi = incoming * (1.0 - A) / tau + S * (sig * dx + mua * (A - 1.0)) / (sig ** 2 * dx)
       incoming = A * incoming + S * (1.0 - A) / sig
     case ('SD')
       cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
