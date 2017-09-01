@@ -13,7 +13,7 @@ module dgmsweeper
   contains
 
   subroutine dgmsweep(phi_new, psi_new, incoming)
-    double precision, intent(inout) :: incoming(number_course_groups,2 * number_angles,0:expansion_order)
+    double precision, intent(inout) :: incoming(number_course_groups, number_angles,0:expansion_order)
     double precision, intent(inout) :: phi_new(:,:,:), psi_new(:,:,:)
     double precision :: inner_error
     double precision, allocatable :: phi_m(:,:,:), psi_m(:,:,:)

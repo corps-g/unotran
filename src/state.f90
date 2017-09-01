@@ -1,7 +1,7 @@
 module state
   use control, only : store_psi, source_value, file_name, initial_phi, initial_psi, use_dgm, solver_type
-  use material, only : number_groups, number_legendre
-  use mesh, only : number_cells
+  use material, only : number_groups, number_legendre, nu_sig_f
+  use mesh, only : number_cells, mMap
   use angle, only : number_angles
 
   implicit none
@@ -16,7 +16,7 @@ module state
   
   ! Allocate the variable containers
   subroutine initialize_state()
-    integer :: ios = 0
+    integer :: ios = 0, c, g
     ! Allocate the scalar flux and source containers
     allocate(phi(0:number_legendre,number_groups,number_cells))
     ! Initialize phi
@@ -24,7 +24,17 @@ module state
     open(unit = 10, status='old',file=initial_phi,form='unformatted', iostat=ios)
     if (ios > 0) then
       !print *, "initial phi file, ", initial_phi, " is missing, using default value"
-      phi = 1.0  ! default value
+      if (solver_type == 'fixed') then
+        phi = 1.0  ! default value
+      else if (solver_type == 'eigen') then
+        phi = 0.0
+        do c = 1, number_cells
+          do g = 1, number_groups
+            phi(0,g,c) = nu_sig_f(g, mMap(c))
+          end do
+        end do
+      end if
+
     else
       read(10) phi ! read the data in array x to the file
     end if
