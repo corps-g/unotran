@@ -143,6 +143,7 @@ subroutine test3()
   material_map = [1, 1, 1]
   boundary_type = [1.0, 1.0]
   allow_fission = .false.
+  outer_tolerance = 1e-8
   call initialize_dgmsolver()
 
   source = 1.0
