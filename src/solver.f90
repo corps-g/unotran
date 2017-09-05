@@ -52,7 +52,7 @@ module solver
 
   ! Interate equations until convergance
   subroutine solve()
-    double precision :: norm, error, hold, fd_old(number_cells), keff_1
+    double precision :: norm, error, hold, fd_old(number_cells), keff_1, frac
     integer :: counter, a
 
     ! Error of current iteration
@@ -74,7 +74,7 @@ module solver
 
       if (solver_type == 'eigen') then
         ! Compute new eigenvalue if eigen problem
-        d_keff = d_keff * sum(abs(phi)) / sum(abs(d_phi))
+        d_keff = d_keff * sum(abs(phi(0,:,:))) / sum(abs(d_phi(0,:,:)))
       end if
 
       ! error is the difference in phi between successive iterations
@@ -90,14 +90,14 @@ module solver
       end if
 
       if (solver_type == 'eigen') then
+        frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
+
         ! normalize phi
-        phi = phi / sum(abs(phi)) * 2 * d_keff
+        phi = phi / frac
 
         ! normalize psi
         if (store_psi) then
-          do a = 1, number_angles * 2
-            psi(:,a,:) = psi(:,a,:) / sum(abs(psi(:,a,:))) * d_keff
-          end do
+            psi = psi / frac
         end if
       end if
 

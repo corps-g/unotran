@@ -259,6 +259,8 @@ subroutine eigenV1g()
 
   call solve()
 
+  phi = phi / phi(0,1,1) * phi_test(1,1)
+
   t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-6)
 
   phi_test = 0
@@ -316,6 +318,8 @@ subroutine eigenV2g()
                       0.026176658006, 0.109950141974, 0.0193478123294, 0.0588274918942, 0.009858087423],shape(phi_test))
 
   call solve()
+
+  phi = phi / phi(0,1,1) * phi_test(1,1)
 
   t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-6)
 
@@ -436,8 +440,8 @@ subroutine eigenR1g()
 
   keff_test = 0.714285714
 
-  phi_test = 0.14285714
-  psi_test = 0.07142857
+  phi_test = 1.0
+  psi_test = 1.0
 
   t1 = testCond(all(abs(phi(0,:,:) - phi_test) < 1e-6))
   t2 = testCond(all(abs(psi(:,:,:) - psi_test) < 1e-6))
@@ -481,6 +485,9 @@ subroutine eigenR2g()
 
   phi_test = [0.14285714, 0.02521008]
   psi_test = [0.07142857, 0.01260504]
+
+  phi = phi / phi(0,1,1) * phi_test(1)
+  psi = psi / psi(1,1,1) * psi_test(1)
 
   do g = 1, 2
     phi(0,g,:) = phi(0,g,:) - phi_test(g)
@@ -531,11 +538,13 @@ subroutine eigenR7g()
   phi_test = [2.02901618e-01, 2.69843872e-01, 1.22379825e-02, 5.83535529e-06, 0.0, 0.0, 0.0]
   psi_test = [1.01450809e-01, 1.34921936e-01, 6.11899126e-03, 2.91767764e-06, 0.0, 0.0, 0.0]
 
+  phi = phi / phi(0,1,1) * phi_test(1)
+  psi = psi / psi(1,1,1) * psi_test(1)
+
   do g = 1, 7
     phi(0,g,:) = phi(0,g,:) - phi_test(g)
     psi(g,:,:) = psi(g,:,:) - psi_test(g)
   end do
-
 
   t1 = testCond(all(abs(phi(0,:,:)) < 1e-6))
   t2 = testCond(all(abs(psi) < 1e-6))
