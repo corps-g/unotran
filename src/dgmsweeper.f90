@@ -5,7 +5,7 @@ module dgmsweeper
   use angle, only : number_angles
   use sweeper, only : sweep
   use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi
-  use dgm, only : number_course_groups, expansion_order, &
+  use dgm, only : number_coarse_groups, expansion_order, &
                   energymesh, basis, compute_xs_moments, compute_flux_moments
 
   implicit none
@@ -13,14 +13,14 @@ module dgmsweeper
   contains
 
   subroutine dgmsweep(phi_new, psi_new, incoming)
-    double precision, intent(inout) :: incoming(number_course_groups, number_angles,0:expansion_order)
+    double precision, intent(inout) :: incoming(number_coarse_groups, number_angles,0:expansion_order)
     double precision, intent(inout) :: phi_new(:,:,:), psi_new(:,:,:)
     double precision :: inner_error
     double precision, allocatable :: phi_m(:,:,:), psi_m(:,:,:)
     integer :: counter, i
 
-    allocate(phi_m(0:number_legendre,number_course_groups,number_cells))
-    allocate(psi_m(number_course_groups,number_angles*2,number_cells))
+    allocate(phi_m(0:number_legendre,number_coarse_groups,number_cells))
+    allocate(psi_m(number_coarse_groups,number_angles*2,number_cells))
     phi_new = 0.0
     psi_new = 0.0
     phi_m = 0.0
@@ -42,7 +42,7 @@ module dgmsweeper
         ! Sweep through the mesh
 
         ! Use discrete ordinates to sweep over the moment equation
-        call sweep(number_course_groups, phi_m, psi_m, incoming(:,:,i))
+        call sweep(number_coarse_groups, phi_m, psi_m, incoming(:,:,i))
 
         ! error is the difference in the norm of phi for successive iterations
         inner_error = sum(abs(d_phi - phi_m))

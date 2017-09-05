@@ -13,7 +13,7 @@ program test_mesh
   ! Define problem parameters
   fine_mesh = [2, 4, 2]
   material_map = [1, 2, 3]
-  course_mesh = [0.0, 1.0, 2.0, 3.0]
+  coarse_mesh = [0.0, 1.0, 2.0, 3.0]
   boundary_type = [0.0, 0.0]
   
   ! Make the mesh

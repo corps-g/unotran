@@ -13,7 +13,7 @@ subroutine test1()
   use state, only : initialize_state, source, d_source, d_nu_sig_f, d_delta, d_phi, &
                     d_chi, d_sig_s, d_sig_t, d_psi
   use dgmsolver, only : finalize_dgmsolver
-  use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
+  use dgm, only : number_coarse_groups, basis, energymesh, expansion_order, order, &
                   initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments, &
                   compute_source_moments
 
@@ -56,7 +56,7 @@ subroutine test1()
   t1 = testCond(all(order == order_test))
   t2 = testCond(all(energyMesh == energyMesh_test))
   t3 = testCond(expansion_order-eo_test == 0)
-  t4 = testCond(number_course_groups-ncg_test == 0)
+  t4 = testCond(number_coarse_groups-ncg_test == 0)
 
   ! Test reading the basis set from the file
   call initialize_basis()
@@ -176,7 +176,7 @@ subroutine test1()
   else if (t3 == 0) then
     print *, 'DGM1: expansion order failed'
   else if (t4 == 0) then
-    print *, 'DGM1: number course groups failed'
+    print *, 'DGM1: number coarse groups failed'
   else if (t5 == 0) then
     print *, 'DGM1: basis failed'
   else if (t6 == 0) then
@@ -203,7 +203,7 @@ subroutine test1()
   call finalize_control()
 end subroutine test1
 
-! Test that the DO method is matched if using the delta basis and 1 fine per course energy group
+! Test that the DO method is matched if using the delta basis and 1 fine per coarse energy group
 subroutine test2()
   use control
   use material
@@ -212,7 +212,7 @@ subroutine test2()
   use state, only : initialize_state, source, d_source, d_nu_sig_f, d_delta, d_phi, &
                     d_chi, d_sig_s, phi, psi, d_sig_t, d_psi
   use dgmsolver, only : finalize_dgmsolver
-  use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
+  use dgm, only : number_coarse_groups, basis, energymesh, expansion_order, order, &
                   initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments, &
                   compute_source_moments
 
@@ -278,7 +278,7 @@ subroutine test2()
   t1 = testCond(all(order == order_test))
   t2 = testCond(all(energyMesh == energyMesh_test))
   t3 = testCond(expansion_order-eo_test == 0)
-  t4 = testCond(number_course_groups-ncg_test == 0)
+  t4 = testCond(number_coarse_groups-ncg_test == 0)
 
   ! set phi and psi
   phi = phi_m_test(:,:,:)
@@ -335,7 +335,7 @@ subroutine test2()
   else if (t3 == 0) then
     print *, 'DGM2: expansion order failed'
   else if (t4 == 0) then
-    print *, 'DGM2: number course groups failed'
+    print *, 'DGM2: number coarse groups failed'
   else if (t5 == 0) then
     print *, 'DGM2: basis failed'
   else if (t6 == 0) then
@@ -371,7 +371,7 @@ subroutine test3()
   use mesh, only : create_mesh
   use state, only : initialize_state, source
   use dgmsolver, only : finalize_dgmsolver
-  use dgm, only : number_course_groups, basis, energymesh, expansion_order, order, &
+  use dgm, only : number_coarse_groups, basis, energymesh, expansion_order, order, &
                   initialize_moments, initialize_basis, compute_flux_moments, compute_xs_moments
 
   implicit none
@@ -402,7 +402,7 @@ subroutine test3()
   t1 = testCond(all(order == order_test))
   t2 = testCond(all(energyMesh == energyMesh_test))
   t3 = testCond(expansion_order-eo_test == 0)
-  t4 = testCond(number_course_groups-ncg_test == 0)
+  t4 = testCond(number_coarse_groups-ncg_test == 0)
 
   if (t1 == 0) then
     print *, 'DGM3: order failed'
@@ -411,7 +411,7 @@ subroutine test3()
   else if (t3 == 0) then
     print *, 'DGM3: expansion order failed'
   else if (t4 == 0) then
-    print *, 'DGM3: number course groups failed'
+    print *, 'DGM3: number coarse groups failed'
   else
     print *, 'all tests passed for DGM3'
   end if

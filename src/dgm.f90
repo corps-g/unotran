@@ -9,7 +9,7 @@ module dgm
   implicit none
 
   double precision, allocatable :: basis(:,:), chi_m(:,:,:), source_m(:,:,:,:)
-  integer :: expansion_order, number_course_groups
+  integer :: expansion_order, number_coarse_groups
   integer, allocatable :: energyMesh(:), order(:), basismap(:)
 
   contains
@@ -18,13 +18,13 @@ module dgm
   subroutine initialize_moments()
     integer :: g, gp, cg
 
-    ! Get the number of course groups
-    number_course_groups = size(energy_group_map) + 1
+    ! Get the number of coarse groups
+    number_coarse_groups = size(energy_group_map) + 1
 
-    ! Create the map of course groups and default to full expansion order
+    ! Create the map of coarse groups and default to full expansion order
     allocate(energyMesh(number_groups))
-    allocate(order(number_course_groups))
-    allocate(basismap(number_course_groups))
+    allocate(order(number_coarse_groups))
+    allocate(basismap(number_coarse_groups))
     order = -1
     g = 1
     do gp = 1, number_groups
@@ -39,11 +39,11 @@ module dgm
     ! Check if the optional argument for the truncation is present
     if (allocated(truncation_map)) then
       ! Check if the truncation array has the right number of entries
-      if (size(truncation_map) /= number_course_groups) then
+      if (size(truncation_map) /= number_coarse_groups) then
         error stop "Incorrect number of entries in truncation array"
       end if
       ! Update the order array with the truncated value if sensible
-      do cg = 1, number_course_groups
+      do cg = 1, number_coarse_groups
         if ((truncation_map(cg) < order(cg)) .and. (truncation_map(cg) >= 0)) then
           order(cg) = truncation_map(cg)
         end if
@@ -52,8 +52,8 @@ module dgm
 
     expansion_order = MAXVAL(order)
 
-    ! reallocate container arrays to number_course_groups
-    call reallocate_states(number_course_groups)
+    ! reallocate container arrays to number_coarse_groups
+    call reallocate_states(number_coarse_groups)
 
   end subroutine initialize_moments
 
@@ -66,13 +66,13 @@ module dgm
     ! allocate the basis array
     allocate(basis(number_groups, 0:expansion_order))
     allocate(array1(number_groups))
-    allocate(cumsum(number_course_groups))
+    allocate(cumsum(number_coarse_groups))
     ! initialize the basis to zero
     basis = 0.0
 
     cumsum = basismap + 1
 
-    do cg = 1, number_course_groups
+    do cg = 1, number_coarse_groups
       if (cg == 1) then
         cycle
       end if
@@ -196,8 +196,8 @@ module dgm
   ! Expand the source and chi using the basis functions
   subroutine compute_source_moments()
     integer :: order, c, a, g, cg, mat
-    allocate(chi_m(number_course_groups, number_cells, 0:expansion_order))
-    allocate(source_m(number_course_groups, number_angles * 2, number_cells, 0:expansion_order))
+    allocate(chi_m(number_coarse_groups, number_cells, 0:expansion_order))
+    allocate(source_m(number_coarse_groups, number_angles * 2, number_cells, 0:expansion_order))
 
     chi_m = 0.0
     source_m = 0.0

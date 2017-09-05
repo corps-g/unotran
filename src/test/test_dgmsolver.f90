@@ -225,7 +225,7 @@ subroutine test4()
 
   ! initialize types
   integer :: fineMesh(1), materialMap(1), l, c, a, g, counter, testCond, t1, t2
-  double precision :: courseMesh(2), norm, error, phi_test(7,1), boundary(2), psi_test(7,4,1)
+  double precision :: coarseMesh(2), norm, error, phi_test(7,1), boundary(2), psi_test(7,4,1)
 
   call initialize_control('test/dgm_test_options3', .true.)
   call initialize_dgmsolver()
@@ -269,7 +269,7 @@ subroutine test5()
 
   ! initialize types
   integer :: fineMesh(1), materialMap(1), l, c, a, g, counter, testCond, t1, t2
-  double precision :: courseMesh(2), norm, error, phi_test(7,1), psi_test(7,4,1), boundary(2)
+  double precision :: coarseMesh(2), norm, error, phi_test(7,1), psi_test(7,4,1), boundary(2)
 
   call initialize_control('test/dgm_test_options3', .true.)
   boundary_type = [1.0, 1.0]

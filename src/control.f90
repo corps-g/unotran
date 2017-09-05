@@ -2,7 +2,7 @@ module control
   implicit none
 
   ! control variables
-  double precision, allocatable :: course_mesh(:)
+  double precision, allocatable :: coarse_mesh(:)
   integer, allocatable :: fine_mesh(:), material_map(:), energy_group_map(:), truncation_map(:)
   double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lambda=1.0, source_value=0.0
   character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name, initial_phi, initial_psi, solver_type
@@ -51,9 +51,9 @@ module control
         case ('fine_mesh')
           allocate(fine_mesh(nitems(buffer)))
           read(buffer, *, iostat=ios) fine_mesh
-        case ('course_mesh')
-          allocate(course_mesh(nitems(buffer)))
-          read(buffer, *, iostat=ios) course_mesh
+        case ('coarse_mesh')
+          allocate(coarse_mesh(nitems(buffer)))
+          read(buffer, *, iostat=ios) coarse_mesh
         case ('material_map')
           allocate(material_map(nitems(buffer)))
           read(buffer, *, iostat=ios) material_map
@@ -119,7 +119,7 @@ module control
     if (.not. no_print) then
       print *, 'MESH VARIABLES'
       print *, '  fine_mesh          = [', fine_mesh, ']'
-      print *, '  course_mesh        = [', course_mesh, ']'
+      print *, '  coarse_mesh        = [', coarse_mesh, ']'
       print *, '  material_map       = [', material_map, ']'
       print *, '  boundary_type      = [', boundary_type, ']'
       print *, 'MATERIAL VARIABLES'
@@ -169,8 +169,8 @@ module control
     if (allocated(fine_mesh)) then
       deallocate(fine_mesh)
     end if
-    if (allocated(course_mesh)) then
-      deallocate(course_mesh)
+    if (allocated(coarse_mesh)) then
+      deallocate(coarse_mesh)
     end if
     if (allocated(material_map)) then
       deallocate(material_map)

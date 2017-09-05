@@ -1,5 +1,5 @@
 fine_mesh          5 5
-course_mesh        0.0 1.0 2.0
+coarse_mesh        0.0 1.0 2.0
 material_map       2 1
 xs_file            test/2gXS.anlxs
 angle_order        2

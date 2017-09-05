@@ -9,7 +9,7 @@ program test_state
 
   ! initialize types
   integer :: fineMesh(1), materialMap(1), t1=1, t2=1, t3=1, t4=1, testCond
-  double precision :: courseMesh(2), norm, error, boundary(2)
+  double precision :: coarseMesh(2), norm, error, boundary(2)
   double precision :: phi_test(7,1), psi_test(7,4,1),source_test(7,4,1)
   
   phi_test = 1

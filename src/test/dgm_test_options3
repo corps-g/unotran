@@ -1,5 +1,5 @@
 fine_mesh          1
-course_mesh        0.0 1.0
+coarse_mesh        0.0 1.0
 material_map       1
 xs_file            test/testXS.anlxs
 angle_order        2
