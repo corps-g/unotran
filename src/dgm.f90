@@ -27,11 +27,14 @@ module dgm
     allocate(basismap(number_coarse_groups))
     order = -1
     g = 1
+
     do gp = 1, number_groups
       energyMesh(gp) = g
       order(g) = order(g) + 1
-      if (gp == energy_group_map(g)) then
-        g = g + 1
+      if (g < number_coarse_groups) then
+        if (gp == energy_group_map(g)) then
+          g = g + 1
+        end if
       end if
     end do
     basismap(:) = order(:)

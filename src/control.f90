@@ -6,7 +6,7 @@ module control
   integer, allocatable :: fine_mesh(:), material_map(:), energy_group_map(:), truncation_map(:)
   double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lambda=1.0, source_value=0.0
   character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name, initial_phi, initial_psi, solver_type
-  integer :: angle_order, angle_option, dgm_expansion_order=-1
+  integer :: angle_order, angle_option, dgm_expansion_order=-1, legendre_order=-1
   logical :: allow_fission=.false., outer_print=.true., inner_print=.false.
   logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false.
 
@@ -101,6 +101,8 @@ module control
           solver_type=trim(adjustl(buffer))
         case ('source')
           read(buffer, *, iostat=ios) source_value
+        case ('legendre_order')
+          read(buffer, *, iostat=ios) legendre_order
         case default
           print *, 'Skipping invalid label at line', line
         end select
@@ -139,6 +141,11 @@ module control
       print *, '  outer_tolerance    = ', outer_tolerance
       print *, '  inner_tolerance    = ', inner_tolerance
       print *, '  lambda             = ', lambda
+      if (legendre_order > -1) then
+        print *, '  legendre_order     = ', legendre_order
+      else
+        print *, '  legendre_order     = DEFAULT'
+      end if
       if (use_DGM) then
         print *, 'DGM OPTIONS'
         print *, '  dgm_basis_file     = "', dgm_basis_name, '"'
