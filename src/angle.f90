@@ -24,14 +24,14 @@ module angle
     number_angles = angle_order
     allocate(mu(number_angles), wt(number_angles))
     if (angle_option == GL) then
-      call generate_gl_parameters(2*number_angles, mu, wt)
+      call generate_gl_parameters(2 * number_angles, mu, wt)
     else if (angle_option == DGL) then
       call generate_gl_parameters(number_angles, mu, wt)
-      mu = 0.5*mu + 0.5
-      wt = 0.5*wt
-      do i = 1, number_angles/2
-        mu(number_angles-i+1) = 1-mu(i)
-        wt(number_angles-i+1) = wt(i)
+      mu = 0.5 * mu + 0.5
+      wt = 0.5 * wt
+      do i = 1, number_angles / 2
+        mu(number_angles - i + 1) = 1 - mu(i)
+        wt(number_angles - i + 1) = wt(i)
       end do
     else
       stop "Invalid quadrature option."
@@ -60,9 +60,9 @@ module angle
     integer :: i, j
     double precision :: p, dp
     ! The roots are symmetric, so we only find half of them.
-    do i = 1, int(m/2)+mod(m,2)
+    do i = 1, int(m / 2) + mod(m, 2)
       ! Asymptotic approx. due to F. Tricomi, Ann. Mat. Pura Appl., 31 (1950)
-      x(i) = cos(pi*(i-0.25)/(m+0.5)) * (1-0.125*(1_8/m**2-1_8/m**3))
+      x(i) = cos(pi * (i - 0.25) / (m + 0.5)) * (1 - 0.125 * (1_8 / m ** 2 - 1_8 / m ** 3))
       do j = 1, 100
         p = legendre_p(m, x(i))
         dp = d_legendre_p(m, x(i))
@@ -70,9 +70,9 @@ module angle
           exit
         end if
         ! Newton step
-        x(i) = x(i) - p/dp
+        x(i) = x(i) - p / dp
       end do
-      w(i) = 2.0_8/((1.0 - x(i)**2)*d_legendre_p(m, x(i))**2)
+      w(i) = 2.0_8 / ((1.0 - x(i) ** 2) * d_legendre_p(m, x(i)) ** 2)
     end do
   end subroutine generate_gl_parameters
 
@@ -83,8 +83,8 @@ module angle
     allocate(p_leg(0:number_legendre, number_angles * 2))
     do a = 1, number_angles
       do l = 0, number_legendre
-        p_leg(l,a) = legendre_p(l,mu(a))
-        p_leg(l,2 * number_angles - a + 1) = legendre_p(l,-mu(a))
+        p_leg(l, a) = legendre_p(l, mu(a))
+        p_leg(l, 2 * number_angles - a + 1) = legendre_p(l, -mu(a))
       end do
     end do
   end subroutine initialize_polynomials
@@ -107,7 +107,7 @@ module angle
       do m = 2, l
         P_2 = P_1
         P_1 = P_0
-        P_0 = ((2*m-1)*x*P_1-(m-1)*P_2)/m
+        P_0 = ((2 * m - 1) * x * P_1 - (m - 1) * P_2) / m
       end do
     end if
     legendre_p = P_0
@@ -122,7 +122,7 @@ module angle
     if (l == 0) then
       d_legendre_p = 0.0_8
     else
-      d_legendre_p = (legendre_p(l-1, x)-x*legendre_p(l, x))*l/(1-x**2)
+      d_legendre_p = (legendre_p(l - 1, x) - x * legendre_p(l, x)) * l / (1 - x ** 2)
     end if
   end function d_legendre_p
 
