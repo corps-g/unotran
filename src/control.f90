@@ -119,45 +119,7 @@ module control
     end if
 
     if (.not. no_print) then
-      print *, 'MESH VARIABLES'
-      print *, '  fine_mesh          = [', fine_mesh, ']'
-      print *, '  coarse_mesh        = [', coarse_mesh, ']'
-      print *, '  material_map       = [', material_map, ']'
-      print *, '  boundary_type      = [', boundary_type, ']'
-      print *, 'MATERIAL VARIABLES'
-      print *, '  xs_file_name       = "', xs_name, '"'
-      print *, 'ANGLE VARIABLES'
-      print *, '  angle_order        = ', angle_order
-      print *, '  angle_option       = ', angle_option
-      print *, 'SOURCE'
-      print *, '  constant source    = ', source_value
-      print *, 'OPTIONS'
-      print *, '  solver_type        = "', solver_type, '"'
-      print *, '  equation_type      = "', equation_type, '"'
-      print *, '  store_psi          = ', store_psi
-      print *, '  allow_fission      = ', allow_fission
-      print *, '  outer_print        = ', outer_print
-      print *, '  inner_print        = ', inner_print
-      print *, '  outer_tolerance    = ', outer_tolerance
-      print *, '  inner_tolerance    = ', inner_tolerance
-      print *, '  lambda             = ', lambda
-      if (legendre_order > -1) then
-        print *, '  legendre_order     = ', legendre_order
-      else
-        print *, '  legendre_order     = DEFAULT'
-      end if
-      if (use_DGM) then
-        print *, 'DGM OPTIONS'
-        print *, '  dgm_basis_file     = "', dgm_basis_name, '"'
-        print *, '  use_DGM            = ', use_DGM
-        print *, '  use_recondensation = ', use_recondensation
-        print *, '  energy_group_map   = [', energy_group_map, ']'
-        if (allocated(truncation_map)) then
-          print *, '  truncation_map     = [', truncation_map, ']'
-        end if
-      else
-        print *, '  use_dgm            = ', use_dgm
-      end if
+      call output_control()
     end if
 
     ! Kill the program if an invalid solver_type is selected
@@ -171,6 +133,50 @@ module control
     end if
 
   end subroutine initialize_control
+
+  subroutine output_control()
+
+    print *, 'MESH VARIABLES'
+    print *, '  fine_mesh          = [', fine_mesh, ']'
+    print *, '  coarse_mesh        = [', coarse_mesh, ']'
+    print *, '  material_map       = [', material_map, ']'
+    print *, '  boundary_type      = [', boundary_type, ']'
+    print *, 'MATERIAL VARIABLES'
+    print *, '  xs_file_name       = "', xs_name, '"'
+    print *, 'ANGLE VARIABLES'
+    print *, '  angle_order        = ', angle_order
+    print *, '  angle_option       = ', angle_option
+    print *, 'SOURCE'
+    print *, '  constant source    = ', source_value
+    print *, 'OPTIONS'
+    print *, '  solver_type        = "', solver_type, '"'
+    print *, '  equation_type      = "', equation_type, '"'
+    print *, '  store_psi          = ', store_psi
+    print *, '  allow_fission      = ', allow_fission
+    print *, '  outer_print        = ', outer_print
+    print *, '  inner_print        = ', inner_print
+    print *, '  outer_tolerance    = ', outer_tolerance
+    print *, '  inner_tolerance    = ', inner_tolerance
+    print *, '  lambda             = ', lambda
+    if (legendre_order > -1) then
+      print *, '  legendre_order     = ', legendre_order
+    else
+      print *, '  legendre_order     = DEFAULT'
+    end if
+    if (use_DGM) then
+      print *, 'DGM OPTIONS'
+      print *, '  dgm_basis_file     = "', dgm_basis_name, '"'
+      print *, '  use_DGM            = ', use_DGM
+      print *, '  use_recondensation = ', use_recondensation
+      print *, '  energy_group_map   = [', energy_group_map, ']'
+      if (allocated(truncation_map)) then
+        print *, '  truncation_map     = [', truncation_map, ']'
+      end if
+    else
+      print *, '  use_dgm            = ', use_dgm
+    end if
+
+  end subroutine output_control
 
   subroutine finalize_control()
     if (allocated(fine_mesh)) then
