@@ -54,7 +54,7 @@ module solver
 
   ! Interate equations until convergance
   subroutine solve()
-    double precision :: norm, error, hold, fd_old(number_cells), keff_1
+    double precision :: error, fd_old(number_cells)
     integer :: counter, a
 
     ! Error of current iteration
@@ -68,12 +68,9 @@ module solver
     do while (error > outer_tolerance)  ! Interate to convergance tolerance
       ! save phi from previous iteration
       d_phi = phi
-      fd_old(:) = d_density(:)
+
       ! Sweep through the mesh
       call sweep(number_groups, phi, psi, incoming)
-
-      ! Store old keff
-      keff_1 = d_keff
 
       if (solver_type == 'eigen') then
         ! Compute new eigenvalue if eigen problem

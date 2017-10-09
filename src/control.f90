@@ -6,9 +6,9 @@ module control
   integer, allocatable :: fine_mesh(:), material_map(:), energy_group_map(:), truncation_map(:)
   double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lambda=1.0, source_value=0.0
   character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name, initial_phi, initial_psi, solver_type
-  integer :: angle_order, angle_option, dgm_expansion_order=-1, legendre_order=-1
+  integer :: angle_order, angle_option, dgm_expansion_order=-1, legendre_order=-1, max_outer_iters=1000, max_inner_iters=1000
   logical :: allow_fission=.false., outer_print=.true., inner_print=.false.
-  logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false.
+  logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false., ignore_warnings=.false.
 
   contains
 
@@ -95,6 +95,8 @@ module control
           read(buffer, *, iostat=ios) store_psi
         case ('use_recondensation')
           read(buffer, *, iostat=ios) use_recondensation
+        case ('ignore_warnings')
+          read(buffer, *, iostat=ios) ignore_warnings
         case ('equation_type')
           equation_type=trim(adjustl(buffer))
         case ('solver_type')
@@ -103,6 +105,10 @@ module control
           read(buffer, *, iostat=ios) source_value
         case ('legendre_order')
           read(buffer, *, iostat=ios) legendre_order
+        case ('max_outer_iters')
+          read(buffer, *, iostat=ios) max_outer_iters
+        case ('max_inner_iters')
+          read(buffer, *, iostat=ios) max_inner_iters
         case default
           print *, 'Skipping invalid label at line', line
         end select
@@ -157,7 +163,10 @@ module control
     print *, '  inner_print        = ', inner_print
     print *, '  outer_tolerance    = ', outer_tolerance
     print *, '  inner_tolerance    = ', inner_tolerance
+    print *, '  max_outer_iters    = ', max_outer_iters
+    print *, '  max_inner_iters    = ', max_inner_iters
     print *, '  lambda             = ', lambda
+    print *, '  ignore_warnings    = ', ignore_warnings
     if (legendre_order > -1) then
       print *, '  legendre_order     = ', legendre_order
     else

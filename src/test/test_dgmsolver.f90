@@ -329,9 +329,12 @@ subroutine eigenV2g()
   dgm_basis_name = '2gbasis'
   use_DGM = .true.
   use_recondensation = .false.
-  outer_print = .true.
-  inner_print = .true.
+  outer_print = .false.
+  inner_print = .false.
   lambda = 0.03
+  max_inner_iters = 50
+  max_outer_iters = 5000
+  ignore_warnings = .true.
 
 !  call output_control()
 
@@ -345,8 +348,6 @@ subroutine eigenV2g()
                       0.026176658006, 0.109950141974, 0.0193478123294, 0.0588274918942, 0.009858087423],shape(phi_test))
 
   call dgmsolve()
-
-  print *, d_keff
 
   phi = phi / phi(0,1,1) * phi_test(1,1)
 

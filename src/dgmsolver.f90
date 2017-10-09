@@ -56,11 +56,6 @@ module dgmsolver
       ! error is the difference in phi between successive iterations
       outer_error = sum(abs(phi - phi_new))
 
-      ! Compute new eigenvalue if eigen problem
-      if (solver_type == 'eigen') then
-        d_keff = d_keff * sum(abs(phi_new)) / sum(abs(phi))
-      end if
-
       ! output the current error and iteration number
       if (outer_print) then
         if (solver_type == 'eigen') then
@@ -70,12 +65,21 @@ module dgmsolver
         end if
       end if
 
-      ! increment the iteration
-      counter = counter + 1
-
       ! Update flux using krasnoselskii iteration
       phi = (1.0 - lambda) * phi + lambda * phi_new
       psi = (1.0 - lambda) * psi + lambda * psi_new
+
+      ! increment the iteration
+      counter = counter + 1
+
+      ! Break out of loop if exceeding maximum outer iterations
+      if (counter > max_outer_iters) then
+        if (.not. ignore_warnings) then
+          print *, 'warning: exceeded maximum outer iterations'
+        end if
+        exit
+      end if
+
     end do
 
   end subroutine dgmsolve

@@ -152,6 +152,7 @@ module dgm
         end do
       end do
     end do
+
   end subroutine compute_flux_moments
 
   ! Expand the cross section moments using the basis functions
@@ -226,7 +227,6 @@ module dgm
         end do
       end do
     end do
-
 
   end subroutine compute_source_moments
 
