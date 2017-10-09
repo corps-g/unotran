@@ -1,13 +1,14 @@
 program test_dgmsolver
-  call test1()
-  call test2()
-  call test3()
-  call test4()
-  call test5()
+!  call test2g()
+!  call vacuum1()
+!  call reflect1()
+!  call vacuum2()
+!  call reflect2()
+  call eigenV2g()
 end program test_dgmsolver
 
 ! Test the 2 group dgm solution
-subroutine test1()
+subroutine test2g()
   use control
   use dgmsolver
 
@@ -42,20 +43,20 @@ subroutine test1()
   t2 = testCond(norm2(psi - psi_test) < 1e-6)
 
   if (t1 == 0) then
-    print *, 'DGM solver 1: phi failed'
+    print *, 'DGM solver 2g: phi failed'
   else if (t2 == 0) then
-    print *, 'DGM solver 1: psi failed'
+    print *, 'DGM solver 2g: psi failed'
   else
-    print *, 'all tests passed for DGM solver 1'
+    print *, 'all tests passed for DGM solver 2g'
   end if
 
   call finalize_dgmsolver()
   call finalize_control()
 
-end subroutine test1
+end subroutine test2g
 
 ! Test against detran with vacuum conditions
-subroutine test2()
+subroutine vacuum1()
   use control
   use dgmsolver
 
@@ -125,10 +126,10 @@ subroutine test2()
   call finalize_dgmsolver()
   call finalize_control()
 
-end subroutine test2
+end subroutine vacuum1
 
 ! test against detran with reflective conditions
-subroutine test3()
+subroutine reflect1()
   use control
   use dgmsolver
 
@@ -214,10 +215,10 @@ subroutine test3()
   call finalize_dgmsolver()
   call finalize_control()
 
-end subroutine test3
+end subroutine reflect1
 
 ! Test against detran with vacuum conditions and 1 spatial cell
-subroutine test4()
+subroutine vacuum2()
   use control
   use dgmsolver
 
@@ -258,10 +259,10 @@ subroutine test4()
   call finalize_dgmsolver()
   call finalize_control()
 
-end subroutine test4
+end subroutine vacuum2
 
 ! test against detran with reflective conditions
-subroutine test5()
+subroutine reflect2()
   use control
   use dgmsolver
 
@@ -305,7 +306,78 @@ subroutine test5()
   call finalize_dgmsolver()
   call finalize_control()
 
-end subroutine test5
+end subroutine reflect2
+
+! Test the 2g eigenvalue problem
+subroutine eigenV2g()
+  use control
+  use dgmsolver
+  use angle, only : wt
+
+  implicit none
+
+  ! initialize types
+  integer :: testCond, t1, t2, t3, a, c
+  double precision :: phi_test(2,10), psi_test(2,4,10), keff_test
+
+  ! Define problem parameters
+  call initialize_control('test/eigen_test_options', .true.)
+  xs_name = 'test/2gXS.anlxs'
+  source_value = 0.0
+  boundary_type = [0.0, 0.0]
+  legendre_order = 0
+  dgm_basis_name = '2gbasis'
+  use_DGM = .true.
+  use_recondensation = .false.
+  outer_print = .true.
+  inner_print = .true.
+  lambda = 0.03
+
+!  call output_control()
+
+  call initialize_dgmsolver()
+
+  keff_test = 0.809952323
+
+  phi_test = reshape([0.0588274918942, 0.00985808742285, 0.109950141974, 0.0193478123294,  0.149799204, &
+                      0.026176658006, 0.178131036674, 0.0312242163256, 0.192866360834, 0.03377131381, &
+                      0.192866360834, 0.0337713138118, 0.178131036674, 0.0312242163256,  0.149799204, &
+                      0.026176658006, 0.109950141974, 0.0193478123294, 0.0588274918942, 0.009858087423],shape(phi_test))
+
+  call dgmsolve()
+
+  print *, d_keff
+
+  phi = phi / phi(0,1,1) * phi_test(1,1)
+
+  t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-6)
+
+  phi_test = 0
+  do c = 1, number_cells
+    do a = 1, number_angles
+      phi_test(:,c) = phi_test(:,c) + 0.5 * wt(a) * psi(:,a,c)
+      phi_test(:,c) = phi_test(:,c) + 0.5 * wt(number_angles - a + 1) * psi(:, 2 * number_angles - a + 1,c)
+    end do
+  end do
+  phi_test(:,:) = phi_test(:,:) / phi(0,:,:)
+  t2 = testCond(all(abs(phi_test(:,:) - sum(phi_test) / 20) < 5e-4))
+
+  t3 = testCond(abs(d_keff - keff_test) < 1e-6)
+
+  if (t1 == 0) then
+    print *, 'dgmsolver: eigen 2g vacuum solver phi failed'
+  else if (t2 == 0) then
+    print *, 'dgmsolver: eigen 2g vacuum solver psi failed'
+  else if (t3 == 0) then
+    print *, 'dgmsolver: eigen 2g vacuum solver keff failed'
+  else
+    print *, 'all tests passed for eigen 2g vacuum dgmsolver'
+  end if
+
+  call finalize_dgmsolver()
+  call finalize_control()
+
+end subroutine eigenV2g
 
 integer function testCond(condition)
   logical, intent(in) :: condition
