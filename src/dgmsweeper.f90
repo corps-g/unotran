@@ -1,10 +1,10 @@
 module dgmsweeper
-  use control, only : boundary_type, inner_print, inner_tolerance, lambda, use_recondensation, store_psi
+  use control
   use material, only : number_groups, number_legendre
   use mesh, only : dx, number_cells, mMap
   use angle, only : number_angles
   use sweeper, only : sweep
-  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi
+  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi, d_keff
   use dgm, only : number_coarse_groups, expansion_order, &
                   energymesh, basis, compute_xs_moments, compute_flux_moments
 
@@ -39,22 +39,27 @@ module dgmsweeper
 
       ! Converge the 0th order flux moments
       do while (inner_error > inner_tolerance)  ! Interate to convergance tolerance
-        ! Sweep through the mesh
-
         ! Use discrete ordinates to sweep over the moment equation
         call sweep(number_coarse_groups, phi_m, psi_m, incoming(:,:,i))
 
         ! error is the difference in the norm of phi for successive iterations
         inner_error = sum(abs(d_phi - phi_m))
+
         ! output the current error and iteration number
         if (inner_print) then
           print *, '    ', 'eps = ', inner_error, ' counter = ', counter, ' order = ', i, phi_m(0,:,1)
         end if
+
         ! increment the iteration
         counter = counter + 1
 
         ! Update the 0th order moments if working on converging zeroth moment
         if (i == 0) then
+          if (solver_type == 'eigen') then
+            d_keff = d_keff * sum(abs(phi_m(0,:,:))) / sum(abs(d_phi(0,:,:)))
+            call normalize_flux(phi_m, psi_m)
+          end if
+
           !d_phi = (1.0 - lambda) * d_phi + lambda * phi_m
           !d_psi = (1.0 - lambda) * d_psi + lambda * psi_m
           d_phi = phi_m
@@ -66,6 +71,14 @@ module dgmsweeper
         ! If recondensation is active, break out of loop early
         if (use_recondensation) then
           call compute_xs_moments(order=i)
+        end if
+
+        ! Break out of loop if exceeding maximum inner iterations
+        if (counter > max_inner_iters) then
+          if (.not. ignore_warnings) then
+            print *, 'warning: exceeded maximum inner iterations'
+          end if
+          exit
         end if
 
       end do
@@ -100,4 +113,25 @@ module dgmsweeper
     end do
   end subroutine unfold_flux_moments
   
+  ! Normalize the flux for the eigenvalue problem
+  subroutine normalize_flux(phi, psi)
+
+    double precision, intent(inout) :: phi(:,:,:), psi(:,:,:)
+    double precision :: frac
+
+    if (solver_type == 'eigen') then
+      frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
+
+      ! normalize phi
+      phi = phi / frac
+
+      ! normalize psi
+      if (store_psi) then
+          psi = psi / frac
+      end if
+    end if
+
+  end subroutine normalize_flux
+
+
 end module dgmsweeper

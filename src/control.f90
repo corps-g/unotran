@@ -6,9 +6,9 @@ module control
   integer, allocatable :: fine_mesh(:), material_map(:), energy_group_map(:), truncation_map(:)
   double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lambda=1.0, source_value=0.0
   character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name, initial_phi, initial_psi, solver_type
-  integer :: angle_order, angle_option, dgm_expansion_order=-1
+  integer :: angle_order, angle_option, dgm_expansion_order=-1, legendre_order=-1, max_outer_iters=1000, max_inner_iters=1000
   logical :: allow_fission=.false., outer_print=.true., inner_print=.false.
-  logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false.
+  logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false., ignore_warnings=.false.
 
   contains
 
@@ -95,12 +95,20 @@ module control
           read(buffer, *, iostat=ios) store_psi
         case ('use_recondensation')
           read(buffer, *, iostat=ios) use_recondensation
+        case ('ignore_warnings')
+          read(buffer, *, iostat=ios) ignore_warnings
         case ('equation_type')
           equation_type=trim(adjustl(buffer))
         case ('solver_type')
           solver_type=trim(adjustl(buffer))
         case ('source')
           read(buffer, *, iostat=ios) source_value
+        case ('legendre_order')
+          read(buffer, *, iostat=ios) legendre_order
+        case ('max_outer_iters')
+          read(buffer, *, iostat=ios) max_outer_iters
+        case ('max_inner_iters')
+          read(buffer, *, iostat=ios) max_inner_iters
         case default
           print *, 'Skipping invalid label at line', line
         end select
@@ -117,40 +125,7 @@ module control
     end if
 
     if (.not. no_print) then
-      print *, 'MESH VARIABLES'
-      print *, '  fine_mesh          = [', fine_mesh, ']'
-      print *, '  coarse_mesh        = [', coarse_mesh, ']'
-      print *, '  material_map       = [', material_map, ']'
-      print *, '  boundary_type      = [', boundary_type, ']'
-      print *, 'MATERIAL VARIABLES'
-      print *, '  xs_file_name       = "', xs_name, '"'
-      print *, 'ANGLE VARIABLES'
-      print *, '  angle_order        = ', angle_order
-      print *, '  angle_option       = ', angle_option
-      print *, 'SOURCE'
-      print *, '  constant source    = ', source_value
-      print *, 'OPTIONS'
-      print *, '  solver_type        = "', solver_type, '"'
-      print *, '  equation_type      = "', equation_type, '"'
-      print *, '  store_psi          = ', store_psi
-      print *, '  allow_fission      = ', allow_fission
-      print *, '  outer_print        = ', outer_print
-      print *, '  inner_print        = ', inner_print
-      print *, '  outer_tolerance    = ', outer_tolerance
-      print *, '  inner_tolerance    = ', inner_tolerance
-      print *, '  lambda             = ', lambda
-      if (use_DGM) then
-        print *, 'DGM OPTIONS'
-        print *, '  dgm_basis_file     = "', dgm_basis_name, '"'
-        print *, '  use_DGM            = ', use_DGM
-        print *, '  use_recondensation = ', use_recondensation
-        print *, '  energy_group_map   = [', energy_group_map, ']'
-        if (allocated(truncation_map)) then
-          print *, '  truncation_map     = [', truncation_map, ']'
-        end if
-      else
-        print *, '  use_dgm            = ', use_dgm
-      end if
+      call output_control()
     end if
 
     ! Kill the program if an invalid solver_type is selected
@@ -164,6 +139,55 @@ module control
     end if
 
   end subroutine initialize_control
+
+  subroutine output_control()
+
+    print *, 'MESH VARIABLES'
+    print *, '  fine_mesh          = [', fine_mesh, ']'
+    print *, '  coarse_mesh        = [', coarse_mesh, ']'
+    print *, '  material_map       = [', material_map, ']'
+    print *, '  boundary_type      = [', boundary_type, ']'
+    print *, 'MATERIAL VARIABLES'
+    print *, '  xs_file_name       = "', xs_name, '"'
+    print *, 'ANGLE VARIABLES'
+    print *, '  angle_order        = ', angle_order
+    print *, '  angle_option       = ', angle_option
+    print *, 'SOURCE'
+    print *, '  constant source    = ', source_value
+    print *, 'OPTIONS'
+    print *, '  solver_type        = "', solver_type, '"'
+    print *, '  equation_type      = "', equation_type, '"'
+    print *, '  store_psi          = ', store_psi
+    print *, '  allow_fission      = ', allow_fission
+    print *, '  outer_print        = ', outer_print
+    print *, '  inner_print        = ', inner_print
+    print *, '  outer_tolerance    = ', outer_tolerance
+    print *, '  inner_tolerance    = ', inner_tolerance
+    print *, '  max_outer_iters    = ', max_outer_iters
+    print *, '  max_inner_iters    = ', max_inner_iters
+    print *, '  lambda             = ', lambda
+    print *, '  ignore_warnings    = ', ignore_warnings
+    if (legendre_order > -1) then
+      print *, '  legendre_order     = ', legendre_order
+    else
+      print *, '  legendre_order     = DEFAULT'
+    end if
+    if (use_DGM) then
+      print *, 'DGM OPTIONS'
+      print *, '  dgm_basis_file     = "', dgm_basis_name, '"'
+      print *, '  use_DGM            = ', use_DGM
+      print *, '  use_recondensation = ', use_recondensation
+      if (allocated(truncation_map)) then
+        print *, '  energy_group_map   = [', energy_group_map, ']'
+      end if
+      if (allocated(truncation_map)) then
+        print *, '  truncation_map     = [', truncation_map, ']'
+      end if
+    else
+      print *, '  use_dgm            = ', use_dgm
+    end if
+
+  end subroutine output_control
 
   subroutine finalize_control()
     if (allocated(fine_mesh)) then

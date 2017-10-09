@@ -17,7 +17,7 @@ module solver
   
   ! Initialize all of the variables and solvers
   subroutine initialize_solver()
-    integer :: c
+    integer :: c, l
 
     ! initialize the mesh
     call create_mesh()
@@ -34,7 +34,9 @@ module solver
     do c = 1, number_cells
       d_nu_sig_f(:, c) = nu_sig_f(:, mMap(c))
       d_chi(:, c) = chi(:, mMap(c))
-      d_sig_s(:, :, :, c) = sig_s(:, :, :, mMap(c))
+      do l = 0, number_legendre
+        d_sig_s(l, :, :, c) = sig_s(l, :, :, mMap(c))
+      end do
       d_sig_t(:, c) = sig_t(:, mMap(c))
     end do
     d_source(:, :, :) = source(:, :, :)
@@ -52,7 +54,7 @@ module solver
 
   ! Interate equations until convergance
   subroutine solve()
-    double precision :: norm, error, hold, fd_old(number_cells), keff_1, frac
+    double precision :: error, fd_old(number_cells)
     integer :: counter, a
 
     ! Error of current iteration
@@ -61,16 +63,14 @@ module solver
     ! interation number
     counter = 1
 
+    call normalize_flux()
+
     do while (error > outer_tolerance)  ! Interate to convergance tolerance
       ! save phi from previous iteration
       d_phi = phi
-      fd_old(:) = d_density(:)
 
       ! Sweep through the mesh
       call sweep(number_groups, phi, psi, incoming)
-
-      ! Store old keff
-      keff_1 = d_keff
 
       if (solver_type == 'eigen') then
         ! Compute new eigenvalue if eigen problem
@@ -89,23 +89,31 @@ module solver
         end if
       end if
 
-      if (solver_type == 'eigen') then
-        frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
-
-        ! normalize phi
-        phi = phi / frac
-
-        ! normalize psi
-        if (store_psi) then
-            psi = psi / frac
-        end if
-      end if
+      call normalize_flux()
 
       ! increment the iteration
       counter = counter + 1
     end do
 
   end subroutine solve
+
+  subroutine normalize_flux()
+
+    double precision :: frac
+
+    if (solver_type == 'eigen') then
+      frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
+
+      ! normalize phi
+      phi = phi / frac
+
+      ! normalize psi
+      if (store_psi) then
+          psi = psi / frac
+      end if
+    end if
+
+  end subroutine normalize_flux
 
   subroutine output()
 

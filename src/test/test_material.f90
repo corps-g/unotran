@@ -109,17 +109,17 @@ program test_material
         2.21910000e-02,   9.38584000e-03,   6.56500000e-03,   3.63192000e-03,   1.11533000e-03,   8.18084000e-04,   1.27068000e-03 &
                       /), shape(sig_s_test))
   
-  ! Test total cross section             
-  t1 = testCond(norm2(sig_t - sig_t_test) < 1e-6)
+  ! Test total cross section
+  t1 = testCond(norm2(sig_t(:,1:6) - sig_t_test) < 1e-6)
   
   ! Test fission cross section  
-  t2 = testCond(norm2(sig_f - sig_f_test) < 1e-6)
+  t2 = testCond(norm2(sig_f(:,1:6) - sig_f_test) < 1e-6)
   
   ! Test nu * fission cross section  
-  t3 = testCond(norm2(nu_sig_f - nu_sig_f_test) < 1e-6)
+  t3 = testCond(norm2(nu_sig_f(:,1:6) - nu_sig_f_test) < 1e-6)
   
   ! Test chi
-  t4 = testCond(norm2(chi - chi_test) < 1e-6)
+  t4 = testCond(norm2(chi(:,1:6) - chi_test) < 1e-6)
   
   ! Test scattering cross section
   t5 = testCond(all(abs(sig_s(:,:,:,1) - sig_s_test) < 1e-3))

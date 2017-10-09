@@ -11,6 +11,8 @@ program test_solver
   call eigenR1gPin()
   call eigenR2gPin()
   call eigenR7gPin()
+  call anisotropic1g()
+  call anisotropic2g()
 end program test_solver
 
 ! Test against detran with vacuum conditions
@@ -76,7 +78,7 @@ subroutine vacuum1()
   call solve()
 
   t1 = testCond(norm2(phi(0,:,:) - phi_test) < 1e-6)
-  
+
   phi_test = 0
   do c = 1, number_cells
     do a = 1, number_angles
@@ -249,6 +251,7 @@ subroutine eigenV1g()
   call initialize_control('test/eigen_test_options', .true.)
   source_value = 0.0
   boundary_type = [0.0, 0.0]
+  legendre_order = 0
 
   call initialize_solver()
 
@@ -433,6 +436,7 @@ subroutine eigenR1g()
 
   ! Define problem parameters
   call initialize_control('test/eigen_test_options', .true.)
+  legendre_order = 0
 
   call initialize_solver()
 
@@ -580,6 +584,7 @@ subroutine eigenR1gPin()
 
   ! Define problem parameters
   call initialize_control('test/pin_test_options', .true.)
+  legendre_order = 0
 
   call initialize_solver()
 
@@ -762,6 +767,128 @@ subroutine eigenR7gPin()
   call finalize_control()
 
 end subroutine eigenR7gPin
+
+subroutine anisotropic1g()
+  use control
+  use solver
+  use angle, only : wt
+
+  implicit none
+
+  ! initialize types
+  integer :: testCond, t1, t2, t3, a, c, an
+  double precision :: phi_test(1,16), psi_test(1,4,16), keff_test
+
+  ! Define problem parameters
+  call initialize_control('test/pin_test_options', .true.)
+  legendre_order = 1
+
+  call initialize_solver()
+
+  keff_test = 0.6824742
+
+  phi_test = reshape([0.133418376522, 0.133560750803, 0.133845902455, 0.134709753202, 0.1359152954, &
+                      0.13679997221, 0.137380731077, 0.137668452106, 0.137668452106, 0.1373807311, &
+                      0.13679997221, 0.135915295391, 0.134709753202, 0.133845902455, 0.1335607508, &
+                      0.133418376521],shape(phi_test))
+
+  call solve()
+
+  phi_test = phi_test / phi_test(1,1) * phi(0,1,1)
+
+  t1 = testCond(all((phi(0,:,:) - phi_test) < 1e-6))
+
+  phi_test = 0
+  do c = 1, number_cells
+    do a = 1, number_angles
+      phi_test(:,c) = phi_test(:,c) + 0.5 * wt(a) * psi(:,a,c)
+      phi_test(:,c) = phi_test(:,c) + 0.5 * wt(number_angles - a + 1) * psi(:, 2 * number_angles - a + 1,c)
+    end do
+  end do
+  phi_test(:,:) = phi_test(:,:) / phi(0,:,:)
+  t2 = testCond(all(abs(phi_test(:,:) - sum(phi_test) / 16) < 5e-4))
+
+  t3 = testCond(abs(d_keff - keff_test) < 1e-6)
+
+  if (t1 == 0) then
+    print *, 'solver: anisotropic 1g phi failed'
+  else if (t2 == 0) then
+    print *, 'solver: anisotropic 1g psi failed'
+  else if (t3 == 0) then
+    print *, 'solver: anisotropic 1g keff failed'
+  else
+    print *, 'all tests passed for anisotropic 1g solver'
+  end if
+
+  call finalize_solver()
+  call finalize_control()
+
+end subroutine anisotropic1g
+
+subroutine anisotropic2g()
+  use control
+  use solver
+  use angle, only : wt
+
+  implicit none
+
+  ! initialize types
+  integer :: testCond, t1, t2, t3, a, c, an
+  double precision :: phi_test(2,16), psi_test(2,4,16), keff_test
+
+  ! Define problem parameters
+  call initialize_control('test/pin_test_options', .true.)
+  material_map = [5, 1, 5]
+  angle_order = 2
+  xs_name = 'test/2gXSaniso.anlxs'
+  legendre_order = 7
+
+  call initialize_solver()
+
+  keff_test = 0.43942560
+  phi_test = 0.0
+  phi_test = reshape([30.873137430393538, 0.5498013920878216, 30.872051438564693, 0.5499423487323769,&
+                      30.869954350895192, 0.5502186237557053, 30.858188929487795, 0.552892568086489,&
+                      30.83962534645895, 0.55721332781946, 30.826024305427918, 0.5602735275004431,&
+                      30.817018210691153, 0.5622319371418444, 30.812423264396884, 0.5631875110769776,&
+                      30.812423264396884, 0.5631875110769776, 30.817018210691153, 0.5622319371418444,&
+                      30.826024305427918, 0.5602735275004431, 30.83962534645895, 0.55721332781946,&
+                      30.858188929487795, 0.552892568086489, 30.869954350895192, 0.5502186237557053,&
+                      30.872051438564693, 0.5499423487323769, 30.873137430393538, 0.5498013920878216],shape(phi_test))
+
+  call solve()
+
+  phi_test = phi_test / phi_test(1,1) * phi(0,1,1)
+
+  t1 = testCond(all((phi(0,:,:) - phi_test) < 1e-5))
+
+  phi_test = 0
+  do c = 1, number_cells
+    do a = 1, number_angles
+      phi_test(:,c) = phi_test(:,c) + 0.5 * wt(a) * psi(:,a,c)
+      phi_test(:,c) = phi_test(:,c) + 0.5 * wt(number_angles - a + 1) * psi(:, 2 * number_angles - a + 1,c)
+    end do
+  end do
+  phi_test(:,:) = phi_test(:,:) / phi(0,:,:)
+
+  t2 = testCond(all(abs(phi_test(:,:) - sum(phi_test) / 32) < 5e-4))
+
+  t3 = testCond(abs(d_keff - keff_test) < 1e-6)
+
+  if (t1 == 0) then
+    print *, 'solver: anisotropic 2g phi failed'
+  else if (t2 == 0) then
+    print *, 'solver: anisotropic 2g psi failed'
+  else if (t3 == 0) then
+    print *, 'solver: anisotropic 2g keff failed'
+  else
+    print *, 'all tests passed for anisotropic 2g solver'
+  end if
+
+  call finalize_solver()
+  call finalize_control()
+
+end subroutine anisotropic2g
 
 integer function testCond(condition)
   logical, intent(in) :: condition

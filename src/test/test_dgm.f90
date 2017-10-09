@@ -282,8 +282,10 @@ subroutine test2()
 
   ! set phi and psi
   phi = phi_m_test(:,:,:)
-  psi = psi_m_test
-
+  psi(:,1,:) = psi_m_test(:,1,:)
+  psi(:,2,:) = psi_m_test(:,1,:)
+  psi(:,3,:) = psi_m_test(:,1,:)
+  psi(:,4,:) = psi_m_test(:,1,:)
 
   ! Test reading the basis set from the file
   call initialize_basis()
@@ -301,7 +303,7 @@ subroutine test2()
   t6 = testCond(all(abs(d_phi - phi_m_test) < 1e-6))
 
   ! test angular flux moments
-  t7 = testCond(all(abs(d_psi - psi_m_test) < 1e-6))
+  t7 = testCond(all(abs(d_psi(:,1:1,:) - psi_m_test) < 1e-6))
 
   ! Get the cross section moments for order 0
   call compute_xs_moments(0)
@@ -312,7 +314,7 @@ subroutine test2()
   t8 = testCond(all(abs(d_source - source_m_test) < 1e-6))
 
   ! test total cross section moments
-  t9 = testCond(all(abs(d_sig_t - sig_t) < 1e-6))
+  t9 = testCond(all(abs(d_sig_t - sig_t(:,1:1)) < 1e-6))
 
   ! test angular cross section moments (delta)
   delta_m_test = 0.0

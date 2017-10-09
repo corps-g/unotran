@@ -59,6 +59,7 @@ module sweeper
         end do
       end do
     end do
+
   end subroutine sweep
   
   subroutine computeEQ(S, incoming, sig, invmu, dx, mua, cellPsi)
@@ -124,7 +125,7 @@ module sweeper
 
           ! Add the scattering source for each legendre moment
           do l = 0, number_legendre
-            scat(:) = (2 * l + 1) * p_leg(l, an) * matmul(transpose(d_sig_s(l, :, :, c)), d_phi(l,:,c))
+            scat(:) = 1 / (2 * l + 1) * p_leg(l, an) * matmul(transpose(d_sig_s(l, :, :, c)), d_phi(l,:,c))
             Q(:,an,c) = Q(:,an,c) + scat(:)
           end do
         end do
