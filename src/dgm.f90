@@ -19,7 +19,11 @@ module dgm
     integer :: g, gp, cg
 
     ! Get the number of coarse groups
-    number_coarse_groups = size(energy_group_map) + 1
+    if (allocated(energy_group_map)) then
+      number_coarse_groups = size(energy_group_map) + 1
+    else
+      number_coarse_groups = 1
+    end if
 
     ! Create the map of coarse groups and default to full expansion order
     allocate(energyMesh(number_groups))

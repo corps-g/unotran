@@ -168,7 +168,9 @@ module control
       print *, '  dgm_basis_file     = "', dgm_basis_name, '"'
       print *, '  use_DGM            = ', use_DGM
       print *, '  use_recondensation = ', use_recondensation
-      print *, '  energy_group_map   = [', energy_group_map, ']'
+      if (allocated(truncation_map)) then
+        print *, '  energy_group_map   = [', energy_group_map, ']'
+      end if
       if (allocated(truncation_map)) then
         print *, '  truncation_map     = [', truncation_map, ']'
       end if
