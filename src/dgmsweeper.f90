@@ -15,12 +15,11 @@ module dgmsweeper
   subroutine dgmsweep(phi_new, psi_new, incoming)
     double precision, intent(inout) :: incoming(number_coarse_groups, number_angles,0:expansion_order)
     double precision, intent(inout) :: phi_new(:,:,:), psi_new(:,:,:)
-    double precision :: inner_error
     double precision, allocatable :: phi_m(:,:,:), psi_m(:,:,:)
-    integer :: counter, i
+    integer :: i
 
-    allocate(phi_m(0:number_legendre,number_coarse_groups,number_cells))
-    allocate(psi_m(number_coarse_groups,number_angles*2,number_cells))
+    allocate(phi_m(0:number_legendre, number_coarse_groups, number_cells))
+    allocate(psi_m(number_coarse_groups, number_angles * 2, number_cells))
     phi_new = 0.0
     psi_new = 0.0
     phi_m = 0.0
@@ -30,58 +29,12 @@ module dgmsweeper
     call compute_flux_moments()
 
     do i = 0, expansion_order
-      ! Initialize iteration variables
-      inner_error = 1.0
-      counter = 1
 
       ! Compute the order=0 cross section moments
       call compute_xs_moments(order=i)
 
       ! Converge the 0th order flux moments
-      do while (inner_error > inner_tolerance)  ! Interate to convergance tolerance
-        ! Use discrete ordinates to sweep over the moment equation
-        call sweep(number_coarse_groups, phi_m, psi_m, incoming(:,:,i))
-
-        ! error is the difference in the norm of phi for successive iterations
-        inner_error = sum(abs(d_phi - phi_m))
-
-        ! output the current error and iteration number
-        if (inner_print) then
-          print *, '    ', 'eps = ', inner_error, ' counter = ', counter, ' order = ', i, phi_m(0,:,1)
-        end if
-
-        ! increment the iteration
-        counter = counter + 1
-
-        ! Update the 0th order moments if working on converging zeroth moment
-        if (i == 0) then
-          if (solver_type == 'eigen') then
-            d_keff = d_keff * sum(abs(phi_m(0,:,:))) / sum(abs(d_phi(0,:,:)))
-            call normalize_flux(phi_m, psi_m)
-          end if
-
-          !d_phi = (1.0 - lambda) * d_phi + lambda * phi_m
-          !d_psi = (1.0 - lambda) * d_psi + lambda * psi_m
-          d_phi = phi_m
-          d_psi = psi_m
-        else
-          exit
-        end if
-
-        ! If recondensation is active, break out of loop early
-        if (use_recondensation) then
-          call compute_xs_moments(order=i)
-        end if
-
-        ! Break out of loop if exceeding maximum inner iterations
-        if (counter > max_inner_iters) then
-          if (.not. ignore_warnings) then
-            print *, 'warning: exceeded maximum inner iterations'
-          end if
-          exit
-        end if
-
-      end do
+      call inner_solve(i, incoming(:,:,i), phi_m, psi_m)
 
       ! Unfold 0th order flux
       call unfold_flux_moments(i, phi_m, psi_m, phi_new, psi_new)
@@ -90,6 +43,64 @@ module dgmsweeper
 
     deallocate(phi_m, psi_m)
   end subroutine dgmsweep
+
+  subroutine inner_solve(i, incoming, phi_m, psi_m)
+    integer, intent(in) :: i
+    double precision, intent(inout) :: incoming(:,:)
+    double precision, intent(inout) :: phi_m(0:number_legendre, number_coarse_groups, number_cells)
+    double precision, intent(inout) :: psi_m(number_coarse_groups, number_angles * 2, number_cells)
+    double precision :: inner_error
+    integer :: counter
+
+    ! Initialize iteration variables
+    inner_error = 1.0
+    counter = 1
+
+    do while (inner_error > inner_tolerance)  ! Interate to convergance tolerance
+      ! Use discrete ordinates to sweep over the moment equation
+      call sweep(number_coarse_groups, phi_m, psi_m, incoming)
+
+      ! error is the difference in the norm of phi for successive iterations
+      inner_error = sum(abs(d_phi - phi_m))
+
+      ! output the current error and iteration number
+      if (inner_print) then
+        print *, '    ', 'eps = ', inner_error, ' counter = ', counter, ' order = ', i, phi_m(0,:,1)
+      end if
+
+      ! increment the iteration
+      counter = counter + 1
+
+      ! Update the 0th order moments if working on converging zeroth moment
+      if (i == 0) then
+        if (solver_type == 'eigen') then
+          d_keff = d_keff * sum(abs(phi_m(0,:,:))) / sum(abs(d_phi(0,:,:)))
+          call normalize_flux(phi_m, psi_m)
+        end if
+
+        !d_phi = (1.0 - lambda) * d_phi + lambda * phi_m
+        !d_psi = (1.0 - lambda) * d_psi + lambda * psi_m
+        d_phi = phi_m
+        d_psi = psi_m
+      else
+        exit
+      end if
+
+      ! If recondensation is active, break out of loop early
+      if (use_recondensation) then
+        call compute_xs_moments(order=i)
+      end if
+
+      ! Break out of loop if exceeding maximum inner iterations
+      if (counter > max_inner_iters) then
+        if (.not. ignore_warnings) then
+          print *, 'warning: exceeded maximum inner iterations'
+        end if
+        exit
+      end if
+
+    end do
+  end subroutine inner_solve
 
   ! Unfold the flux moments
   subroutine unfold_flux_moments(order, phi_moment, psi_moment, phi_new, psi_new)
