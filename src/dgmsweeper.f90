@@ -45,6 +45,7 @@ module dgmsweeper
   end subroutine dgmsweep
 
   subroutine inner_solve(i, incoming, phi_m, psi_m)
+
     integer, intent(in) :: i
     double precision, intent(inout) :: incoming(:,:)
     double precision, intent(inout) :: phi_m(0:number_legendre, number_coarse_groups, number_cells)
@@ -75,7 +76,6 @@ module dgmsweeper
       if (i == 0) then
         if (solver_type == 'eigen') then
           d_keff = d_keff * sum(abs(phi_m(0,:,:))) / sum(abs(d_phi(0,:,:)))
-          call normalize_flux(phi_m, psi_m)
         end if
 
         !d_phi = (1.0 - lambda) * d_phi + lambda * phi_m
@@ -122,6 +122,10 @@ module dgmsweeper
         end do
       end do
     end do
+
+    ! Normalize the unfolded fluxes (if eigenvalue problem)
+    call normalize_flux(phi_new, psi_new)
+
   end subroutine unfold_flux_moments
   
   ! Normalize the flux for the eigenvalue problem
