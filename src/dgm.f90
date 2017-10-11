@@ -173,28 +173,35 @@ module dgm
       mat = mMap(c)
       do g = 1, number_groups
         cg = energyMesh(g)
-        ! total cross section moment
-        d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
-        ! fission cross section moment
-        d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+        ! Check if producing nan
+        if (d_phi(0, cg, c) /= 0.0) then
+          ! total cross section moment
+          d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+          ! fission cross section moment
+          d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+        end if
+
         ! Scattering cross section moment
         do gp = 1, number_groups
           cgp = energyMesh(gp)
-          d_sig_s(:, cgp, cg, c) = d_sig_s(:, cgp, cg, c) &
-                                   + basis(g, order) * sig_s(:, gp, g, mat) * phi(:, gp, c) / d_phi(:, cgp, c)
+          do l = 0, number_legendre
+            ! Check if producing nan
+            if (d_phi(l, cgp, c) /= 0.0) then
+              d_sig_s(l, cgp, cg, c) = d_sig_s(l, cgp, cg, c) &
+                                     + basis(g, order) * sig_s(l, gp, g, mat) * phi(l, gp, c) / d_phi(l, cgp, c)
+            end if
+          end do
         end do
       end do
 
+      ! angular total cross section moment (delta)
       do a = 1, number_angles * 2
         do g = 1, number_groups
           cg = energyMesh(g)
-          if (d_psi(cg, a, c) == 0.0) then
-            num = 0.0
-          else
-            num = basis(g, order) * (sig_t(g, mat) - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
+          ! Check if producing nan
+          if (d_psi(cg, a, c) /= 0.0) then
+            d_delta(cg, a, c) = d_delta(cg, a, c) + basis(g, order) * (sig_t(g, mat) - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
           end if
-          ! angular total cross section moment (delta)
-          d_delta(cg, a, c) = d_delta(cg, a, c) + num
         end do
       end do
     end do
