@@ -4,35 +4,41 @@ program test_angle
 
   implicit none
 
-  integer :: l = 7, t1=1, t2=1, testCond
+  integer :: l = 7, t1=1, t2=1, t3=1, t4=1, testCond
   double precision :: mu_test(7), wt_test(7)
 
-  mu_test = [0.9862838087,0.9284348837,0.8272013151,0.6872929048,0.5152486364,0.3191123689,0.1080549487]
-  wt_test = [0.0351194603,0.0801580872,0.1215185707,0.1572031672,0.1855383975,0.2051984637,0.2152638535]
+  mu_test = [0.9862838086968123,0.9284348836635735,0.8272013150697650,0.6872929048116855,0.5152486363581541,0.3191123689278897,0.1080549487073437]
+  wt_test = [0.0351194603317519,0.0801580871597602,0.1215185706879032,0.1572031671581935,0.1855383974779378,0.2051984637212956,0.2152638534631578]
 
   call initialize_control('test/reg_test_options', .true.)
   angle_order = 7
   angle_option = 1
   call initialize_angle()
-  t1 = testCond(norm2(mu-mu_test) < 1e-7)
+  t1 = testCond(norm2(mu-mu_test) < 1e-12)
+  t2 = testCond(norm2(wt-wt_test) < 1e-12)
   call finalize_angle()
   call finalize_control()
 
-  mu_test = [0.9745539562,0.8707655928,0.7029225757,0.5000000000,0.2970774243,0.1292344072,0.0254460438]
-  wt_test = [0.0647424831,0.1398526957,0.1909150253,0.2089795918,0.1909150253,0.1398526957,0.0647424831]
+  mu_test = [0.974553956171379190, 0.87076559279969723, 0.70292257568869854, 0.50000000000000000, 0.29707742431130146, 0.12923440720030277, 0.025446043828620812]
+  wt_test = [0.064742483084434838, 0.13985269574463835, 0.19091502525255952, 0.20897959183673470, 0.19091502525255952, 0.13985269574463835, 0.064742483084434838]
   
   call initialize_control('test/reg_test_options', .true.)
   angle_order = 7
   angle_option = 2
   call initialize_angle()
-  t2 = testCond(norm2(mu-mu_test) < 1e-7)
+  t3 = testCond(norm2(mu-mu_test) < 1e-12)
+  t4 = testCond(norm2(wt-wt_test) < 1e-12)
   call finalize_angle()
   call finalize_control()
   
   if (t1 == 0) then
-    print *, 'angle: GL option failed'
+    print *, 'angle: GL mu failed'
   else if (t2 == 0) then
-    print *, 'angle: DGL option failed'
+    print *, 'angle: GL wt failed'
+  else if (t3 == 0) then
+    print *, 'angle: DGL mu failed'
+  else if (t4 == 0) then
+    print *, 'angle: DGL wt failed'
   else
     print *, 'all tests passed for angle'
   end if
