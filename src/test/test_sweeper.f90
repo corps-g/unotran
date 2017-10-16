@@ -20,8 +20,8 @@ program test_sweeper
 
   call computeEQ(1.0_8, incoming, 1.0_8, dx(1) / (2 * abs(mu(1))), dx(1), mu(1), Ps)
 
-  t1 = testCond(abs(incoming - 0.734680275209795978) < 1e-6)
-  t2 = testCond(abs(Ps - 0.367340137604897989) < 1e-6)
+  t1 = testCond(abs(incoming - 0.734680275209795978) < 1e-12)
+  t2 = testCond(abs(Ps - 0.367340137604897989) < 1e-12)
 
   call finalize_solver()
   call finalize_control()
@@ -39,8 +39,8 @@ program test_sweeper
 
   call computeEQ(1.0_8, incoming, 1.0_8, dx(1) / (2 * abs(mu(1))), dx(1), mu(1), Ps)
 
-  t3 = testCond(abs(incoming - 0.686907416523104323) < 1e-6)
-  t4 = testCond(abs(Ps - 0.408479080928661801) < 1e-6)
+  t3 = testCond(abs(incoming - 0.686907416523104323) < 1e-12)
+  t4 = testCond(abs(Ps - 0.408479080928661801) < 1e-12)
 
   if (t1 == 0) then
     print *, 'sweeper: DD test (outgoing) Failed'

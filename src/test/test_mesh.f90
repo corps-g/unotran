@@ -27,7 +27,7 @@ program test_mesh
   t1 = testCond(number_cells_test == number_cells)
   
   ! test dx
-  t2 = testCond(norm2(dx-dx_test) < 1e-7)
+  t2 = testCond(norm2(dx-dx_test) < 1e-12)
   
   ! test material map
   t3 = testCond(ALL(mMap == mMap_test))

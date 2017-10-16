@@ -33,9 +33,9 @@ program test_state
   ! Create the state variable containers
   call initialize_state()
   
-  t1 = testCond(norm2(phi(0,:,:)-phi_test) < 1e-7)
+  t1 = testCond(norm2(phi(0,:,:)-phi_test) < 1e-12)
   
-  t2 = testCond(norm2(source-source_test) < 1e-7)
+  t2 = testCond(norm2(source-source_test) < 1e-12)
   
   call finalize_state()
 
@@ -43,7 +43,7 @@ program test_state
 
   call initialize_state()
   
-  t3 = testCond(norm2(psi-psi_test) < 1e-7)
+  t3 = testCond(norm2(psi-psi_test) < 1e-12)
   
   if (t1 == 0) then
     print *, 'state: phi initialization failed'
