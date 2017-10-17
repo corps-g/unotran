@@ -26,7 +26,7 @@ subroutine innerSolver()
   use_DGM = .true.
   use_recondensation = .false.
   energy_group_map = [4]
-  inner_print = .false.
+  inner_print = .true.
   max_inner_iters = 500
   ignore_warnings = .true.
 
@@ -51,9 +51,9 @@ subroutine innerSolver()
   phi_m = 0
   psi_m = 0
 
-  d_keff = 2.424946538
+  d_keff = 2.42494653837
   do c=1, number_cells
-    phi(0,:,c) = [2.9285415251, 3.8947396818, 0.1766345696, 8.42E-05, 0.0, 0.0, 0.0]
+    phi(0,:,c) = [2.9285415251016529, 3.8947396817725437, 0.17663456964651852, 0.000084223479284161671, 0.0, 0.0, 0.0]
     do a=1, number_angles * 2
       psi(:,a,c) = phi(0,:,c)
     end do
@@ -65,22 +65,26 @@ subroutine innerSolver()
   call getIncoming(0, incoming)
   call compute_xs_moments(order=0)
   call inner_solve(0, incoming, phi_m, psi_m)
-  t1 = testCond(norm2(phi_m(0,:,1) - [3.5, 0.0]) < 1e-5)
+  print *, phi_m(0,:,1)
+  t1 = testCond(all(abs(phi_m(0,:,1) - [3.5, 0.0]) < 1e-12))
   ! Order 1
   call getIncoming(1, incoming)
   call compute_xs_moments(order=1)
   call inner_solve(1, incoming, phi_m, psi_m)
-  t2 = testCond(norm2(phi_m(0,:,1) - [-2.7958624554, 0.0]) < 1e-5)
+  print *, phi_m(0,:,1)
+  t2 = testCond(all(abs(phi_m(0,:,1) - [2.795862455358810, 0.0]) < 1e-12))
   ! Order 2
   call getIncoming(2, incoming)
   call compute_xs_moments(order=2)
   call inner_solve(2, incoming, phi_m, psi_m)
-  t3 = testCond(norm2(phi_m(0,:,1) - [-0.5713742514, 0.0]) < 1e-5)
+  print *, phi_m(0,:,1)
+  t3 = testCond(all(abs(phi_m(0,:,1) - [-0.571374251419063, 0.0]) < 1e-12))
   ! Order 3
   call getIncoming(3, incoming)
   call compute_xs_moments(order=3)
   call inner_solve(3, incoming, phi_m, psi_m)
-  t4 = testCond(norm2(phi_m(0,:,1) - [1.8393577552, 0.0]) < 1e-5)
+  print *, phi_m(0,:,1)
+  t4 = testCond(all(abs(phi_m(0,:,1) - [-1.839357755224960, 0.0]) < 1e-12))
 
   if (t1 == 0) then
     print *, 'DGM sweeper order 0 failed'

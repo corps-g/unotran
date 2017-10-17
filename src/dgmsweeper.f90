@@ -29,7 +29,6 @@ module dgmsweeper
     call compute_flux_moments()
 
     do i = 0, expansion_order
-
       ! Compute the order=0 cross section moments
       call compute_xs_moments(order=i)
 
@@ -37,10 +36,10 @@ module dgmsweeper
       call inner_solve(i, incoming(:,:,i), phi_m, psi_m)
 
       ! Unfold 0th order flux
-      call unfold_flux_moments(i, phi_m, psi_m, phi_new, psi_new)
-
+      call unfold_flux_moments(i, phi_m, psi_m, phi_new, psi_new, incoming(:,:,i))
     end do
 
+    stop
     deallocate(phi_m, psi_m)
   end subroutine dgmsweep
 
@@ -50,7 +49,7 @@ module dgmsweeper
     double precision, intent(inout) :: incoming(:,:)
     double precision, intent(inout) :: phi_m(0:number_legendre, number_coarse_groups, number_cells)
     double precision, intent(inout) :: psi_m(number_coarse_groups, number_angles * 2, number_cells)
-    double precision :: inner_error
+    double precision :: inner_error, frac
     integer :: counter
 
     ! Initialize iteration variables
@@ -61,52 +60,55 @@ module dgmsweeper
       ! Use discrete ordinates to sweep over the moment equation
       call sweep(number_coarse_groups, phi_m, psi_m, incoming)
 
-      ! error is the difference in the norm of phi for successive iterations
-      inner_error = sum(abs(d_phi - phi_m))
-
-      ! output the current error and iteration number
-      if (inner_print) then
-        print *, '    ', 'eps = ', inner_error, ' counter = ', counter, ' order = ', i, phi_m(0,:,1)
-      end if
-
-      ! increment the iteration
-      counter = counter + 1
-
       ! Update the 0th order moments if working on converging zeroth moment
       if (i == 0) then
+        ! error is the difference in the norm of phi for successive iterations
+        inner_error = sum(abs(d_phi - phi_m))
+
+        ! output the current error and iteration number
+        if (inner_print) then
+          print *, '    ', 'eps = ', inner_error, ' counter = ', counter, ' order = ', i, phi_m(0,:,1)
+        end if
+
+        ! increment the iteration
+        counter = counter + 1
+
         if (solver_type == 'eigen') then
-          d_keff = d_keff * sum(abs(phi_m(0,:,:))) / sum(abs(d_phi(0,:,:)))
+          frac = sum(abs(phi_m(0,:,:))) / sum(abs(d_phi(0,:,:)))
+          d_keff = d_keff * frac
+          !phi_m = phi_m * frac
         end if
 
         !d_phi = (1.0 - lambda) * d_phi + lambda * phi_m
         !d_psi = (1.0 - lambda) * d_psi + lambda * psi_m
         d_phi = phi_m
         d_psi = psi_m
-      else
-        exit
-      end if
 
-      ! If recondensation is active, break out of loop early
-      if (use_recondensation) then
-        call compute_xs_moments(order=i)
-      end if
-
-      ! Break out of loop if exceeding maximum inner iterations
-      if (counter > max_inner_iters) then
-        if (.not. ignore_warnings) then
-          print *, 'warning: exceeded maximum inner iterations'
+        ! If recondensation is active, break out of loop early
+        if (use_recondensation) then
+          call compute_xs_moments(order=i)
         end if
+
+        ! Break out of loop if exceeding maximum inner iterations
+        if (counter > max_inner_iters) then
+          if (.not. ignore_warnings) then
+            print *, 'warning: exceeded maximum inner iterations'
+          end if
+          exit
+        end if
+      else
+        ! Higher orders converge in a single pass
         exit
       end if
-
     end do
   end subroutine inner_solve
 
   ! Unfold the flux moments
-  subroutine unfold_flux_moments(order, phi_moment, psi_moment, phi_new, psi_new)
+  subroutine unfold_flux_moments(order, phi_moment, psi_moment, phi_new, psi_new, incoming)
     integer, intent(in) :: order
     double precision, intent(in) :: phi_moment(:,:,:), psi_moment(:,:,:)
     double precision, intent(out) :: psi_new(:,:,:), phi_new(:,:,:)
+    double precision, intent(inout) :: incoming(:,:)
     integer :: a, c, cg, g, mat
 
     do c = 1, number_cells
@@ -124,14 +126,14 @@ module dgmsweeper
     end do
 
     ! Normalize the unfolded fluxes (if eigenvalue problem)
-    call normalize_flux(phi_new, psi_new)
+    call normalize_flux(phi_new, psi_new, incoming)
 
   end subroutine unfold_flux_moments
   
   ! Normalize the flux for the eigenvalue problem
-  subroutine normalize_flux(phi, psi)
+  subroutine normalize_flux(phi, psi, incoming)
 
-    double precision, intent(inout) :: phi(:,:,:), psi(:,:,:)
+    double precision, intent(inout) :: phi(:,:,:), psi(:,:,:), incoming(:,:)
     double precision :: frac
 
     if (solver_type == 'eigen') then
@@ -141,9 +143,7 @@ module dgmsweeper
       phi = phi / frac
 
       ! normalize psi
-      if (store_psi) then
-          psi = psi / frac
-      end if
+      psi = psi / frac
     end if
 
   end subroutine normalize_flux
