@@ -26,7 +26,7 @@ subroutine innerSolver()
   use_DGM = .true.
   use_recondensation = .false.
   energy_group_map = [4]
-  inner_print = .true.
+  inner_print = .false.
   max_inner_iters = 500
   ignore_warnings = .true.
 
@@ -65,25 +65,25 @@ subroutine innerSolver()
   call getIncoming(0, incoming)
   call compute_xs_moments(order=0)
   call inner_solve(0, incoming, phi_m, psi_m)
-  print *, phi_m(0,:,1)
+  print *, phi_m(0,:,1), phi_m(0,:,1) - [3.5, 0.0]
   t1 = testCond(all(abs(phi_m(0,:,1) - [3.5, 0.0]) < 1e-12))
   ! Order 1
   call getIncoming(1, incoming)
   call compute_xs_moments(order=1)
   call inner_solve(1, incoming, phi_m, psi_m)
-  print *, phi_m(0,:,1)
+  print *, phi_m(0,:,1), phi_m(0,:,1) - [2.795862455358810, 0.0]
   t2 = testCond(all(abs(phi_m(0,:,1) - [2.795862455358810, 0.0]) < 1e-12))
   ! Order 2
   call getIncoming(2, incoming)
   call compute_xs_moments(order=2)
   call inner_solve(2, incoming, phi_m, psi_m)
-  print *, phi_m(0,:,1)
+  print *, phi_m(0,:,1), phi_m(0,:,1) - [-0.571374251419063, 0.0]
   t3 = testCond(all(abs(phi_m(0,:,1) - [-0.571374251419063, 0.0]) < 1e-12))
   ! Order 3
   call getIncoming(3, incoming)
   call compute_xs_moments(order=3)
   call inner_solve(3, incoming, phi_m, psi_m)
-  print *, phi_m(0,:,1)
+  print *, phi_m(0,:,1), phi_m(0,:,1) - [-1.839357755224960, 0.0]
   t4 = testCond(all(abs(phi_m(0,:,1) - [-1.839357755224960, 0.0]) < 1e-12))
 
   if (t1 == 0) then
