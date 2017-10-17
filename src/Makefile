@@ -58,80 +58,80 @@ BC := /usr/bin/bc
 
 objects = material mesh angle sweeper state
 
-all: $(objects) main
+all: $(objects) unotran
 
 # Use the repository's BLAS implementation
 angle: angle.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
 	
 test_angle: control.f90 angle.f90 ./test/test_angle.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_angle.so $^ 
-	@./test/test_angle.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_angle $^ 
+	@./test/test_angle
 	
 dgm: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
 test_dgm: control.f90 mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90 ./test/test_dgm.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgm.so $^ 
-	@./test/test_dgm.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgm $^ 
+	@./test/test_dgm
 	
 dgmsweeper: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
 test_dgmsweeper: control.f90 mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 sweeper.f90 ./test/test_dgmsweeper.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgmsweeper.so $^ 
-	@./test/test_dgmsweeper.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgmsweeper $^ 
+	@./test/test_dgmsweeper
 	
 dgmsolver: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 
 test_dgmsolver: control.f90 mesh.f90 material.f90 angle.f90 state.f90 dgm.f90 dgmsweeper.f90 sweeper.f90 dgmsolver.f90 ./test/test_dgmsolver.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgmsolver.so $^ 
-	@./test/test_dgmsolver.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_dgmsolver $^ 
+	@./test/test_dgmsolver
 	
 mesh: mesh.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@ 
 	
 test_mesh: control.f90 mesh.f90 ./test/test_mesh.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_mesh.so $^ 
-	@./test/test_mesh.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_mesh $^ 
+	@./test/test_mesh
 	
 material: material.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
 test_material: control.f90 material.f90 ./test/test_material.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_material.so $^ 
-	@./test/test_material.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_material $^ 
+	@./test/test_material
 	
 state: material.f90 mesh.f90 angle.f90 state.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
 test_state: control.f90 mesh.f90 material.f90 angle.f90 state.f90 ./test/test_state.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_state.so $^ 
-	@./test/test_state.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_state $^ 
+	@./test/test_state
 	
 sweeper: material.f90 mesh.f90 angle.f90 state.f90 sweeper.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
 test_sweeper: control.f90 mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 solver.f90 ./test/test_sweeper.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_sweeper.so $^ 
-	@./test/test_sweeper.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_sweeper $^ 
+	@./test/test_sweeper
 
-main: control.f90 material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 dgmsweeper.f90 solver.f90 dgmsolver.f90 main.f90
-	$(F90) $(OMPFLAG) $(LIBBLAS) -o main.exe $^ 
+unotran: control.f90 material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 dgmsweeper.f90 solver.f90 dgmsolver.f90 main.f90
+	$(F90) $(OMPFLAG) $(LIBBLAS) -o xunotran $^ 
 	
 solver: material.f90 mesh.f90 angle.f90 state.f90 dgm.f90 sweeper.f90 dgmsweeper.f90 solver.f90
 	f2py --fcompiler=$(F90) $(LIBBLAS) -c $^ -m $@
 	
 test_solver: control.f90 mesh.f90 material.f90 angle.f90 state.f90 sweeper.f90 dgm.f90 dgmsweeper.f90 solver.f90 ./test/test_solver.f90
-	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_solver.so $^ 
-	@./test/test_solver.so
+	@$(F90) $(OMPFLAG) $(LIBBLAS) -o ./test/test_solver $^ 
+	@./test/test_solver
 	
 test: test_angle test_mesh test_material test_state test_sweeper test_solver test_dgm test_dgmsweeper test_dgmsolver
 
 # Remove objects, module files, and exectables
 clean:
-	@rm -f *.o *.mod *-x *wrap.cxx *.so test/*.so
+	@rm -f *.o *.mod *-x *wrap.cxx xunotran
 
 # Same, but leave the executable
 neat:
