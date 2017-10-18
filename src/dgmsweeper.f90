@@ -13,9 +13,9 @@ module dgmsweeper
   contains
 
   subroutine dgmsweep(phi_new, psi_new, incoming)
-    double precision, intent(inout) :: incoming(number_coarse_groups, number_angles,0:expansion_order)
     double precision, intent(inout) :: phi_new(:,:,:), psi_new(:,:,:)
-    double precision, allocatable :: phi_m(:,:,:), psi_m(:,:,:)
+    double precision, intent(inout) :: incoming(:,:,0:)
+    double precision, allocatable, dimension(:, :, :) :: phi_m, psi_m
     integer :: i
 
     allocate(phi_m(0:number_legendre, number_coarse_groups, number_cells))
@@ -47,8 +47,8 @@ module dgmsweeper
 
     integer, intent(in) :: i
     double precision, intent(inout) :: incoming(:,:)
-    double precision, intent(inout) :: phi_m(0:number_legendre, number_coarse_groups, number_cells)
-    double precision, intent(inout) :: psi_m(number_coarse_groups, number_angles * 2, number_cells)
+    double precision, intent(inout) :: phi_m(0:,:,:)
+    double precision, intent(inout) :: psi_m(:,:,:)
     double precision :: inner_error, frac
     integer :: counter
 

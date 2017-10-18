@@ -8,9 +8,11 @@ module dgm
 
   implicit none
 
-  double precision, allocatable :: basis(:,:), chi_m(:,:,:), source_m(:,:,:,:)
+  double precision, allocatable, dimension(:, :) :: basis
+  double precision, allocatable, dimension(:, :, :) :: chi_m
+  double precision, allocatable, dimension(:, :, :, :) :: source_m
   integer :: expansion_order, number_coarse_groups
-  integer, allocatable :: energyMesh(:), order(:), basismap(:)
+  integer, allocatable, dimension(:) :: energyMesh, order, basismap
 
   contains
 
@@ -67,7 +69,7 @@ module dgm
   ! Load basis set from file
   subroutine initialize_basis()
     double precision, allocatable, dimension(:) :: array1
-    integer, allocatable :: cumsum(:)
+    integer, allocatable, dimension(:) :: cumsum
     integer :: g, cg, i
 
     ! allocate the basis array
@@ -200,7 +202,8 @@ module dgm
           cg = energyMesh(g)
           ! Check if producing nan
           if (d_psi(cg, a, c) /= 0.0) then
-            d_delta(cg, a, c) = d_delta(cg, a, c) + basis(g, order) * (sig_t(g, mat) - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
+            d_delta(cg, a, c) = d_delta(cg, a, c) + basis(g, order) * (sig_t(g, mat) &
+                                - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
           end if
         end do
       end do

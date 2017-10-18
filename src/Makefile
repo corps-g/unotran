@@ -64,12 +64,13 @@ test_sweeper: $(objects) ./test/test_sweeper.f90
 test: test_angle test_mesh test_material test_state test_sweeper test_solver test_dgm test_dgmsweeper test_dgmsolver
 
 # f2py module
-pydgm: control.f90 angle.f90 material.f90 mesh.f90 #state.f90 sweeper.f90 solver.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90
+pydgm: control.f90 angle.f90 material.f90 mesh.f90 state.f90 sweeper.f90 solver.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90
+	@rm -f pydgm*so
 	f2py --f90flags="$(F90FLAGS)" -c -m $@ $^
 
 # Remove objects, module files, and exectables
 clean:
-	@rm -f *.o *.mod test/*.x
+	@rm -f *.o *.mod pydgm*so xdgm test/*.x
 
 
 #===============================================================================
