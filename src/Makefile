@@ -5,7 +5,7 @@
 #===============================================================================
 
 F90 = gfortran
-F90FLAGS = -O0 -ffree-line-length-none -fcheck=all -fdefault-double-8 -fdefault-real-8
+F90FLAGS = -O0 -fcheck=all -fdefault-double-8 -fdefault-real-8
 LDFLAGS = 
 
 
