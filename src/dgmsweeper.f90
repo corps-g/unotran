@@ -41,7 +41,6 @@ module dgmsweeper
                                phi_new, psi_new, incoming(:,:,i))
     end do
 
-    stop
     deallocate(phi_m, psi_m)
   end subroutine dgmsweep
 
