@@ -30,8 +30,8 @@ sweeper.o
 #===============================================================================
 
 # main executable
-xdgm: $(objects) 
-	$(F90) $(objects) -o $@ $(LDFLAGS) $(LIB) $(INCLUDE)
+xdgm: $(objects) main.f90
+	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o $@ 
 
 # executable tests
 test_angle: $(objects) ./test/test_angle.f90
