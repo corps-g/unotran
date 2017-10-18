@@ -1,9 +1,11 @@
 import unittest
 from test_angle import TestANGLE
+from test_state import TestSTATE
 
 def AllSuite():
     suite = unittest.TestSuite()
     suite.addTests(unittest.makeSuite(TestANGLE))
+    suite.addTests(unittest.makeSuite(TestSTATE))
     
     return suite
 
