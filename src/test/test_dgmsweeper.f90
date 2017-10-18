@@ -6,11 +6,15 @@ end program test_sweeper
 subroutine innerSolver()
   use control
   use dgmsweeper
-  use material, only : create_material, number_legendre, number_groups, finalize_material
-  use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
+  use material, only : create_material, number_legendre, number_groups, &
+                       finalize_material
+  use angle, only : initialize_angle, p_leg, number_angles, &
+                    initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
-  use state, only : initialize_state, phi, source, psi, finalize_state, output_state, d_keff
-  use dgm, only : number_coarse_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order, compute_source_moments
+  use state, only : initialize_state, phi, source, psi, finalize_state, &
+                    output_state, d_keff
+  use dgm, only : number_coarse_groups, initialize_moments, initialize_basis, &
+                  finalize_moments, expansion_order, compute_source_moments
 
   implicit none
 
@@ -53,7 +57,8 @@ subroutine innerSolver()
 
   d_keff = 2.42494653837
   do c=1, number_cells
-    phi(0,:,c) = [2.9285415251016529, 3.8947396817725437, 0.17663456964651852, 0.000084223479284161671, 0.0, 0.0, 0.0]
+    phi(0,:,c) = [2.9285415251016529, 3.8947396817725437, 0.17663456964651852, &
+                  0.000084223479284161671, 0.0, 0.0, 0.0]
     do a=1, number_angles * 2
       psi(:,a,c) = phi(0,:,c)
     end do
@@ -65,25 +70,25 @@ subroutine innerSolver()
   call getIncoming(0, incoming)
   call compute_xs_moments(order=0)
   call inner_solve(0, incoming, phi_m, psi_m)
-  print *, phi_m(0,:,1), phi_m(0,:,1) - [3.5, 0.0]
+!  print *, phi_m(0,:,1), phi_m(0,:,1) - [3.5, 0.0]
   t1 = testCond(all(abs(phi_m(0,:,1) - [3.5, 0.0]) < 1e-12))
   ! Order 1
   call getIncoming(1, incoming)
   call compute_xs_moments(order=1)
   call inner_solve(1, incoming, phi_m, psi_m)
-  print *, phi_m(0,:,1), phi_m(0,:,1) - [2.795862455358810, 0.0]
+!  print *, phi_m(0,:,1), phi_m(0,:,1) - [2.795862455358810, 0.0]
   t2 = testCond(all(abs(phi_m(0,:,1) - [2.795862455358810, 0.0]) < 1e-12))
   ! Order 2
   call getIncoming(2, incoming)
   call compute_xs_moments(order=2)
   call inner_solve(2, incoming, phi_m, psi_m)
-  print *, phi_m(0,:,1), phi_m(0,:,1) - [-0.571374251419063, 0.0]
+!  print *, phi_m(0,:,1), phi_m(0,:,1) - [-0.571374251419063, 0.0]
   t3 = testCond(all(abs(phi_m(0,:,1) - [-0.571374251419063, 0.0]) < 1e-12))
   ! Order 3
   call getIncoming(3, incoming)
   call compute_xs_moments(order=3)
   call inner_solve(3, incoming, phi_m, psi_m)
-  print *, phi_m(0,:,1), phi_m(0,:,1) - [-1.839357755224960, 0.0]
+!  print *, phi_m(0,:,1), phi_m(0,:,1) - [-1.839357755224960, 0.0]
   t4 = testCond(all(abs(phi_m(0,:,1) - [-1.839357755224960, 0.0]) < 1e-12))
 
   if (t1 == 0) then

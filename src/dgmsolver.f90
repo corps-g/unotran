@@ -54,7 +54,8 @@ module dgmsolver
     ! interation number
     counter = 1
 
-    do while (outer_error > outer_tolerance)  ! Interate to convergance tolerance
+    ! Interate to convergance tolerance
+    do while (outer_error > outer_tolerance)
       ! Sweep through the mesh
       call dgmsweep(phi_new, psi_new, incoming)
 
@@ -64,7 +65,8 @@ module dgmsolver
       ! output the current error and iteration number
       if (outer_print) then
         if (solver_type == 'eigen') then
-          print *, 'OuterError = ', outer_error, 'Iteration = ', counter, 'Eigenvalue = ', d_keff
+          print *, 'OuterError = ', outer_error, 'Iteration = ', counter, &
+                   'Eigenvalue = ', d_keff
         else if (solver_type == 'fixed') then
           print *, 'OuterError = ', outer_error, 'Iteration = ', counter
         end if

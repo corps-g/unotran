@@ -4,7 +4,8 @@ module dgmsweeper
   use mesh, only : dx, number_cells, mMap
   use angle, only : number_angles
   use sweeper, only : sweep
-  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi, d_keff
+  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, &
+                    d_sig_t, d_psi, d_keff
   use dgm, only : number_coarse_groups, expansion_order, &
                   energymesh, basis, compute_xs_moments, compute_flux_moments
 
@@ -36,7 +37,8 @@ module dgmsweeper
       call inner_solve(i, incoming(:,:,i), phi_m, psi_m)
 
       ! Unfold 0th order flux
-      call unfold_flux_moments(i, phi_m, psi_m, phi_new, psi_new, incoming(:,:,i))
+      call unfold_flux_moments(i, phi_m, psi_m, &
+                               phi_new, psi_new, incoming(:,:,i))
     end do
 
     stop
@@ -56,7 +58,8 @@ module dgmsweeper
     inner_error = 1.0
     counter = 1
 
-    do while (inner_error > inner_tolerance)  ! Interate to convergance tolerance
+    ! Interate to convergance tolerance
+    do while (inner_error > inner_tolerance)
       ! Use discrete ordinates to sweep over the moment equation
       call sweep(number_coarse_groups, phi_m, psi_m, incoming)
 
@@ -67,7 +70,8 @@ module dgmsweeper
 
         ! output the current error and iteration number
         if (inner_print) then
-          print *, '    ', 'eps = ', inner_error, ' counter = ', counter, ' order = ', i, phi_m(0,:,1)
+          print *, '    ', 'eps = ', inner_error, ' counter = ', counter, &
+                   ' order = ', i, phi_m(0,:,1)
         end if
 
         ! increment the iteration
@@ -104,7 +108,8 @@ module dgmsweeper
   end subroutine inner_solve
 
   ! Unfold the flux moments
-  subroutine unfold_flux_moments(order, phi_moment, psi_moment, phi_new, psi_new, incoming)
+  subroutine unfold_flux_moments(order, phi_moment, psi_moment, &
+                                 phi_new, psi_new, incoming)
     integer, intent(in) :: order
     double precision, intent(in) :: phi_moment(:,:,:), psi_moment(:,:,:)
     double precision, intent(out) :: psi_new(:,:,:), phi_new(:,:,:)
@@ -117,10 +122,12 @@ module dgmsweeper
           cg = energyMesh(g)
           ! Scalar flux
           if (a == 1) then
-            phi_new(:, g, c) = phi_new(:, g, c) + basis(g, order) * phi_moment(:, cg, c)
+            phi_new(:, g, c) = phi_new(:, g, c) &
+                               + basis(g, order) * phi_moment(:, cg, c)
           end if
           ! Angular flux
-          psi_new(g, a, c) = psi_new(g, a, c) +  basis(g, order) * psi_moment(cg, a, c)
+          psi_new(g, a, c) = psi_new(g, a, c) &
+                             + basis(g, order) * psi_moment(cg, a, c)
         end do
       end do
     end do
