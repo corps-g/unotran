@@ -2,10 +2,11 @@ module control
   implicit none
 
   ! control variables
-  double precision, allocatable :: coarse_mesh(:)
-  integer, allocatable :: fine_mesh(:), material_map(:), energy_group_map(:), truncation_map(:)
+  double precision, allocatable, dimension(:) :: coarse_mesh
+  integer, allocatable, dimension(:) :: fine_mesh, material_map, energy_group_map, truncation_map
   double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lambda=1.0, source_value=0.0
-  character(:), allocatable :: xs_name, dgm_basis_name, equation_type, file_name, initial_phi, initial_psi, solver_type
+  character(len=256) :: xs_name, dgm_basis_name, file_name, initial_phi, initial_psi, solver_type
+  character(len=2) :: equation_type
   integer :: angle_order, angle_option, dgm_expansion_order=-1, legendre_order=-1, max_outer_iters=1000, max_inner_iters=1000
   logical :: allow_fission=.false., outer_print=.true., inner_print=.false.
   logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false., ignore_warnings=.false.
@@ -33,6 +34,8 @@ module control
 
     open(fh, file=file_name, action='read', iostat=ios)
     if (ios > 0) stop "*** ERROR: user input file not found ***"
+
+    equation_type = "DD"
 
     ! ios is negative if an end of record condition is encountered or if
     ! an endfile condition was detected.  It is positive if an error was
@@ -115,10 +118,6 @@ module control
       end if
     end do
     close(fh)
-
-    if (.not. allocated(equation_type)) then
-      equation_type = 'DD'
-    end if
 
     if (use_DGM) then
       store_psi = .true.
