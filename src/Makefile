@@ -5,7 +5,7 @@
 #===============================================================================
 
 F90 = gfortran
-F90FLAGS = -O0 -fcheck=all -fdefault-double-8 -fdefault-real-8
+F90FLAGS = -O0 -fcheck=all -fdefault-double-8 -fdefault-real-8 -ffree-line-length-none
 LDFLAGS = 
 
 
@@ -35,32 +35,32 @@ xdgm: $(objects) main.f90
 
 # executable tests
 test_angle: $(objects) ./test/test_angle.f90
-	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	./test/$@.x
+	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
+	@./test/$@.x
 test_dgm: $(objects) ./test/test_dgm.f90
-	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	./test/$@.x
+	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
+	@./test/$@.x
 test_dgmsolver: $(objects) ./test/test_dgmsolver.f90
-	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	./test/$@.x
+	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
+	@./test/$@.x
 test_dgmsweeper: $(objects) ./test/test_dgmsweeper.f90
-	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	./test/$@.x
+	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
+	@./test/$@.x
 test_material: $(objects) ./test/test_material.f90
-	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	./test/$@.x
+	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
+	@./test/$@.x
 test_mesh: $(objects) ./test/test_mesh.f90
-	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	./test/$@.x
+	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
+	@./test/$@.x
 test_solver: $(objects) ./test/test_solver.f90
-	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	./test/$@.x
+	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
+	@./test/$@.x
 test_state: $(objects) ./test/test_state.f90
-	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	./test/$@.x
+	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
+	@./test/$@.x
 test_sweeper: $(objects) ./test/test_sweeper.f90
-	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	./test/$@.x
+	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
+	@./test/$@.x
 test: test_angle test_mesh test_material test_state test_sweeper test_solver test_dgm test_dgmsweeper test_dgmsolver
 
 # f2py module
