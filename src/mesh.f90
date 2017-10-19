@@ -12,7 +12,6 @@ module mesh
 
   ! Compute the cell size and material map for the problem
   subroutine create_mesh()
-    double precision :: width  ! Total width of problem
     double precision :: ddx  ! Temporary variable
     integer :: n, c, i, j
 
@@ -33,7 +32,7 @@ module mesh
     end do
 
     ! Store the total width of the problem
-    width = coarse_mesh(n) - coarse_mesh(1)
+    width = coarse_mesh(n + 1) - coarse_mesh(1)
 
   end subroutine create_mesh
 
