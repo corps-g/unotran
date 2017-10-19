@@ -48,8 +48,8 @@ class TestSTATE(unittest.TestCase):
         phi_test = np.ones((7, 1))
         source_test = np.zeros((7, 4, 1))
         
-        np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test)
-        np.testing.assert_array_almost_equal(pydgm.state.source, source_test)
+        np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.source, source_test, 12)
         
     def test_state_initialize2(self):
         ''' 
@@ -62,9 +62,9 @@ class TestSTATE(unittest.TestCase):
         psi_test = np.ones((7, 4, 1))
         source_test = np.zeros((7, 4, 1))
         
-        np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test)
-        np.testing.assert_array_almost_equal(pydgm.state.psi, psi_test)
-        np.testing.assert_array_almost_equal(pydgm.state.source, source_test)
+        np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.psi, psi_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.source, source_test, 12)
         
     def tearDown(self):
         # Finalize the dependancies

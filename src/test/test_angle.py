@@ -52,7 +52,7 @@ class TestANGLE(unittest.TestCase):
         test_basis = np.array([np.polynomial.legendre.legval(x,I[i]) * (-1) ** i for i in range(nAngle)])
       
         # Test the basis
-        np.testing.assert_array_almost_equal(basis, test_basis)
+        np.testing.assert_array_almost_equal(basis, test_basis, 12)
             
     def test_angle_quadrature(self):
         '''
@@ -72,8 +72,8 @@ class TestANGLE(unittest.TestCase):
         wt_test = wt_test[:nAngle - 1:-1]
         
         # Test for equivalance
-        np.testing.assert_array_almost_equal(pydgm.angle.mu, mu_test)
-        np.testing.assert_array_almost_equal(pydgm.angle.wt, wt_test)
+        np.testing.assert_array_almost_equal(pydgm.angle.mu, mu_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.angle.wt, wt_test, 12)
         
     def tearDown(self):
         pydgm.angle.finalize_angle()

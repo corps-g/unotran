@@ -1,0 +1,71 @@
+import sys
+sys.path.append('../')
+
+import unittest
+import pydgm
+import numpy as np
+
+class TestSWEEPER(unittest.TestCase):
+    
+    def setUp(self):
+        # Set the variables for the test
+        pydgm.control.fine_mesh = [10]
+        pydgm.control.coarse_mesh = [0.0, 10.0]
+        pydgm.control.material_map = [1]
+        s = 'test.anlxs'
+        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.angle_order = 2
+        pydgm.control.angle_option = pydgm.angle.gl
+        pydgm.control.boundary_type = [0.0, 0.0]
+        pydgm.control.allow_fission = False
+        pydgm.control.outer_print = False
+        pydgm.control.inner_print = False
+        pydgm.control.outer_tolerance = 1e-14
+        pydgm.control.inner_tolerance = 1e-14
+        pydgm.control.Lambda = 1.0
+        pydgm.control.store_psi = False
+        s = 'fixed'
+        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.source_value = 1.0
+        
+        # Initialize the dependancies
+        pydgm.solver.initialize_solver()
+    
+    def test_sweeper_computeEQ_dd(self):
+        ''' 
+        Test diamond difference equation
+        '''
+        pydgm.control.equation_type = 'DD'
+        
+        frac = 1 / (2 * 0.8611363115940526)
+        Ps = 0.0
+        inc = np.array([0.0])
+        
+        Ps = pydgm.sweeper.computeeq(1.0, inc, 1.0, frac, 1.0, 0.8611363115940526)
+        
+        self.assertAlmostEqual(inc[0], 0.734680275209795978, 12)
+        self.assertAlmostEqual(Ps, 0.367340137604897989, 12)
+
+    def test_sweeper_computeEQ_sc(self):
+        ''' 
+        Test the step characteristics equation
+        '''
+        pydgm.control.equation_type = 'SC'
+        
+        frac = 1 / (2 * 0.8611363115940526)
+        Ps = 0.0
+        inc = np.array([0.0])
+        
+        Ps = pydgm.sweeper.computeeq(1.0, inc, 1.0, frac, 1.0, 0.8611363115940526)
+        
+        self.assertAlmostEqual(inc[0], 0.686907416523104323, 12)
+        self.assertAlmostEqual(Ps, 0.408479080928661801, 12)
+        
+    def tearDown(self):
+        pydgm.solver.finalize_solver()
+        pydgm.control.finalize_control()
+        
+if __name__ == '__main__':
+    
+    unittest.main()
+
