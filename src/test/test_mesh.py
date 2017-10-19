@@ -30,7 +30,7 @@ class TestMESH(unittest.TestCase):
         # Initialize the dependancies
         pydgm.mesh.create_mesh()
     
-    def test_angle_initialization_mesh(self):
+    def test_mesh_create_mesh(self):
         ''' 
         Test the mesh initialization
         '''
@@ -51,7 +51,7 @@ class TestMESH(unittest.TestCase):
   
         
     def tearDown(self):
-        pydgm.angle.finalize_angle()
+        pydgm.mesh.finalize_mesh()
         
 if __name__ == '__main__':
     

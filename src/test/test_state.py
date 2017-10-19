@@ -31,6 +31,7 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.use_recondensation = False
         s = 'fixed'
         pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.source_value = 0.0
         
         # Initialize the dependancies
         pydgm.mesh.create_mesh()
