@@ -444,7 +444,7 @@ subroutine eigenV2g()
 
   call initialize_dgmsolver()
 
-  keff_test = 0.809952323298
+  keff_test = 0.8099523232983425
 
   phi_test = reshape([&
               0.05882749189352335, 0.009858087422743867, 0.1099501419733834, &
@@ -521,7 +521,7 @@ subroutine eigenV7g()
 
   call initialize_dgmsolver()
 
-  keff_test = 0.434799909025
+  keff_test = 0.4347999090254699
 
   phi_test = reshape([&
               0.4054826380458894, 0.7797540846047309, 0.03343005518884316, &
@@ -620,7 +620,7 @@ subroutine eigenR2g()
 
   call dgmsolve()
 
-  keff_test = 0.840336134454
+  keff_test = 0.8403361344537817
 
   phi_test = [0.1428571428571399, 0.0252100840336125]
   psi_test = [0.07142857142856951, 0.0126050420168061]
@@ -681,7 +681,7 @@ subroutine eigenR7g()
 
   !call output_control()
 
-  keff_test = 2.42494653837
+  keff_test = 2.4249465383700772
 
   phi_test = [3.9968764019364260, 5.3155446123379970, 0.2410710372839961, &
               0.0001149482887246657, 0.0000000000000000, &
@@ -759,7 +759,7 @@ subroutine eigenR2gPin()
 
   call initialize_dgmsolver()
 
-  keff_test = 0.841854685
+  keff_test = 0.8418546852484950
 
   phi_test = reshape([0.133931831084, 0.0466324063141, 0.134075529413, &
                       0.0455080808626, 0.1343633343, &
@@ -829,7 +829,7 @@ subroutine eigenR7gPin()
 
   call initialize_dgmsolver()
 
-  keff_test = 1.351545156
+  keff_test = 1.3515451561148644
 
   phi_test = reshape([2.2650616717, 2.8369334989, 0.0787783060158, &
                       7.04175236386e-05, 3.247808073e-11, &

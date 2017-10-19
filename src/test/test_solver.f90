@@ -343,7 +343,7 @@ subroutine eigenV1g()
 
   call initialize_solver()
 
-  keff_test = 0.689359111542
+  keff_test = 0.6893591115415211
 
   phi_test = reshape([&
                 0.05917851752472814, 0.1101453392055481, 0.1497051827466689, &
@@ -405,7 +405,7 @@ subroutine eigenV2g()
 
   call initialize_solver()
 
-  keff_test = 0.809952323298
+  keff_test = 0.8099523232983425
 
   phi_test = reshape([&
               0.05882749189352335, 0.009858087422743867, 0.1099501419733834, &
@@ -471,7 +471,7 @@ subroutine eigenV7g()
 
   call initialize_solver()
 
-  keff_test = 0.434799909025
+  keff_test = 0.4347999090254699
 
   phi_test = reshape([&
               0.4054826380458894, 0.7797540846047309, 0.03343005518884316, &
@@ -555,7 +555,7 @@ subroutine eigenR1g()
 
   call solve()
 
-  keff_test = 0.714285714286
+  keff_test = 0.7142857142857145
 
   phi_test = 1.0
   psi_test = 1.0
@@ -598,7 +598,7 @@ subroutine eigenR2g()
 
   call solve()
 
-  keff_test = 0.840336134454
+  keff_test = 0.8403361344537817
 
   phi_test = [0.1428571428571399, 0.0252100840336125]
   psi_test = [0.07142857142856951, 0.0126050420168061]
@@ -650,7 +650,7 @@ subroutine eigenR7g()
 
   call solve()
 
-  keff_test = 2.42494653837
+  keff_test = 2.4249465383700772
 
   phi_test = [3.9968764019364260, 5.3155446123379970, 0.2410710372839961, &
               0.0001149482887246657, 0.0000000000000000, &
@@ -705,7 +705,7 @@ subroutine eigenR1gPin()
 
   call initialize_solver()
 
-  keff_test = 0.682474203986
+  keff_test = 0.6824742039858390
 
   phi_test = reshape([&
                   0.1334183765212053, 0.1335607508024285, 0.1338459024547992, &
@@ -768,7 +768,7 @@ subroutine eigenR2gPin()
 
   call initialize_solver()
 
-  keff_test = 0.841854685248
+  keff_test = 0.8418546852484950
 
   phi_test = reshape([&
                 0.1339318310846705, 0.04663240631432017, 0.1340755294135996, &
@@ -839,7 +839,7 @@ subroutine eigenR7gPin()
 
   call initialize_solver()
 
-  keff_test = 1.3515451561148291
+  keff_test = 1.3515451561148644
 
   phi_test = reshape([&
         2.2650616717248330, 2.8369334989286640, 0.07877830602847499, &
