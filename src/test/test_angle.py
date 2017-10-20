@@ -77,6 +77,7 @@ class TestANGLE(unittest.TestCase):
         
     def tearDown(self):
         pydgm.angle.finalize_angle()
+        pydgm.control.finalize_control()
         
 if __name__ == '__main__':
     

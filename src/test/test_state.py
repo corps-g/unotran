@@ -32,6 +32,7 @@ class TestSTATE(unittest.TestCase):
         s = 'fixed'
         pydgm.control.solver_type = s + ' ' * (256 - len(s))
         pydgm.control.source_value = 0.0
+        pydgm.control.legendre_order = 0
         
         # Initialize the dependancies
         pydgm.mesh.create_mesh()
@@ -72,6 +73,7 @@ class TestSTATE(unittest.TestCase):
         pydgm.material.finalize_material()
         pydgm.angle.finalize_angle()
         pydgm.state.finalize_state()
+        pydgm.control.finalize_control()
         
 if __name__ == '__main__':
     

@@ -26,6 +26,7 @@ class TestMESH(unittest.TestCase):
         pydgm.control.store_psi = True
         s = 'fixed'
         pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.legendre_order = 0
         
         # Initialize the dependancies
         pydgm.mesh.create_mesh()
@@ -52,6 +53,7 @@ class TestMESH(unittest.TestCase):
         
     def tearDown(self):
         pydgm.mesh.finalize_mesh()
+        pydgm.control.finalize_control()
         
 if __name__ == '__main__':
     
