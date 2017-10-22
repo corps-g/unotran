@@ -89,7 +89,9 @@ module solver
         end if
       end if
 
-      call normalize_flux()
+      if (solver_type == 'eigen') then
+       call normalize_flux()
+      end if
 
       ! increment the iteration
       counter = counter + 1
@@ -101,16 +103,14 @@ module solver
 
     double precision :: frac
 
-    if (solver_type == 'eigen') then
-      frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
+    frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
 
-      ! normalize phi
-      phi = phi / frac
+    ! normalize phi
+    phi = phi / frac
 
-      ! normalize psi
-      if (store_psi) then
-          psi = psi / frac
-      end if
+    ! normalize psi
+    if (store_psi) then
+        psi = psi / frac
     end if
 
   end subroutine normalize_flux
