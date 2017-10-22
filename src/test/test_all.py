@@ -6,7 +6,7 @@ from test_state import TestSTATE
 from test_sweeper import TestSWEEPER
 from test_solver import TestSOLVER
 from test_dgm import TestDGM
-# from test_dgmsweeper import TestDGMSWEEPER
+from test_dgmsweeper import TestDGMSWEEPER
 # from test_dgmsolver import TestDGMSOLVER
 
 def AllSuite():
@@ -18,7 +18,7 @@ def AllSuite():
     suite.addTests(unittest.makeSuite(TestSWEEPER))
     suite.addTests(unittest.makeSuite(TestSOLVER))
     suite.addTests(unittest.makeSuite(TestDGM))
-#     suite.addTests(unittest.makeSuite(TestDGMSWEEPER))
+    suite.addTests(unittest.makeSuite(TestDGMSWEEPER))
 #     suite.addTests(unittest.makeSuite(TestDGMSOLVER))
     
     return suite
