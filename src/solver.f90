@@ -1,5 +1,5 @@
 module solver
-  use control, only : lambda, outer_print, outer_tolerance, store_psi, solver_type
+  use control, only : lamb, outer_print, outer_tolerance, store_psi, solver_type
   use material, only : create_material, number_legendre, number_groups, finalize_material, &
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle

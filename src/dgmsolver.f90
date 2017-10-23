@@ -73,8 +73,8 @@ module dgmsolver
       end if
 
       ! Update flux using krasnoselskii iteration
-      phi = (1.0 - lambda) * phi + lambda * phi_new
-      psi = (1.0 - lambda) * psi + lambda * psi_new
+      phi = (1.0 - lamb) * phi + lamb * phi_new
+      psi = (1.0 - lamb) * psi + lamb * psi_new
 
       ! increment the iteration
       counter = counter + 1

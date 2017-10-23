@@ -82,8 +82,8 @@ module dgmsweeper
           !phi_m = phi_m * frac
         end if
 
-        !d_phi = (1.0 - lambda) * d_phi + lambda * phi_m
-        !d_psi = (1.0 - lambda) * d_psi + lambda * psi_m
+        !d_phi = (1.0 - lamb) * d_phi + lamb * phi_m
+        !d_psi = (1.0 - lamb) * d_psi + lamb * psi_m
         d_phi = phi_m
         d_psi = psi_m
 

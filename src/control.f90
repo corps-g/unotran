@@ -4,7 +4,7 @@ module control
   ! control variables
   double precision, allocatable, dimension(:) :: coarse_mesh
   integer, allocatable, dimension(:) :: fine_mesh, material_map, energy_group_map, truncation_map
-  double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lambda=1.0, source_value=0.0
+  double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lamb=1.0, source_value=0.0
   character(len=256) :: xs_name, dgm_basis_name, file_name, initial_phi, initial_psi, solver_type
   character(len=2) :: equation_type
   integer :: angle_order, angle_option, dgm_expansion_order=-1, legendre_order=-1, max_outer_iters=1000, max_inner_iters=1000
@@ -91,7 +91,7 @@ module control
         case ('inner_tolerance')
           read(buffer, *, iostat=ios) inner_tolerance
         case ('lambda')
-          read(buffer, *, iostat=ios) lambda
+          read(buffer, *, iostat=ios) lamb
         case ('use_DGM')
           read(buffer, *, iostat=ios) use_DGM
         case ('store_psi')
@@ -164,7 +164,7 @@ module control
     print *, '  inner_tolerance    = ', inner_tolerance
     print *, '  max_outer_iters    = ', max_outer_iters
     print *, '  max_inner_iters    = ', max_inner_iters
-    print *, '  lambda             = ', lambda
+    print *, '  lambda             = ', lamb
     print *, '  ignore_warnings    = ', ignore_warnings
     if (legendre_order > -1) then
       print *, '  legendre_order     = ', legendre_order
