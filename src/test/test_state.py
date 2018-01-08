@@ -25,7 +25,7 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-12
         pydgm.control.inner_tolerance = 1e-12
-        pydgm.control.Lambda = 0.5
+        pydgm.control.lamb = 0.5
         pydgm.control.use_dgm = True
         pydgm.control.store_psi = False
         pydgm.control.use_recondensation = False

@@ -18,11 +18,11 @@ class TestDGMSWEEPER(unittest.TestCase):
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.allow_fission = True
-        pydgm.control.outer_print = False
-        pydgm.control.inner_print = False
+        pydgm.control.outer_print = True
+        pydgm.control.inner_print = True
         pydgm.control.outer_tolerance = 1e-14
         pydgm.control.inner_tolerance = 1e-14
-        pydgm.control.Lambda = 1.0
+        pydgm.control.lamb = 1.0
         pydgm.control.store_psi = True
         pydgm.control.use_dgm = True
         pydgm.control.energy_group_map = [4]
@@ -45,7 +45,7 @@ class TestDGMSWEEPER(unittest.TestCase):
         '''
 
         keff_test = 0.9565644234498036
-        phi_test = np.array([0.1020504930641289, 3.811547533557685, 2.864052634383366, 0.21526881958866095, 0.006948383972629901, 0.0001320419273584034, 9.350617154876036e-08])
+        phi_test = np.array([0.10205049306413014, 3.811547533557704, 2.8640526343833463, 0.215268819588659, 0.006948383972629827, 0.0001320419273584021, 9.350617154875939e-08])
         phi_m = np.reshape(np.zeros(20), (1, 2, 10), 'F')
         psi_m = np.reshape(np.zeros(80), (2, 4, 10), 'F')
 
@@ -53,11 +53,11 @@ class TestDGMSWEEPER(unittest.TestCase):
         for c in range(pydgm.mesh.number_cells):
             pydgm.state.phi[0, :, c] = phi_test
             for a in range(pydgm.angle.number_angles * 2):
-                pydgm.state.psi[:, a, c] = phi_test / 2
+                pydgm.state.psi[:, a, c] = phi_test
 
         # Solve the problem
         pydgm.dgm.compute_flux_moments()
-        phi_m_test = np.array([3.4964597402969204, 0.13591713796652238, -3.1791404276441306, -0.6609152883071883, 0.004087939785148761, 0.00491318330648654, 0.0027288922698201013, 0.0]).reshape((2, -1))
+        phi_m_test = np.concatenate((np.loadtxt('basis').T.dot(phi_test), [0])).reshape((2, -1))
 
         for i in range(4):
             incoming = self.getIncoming(i)

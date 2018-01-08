@@ -22,7 +22,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
         pydgm.control.inner_tolerance = 1e-14
-        pydgm.control.Lambda = 1.0
+        pydgm.control.lamb = 1.0
         pydgm.control.store_psi = False
         s = 'fixed'
         pydgm.control.solver_type = s + ' ' * (256 - len(s))
