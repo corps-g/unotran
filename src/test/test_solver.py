@@ -12,8 +12,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.fine_mesh = [3, 22, 3]
         pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
         pydgm.control.material_map = [6, 1, 6]
-        s = 'test.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
         pydgm.control.angle_order = 10
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [0.0, 0.0]
@@ -24,8 +23,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.inner_tolerance = 1e-14
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = True
-        s = 'fixed'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.equation_type = 'DD'
         pydgm.control.legendre_order = 0
@@ -647,6 +645,8 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
+    
+    # TODO: Add anisotropic tests
     
     def tearDown(self):
         pydgm.solver.finalize_solver()

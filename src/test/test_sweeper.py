@@ -12,8 +12,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.control.fine_mesh = [10]
         pydgm.control.coarse_mesh = [0.0, 10.0]
         pydgm.control.material_map = [1]
-        s = 'test.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [0.0, 0.0]
@@ -24,8 +23,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.control.inner_tolerance = 1e-14
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = False
-        s = 'fixed'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.legendre_order = 0
         

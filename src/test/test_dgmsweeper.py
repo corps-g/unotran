@@ -12,8 +12,7 @@ class TestDGMSWEEPER(unittest.TestCase):
         pydgm.control.fine_mesh = [10]
         pydgm.control.coarse_mesh = [0.0, 10.0]
         pydgm.control.material_map = [1]
-        s = 'test.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [1.0, 1.0]
@@ -29,10 +28,8 @@ class TestDGMSWEEPER(unittest.TestCase):
         pydgm.control.max_inner_iters = 500
         pydgm.control.ignore_warnings = True
         pydgm.control.use_recondensation = False
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
-        s = 'basis'
-        pydgm.control.dgm_basis_name = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
+        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
         pydgm.control.source_value = 0.0
         pydgm.control.equation_type = 'DD'
         pydgm.control.legendre_order = 0
