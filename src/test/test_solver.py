@@ -63,8 +63,7 @@ class TestSOLVER(unittest.TestCase):
         # Set problem conditions
         pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.material_map = [1, 1, 1]
-        s = 'test/1gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -97,8 +96,7 @@ class TestSOLVER(unittest.TestCase):
         # Set problem conditions
         pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.material_map = [1, 1, 1]
-        s = 'test/2gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -145,7 +143,9 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         # Test the scalar flux
-        np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :].flatten('F') / phi_test, np.ones(28 * 7), 12)
+        phi = pydgm.state.phi[0, :, :].flatten('F')
+        
+        np.testing.assert_array_almost_equal(phi / phi_test, np.ones(28 * 7), 12)
 
         # Test the angular flux
         nAngles = pydgm.angle.number_angles
@@ -166,8 +166,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [2, 1]
         pydgm.control.angle_order = 2
         pydgm.control.boundary_type = [1.0, 1.0]
-        s = 'test/1gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -199,8 +198,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [2, 1]
         pydgm.control.angle_order = 2
         pydgm.control.boundary_type = [1.0, 1.0]
-        s = 'test/2gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -236,13 +234,18 @@ class TestSOLVER(unittest.TestCase):
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
         
-        phi_test = [12.672544648860312, 99.03671817311842, 130.2026866195674, 26.18559409855547, 6.400759203994376, 2.2337860609134186, 0.5196203316023417, 12.67448693202096, 99.04405976288407, 130.2324279776323, 26.190965696177237, 6.4088876008405276, 2.2595181875357944, 0.5209530580408911, 12.678388073294773, 99.05293427296532, 130.260637716364, 26.201843332427238, 6.425520342588559, 2.315655310875237, 0.5244779835956537, 12.684281397852965, 99.06338579650257, 130.28761750801002, 26.21851193557012, 6.4514324393938445, 2.412634999681313, 0.5334157340996336, 12.692217333538476, 99.07546520784048, 130.31365794340428, 26.241425884913447, 6.487845367812591, 2.5689673440912353, 0.5599294161703391, 12.700953021960547, 99.08787298541745, 130.33733158501667, 26.267144568832023, 6.528791987404324, 2.7375849590876493, 0.5972361793074424, 12.708475057710633, 99.09843071210251, 130.35651191444853, 26.289282550132317, 6.56345322945365, 2.861617320600131, 0.6215389354912455, 12.71406726930836, 99.10630761898258, 130.37072943890948, 26.305411950605524, 6.5883033624105725, 2.946942044099785, 0.6317018311707815, 12.71777205870059, 99.11153934332636, 130.38012940316244, 26.31594523771697, 6.60434224992093, 3.0003079242325135, 0.6361656468391427, 12.719617474155664, 99.1141493736049, 130.38480616286316, 26.321147187894013, 6.612206809491813, 3.0259691800610304, 0.6379141464275061]
+        # Compute the test flux
+        T = np.diag(pydgm.material.sig_t[:,0])
+        S = pydgm.material.sig_s[0,:,:,0].T
+        phi_test = np.linalg.solve((T - S), np.ones(7))
+        phi_test = np.array([phi_test for i in range(10)]).flatten()
         
         # Solve the problem
         pydgm.solver.solve()
 
         # Test the scalar flux
-        np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :].flatten('F'), phi_test, 12)
+        phi = pydgm.state.phi[0, :, :].flatten('F')
+        np.testing.assert_array_almost_equal(phi / phi_test, np.ones(70), 12)
 
         # Test the angular flux
         nAngles = pydgm.angle.number_angles
@@ -261,12 +264,10 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.fine_mesh = [10]
         pydgm.control.coarse_mesh = [0.0, 10.0]
         pydgm.control.material_map = [1]
-        s = 'test/1gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
 
         # Initialize the dependancies
@@ -301,12 +302,10 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.fine_mesh = [10]
         pydgm.control.coarse_mesh = [0.0, 10.0]
         pydgm.control.material_map = [1]
-        s = 'test/2gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
 
         # Initialize the dependancies
@@ -343,8 +342,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
 
         # Initialize the dependancies
@@ -379,12 +377,10 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.fine_mesh = [10]
         pydgm.control.coarse_mesh = [0.0, 10.0]
         pydgm.control.material_map = [1]
-        s = 'test/1gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
         pydgm.control.boundary_type = [1.0, 1.0]
 
@@ -430,12 +426,10 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.fine_mesh = [10]
         pydgm.control.coarse_mesh = [0.0, 10.0]
         pydgm.control.material_map = [1]
-        s = 'test/2gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
         pydgm.control.boundary_type = [1.0, 1.0]
 
@@ -483,8 +477,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
         pydgm.control.boundary_type = [1.0, 1.0]
 
@@ -529,13 +522,11 @@ class TestSOLVER(unittest.TestCase):
         # Set the variables for the test
         pydgm.control.fine_mesh = [3, 10, 3]
         pydgm.control.material_map = [2, 1, 2]
-        s = 'test/1gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.allow_fission = True
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
 
         # Initialize the dependancies
@@ -571,13 +562,11 @@ class TestSOLVER(unittest.TestCase):
         # Set the variables for the test
         pydgm.control.fine_mesh = [3, 10, 3]
         pydgm.control.material_map = [2, 1, 2]
-        s = 'test/2gXS.anlxs'
-        pydgm.control.xs_name = s + ' ' * (256 - len(s))
+        pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.allow_fission = True
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
 
         # Initialize the dependancies
@@ -616,8 +605,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.angle_order = 2
         pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.allow_fission = True
-        s = 'eigen'
-        pydgm.control.solver_type = s + ' ' * (256 - len(s))
+        pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
 
         # Initialize the dependancies
