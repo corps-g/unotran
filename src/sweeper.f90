@@ -39,15 +39,13 @@ module sweeper
         do a = amin, amax, astep  ! Sweep over angle
           ! Get the correct angle index
           an = merge(a, number_angles + a, octant)
-          ! get a common fraction
-          invmu = dx(c) / (2 * abs(mu(a)))
 
           ! legendre polynomial integration vector
           M = 0.5 * wt(a) * p_leg(:,an)
 
           do g = 1, number_energy_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD
-            call computeEQ(Q(g,an,c), incoming(g,a), d_sig_t(g, c), invmu, dx(c), mu(a), Ps)
+            call computeEQ(Q(g,an,c), incoming(g,a), d_sig_t(g, c), dx(c), mu(a), Ps)
 
             if (store_psi) then
               psi(g,an,c) = Ps
@@ -73,6 +71,7 @@ module sweeper
     select case (equation_type)
     case ('DD')
       ! Diamond Difference relationship
+      invmu = dx(c) / (2 * abs(mu(a)))
       cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
       incoming = 2 * cellPsi - incoming
     case ('SC')
@@ -82,6 +81,8 @@ module sweeper
       cellPsi = incoming * (1.0 - A) / tau + S * (sig * dx + mua * (A - 1.0)) / (sig ** 2 * dx)
       incoming = A * incoming + S * (1.0 - A) / sig
     case ('SD')
+      ! Step Difference relationship
+      invmu = dx(c) / (abs(mu(a)))
       cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
       incoming = cellPsi
     case default
