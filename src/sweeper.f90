@@ -60,18 +60,18 @@ module sweeper
 
   end subroutine sweep
   
-  subroutine computeEQ(S, incoming, sig, invmu, dx, mua, cellPsi)
+  subroutine computeEQ(S, incoming, sig, dx, mua, cellPsi)
     implicit none
 
     double precision, intent(inout) :: incoming
-    double precision, intent(in) :: S, sig, invmu, dx, mua
+    double precision, intent(in) :: S, sig, dx, mua
     double precision, intent(out) :: cellPsi
-    double precision :: tau, A
+    double precision :: tau, A, invmu
 
     select case (equation_type)
     case ('DD')
       ! Diamond Difference relationship
-      invmu = dx(c) / (2 * abs(mu(a)))
+      invmu = dx / (2 * abs(mua))
       cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
       incoming = 2 * cellPsi - incoming
     case ('SC')
@@ -82,7 +82,7 @@ module sweeper
       incoming = A * incoming + S * (1.0 - A) / sig
     case ('SD')
       ! Step Difference relationship
-      invmu = dx(c) / (abs(mu(a)))
+      invmu = dx / (abs(mua))
       cellPsi = (incoming + invmu * S) / (1 + invmu * sig)
       incoming = cellPsi
     case default
