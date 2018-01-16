@@ -11,16 +11,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
-        pydgm.control.fine_mesh = [1]
-        pydgm.control.coarse_mesh = [0.0, 1.0]
-        pydgm.control.material_map = [1]
-        pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_type = [0.0, 0.0]
-        pydgm.control.allow_fission = False
-        pydgm.control.energy_group_map = [1]
-        pydgm.control.dgm_basis_name = '2gbasis'.ljust(256)
         pydgm.control.outer_print = False
         pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
@@ -28,12 +20,52 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.lamb = 1.0
         pydgm.control.use_dgm = True
         pydgm.control.store_psi = True
-        pydgm.control.solver_type = 'fixed'.ljust(256)
-        pydgm.control.source_value = 1.0
         pydgm.control.equation_type = 'DD'
         pydgm.control.legendre_order = 0
         pydgm.control.ignore_warnings = True
+        
+    def setGroups(self, G):
+        if G == 2:
+            pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
+            pydgm.control.dgm_basis_name = 'test/2gbasis'.ljust(256)
+            pydgm.control.energy_group_map = [1]
+        elif G == 4:
+            pydgm.control.xs_name = 'test/4gXS.anlxs'.ljust(256)
+            pydgm.control.energy_group_map = [2]
+            pydgm.control.dgm_basis_name = 'test/4gbasis'.ljust(256)
+        elif G == 7:
+            pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
+            pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
+            pydgm.control.energy_group_map = [4]
+            
+    def setSolver(self, solver):
+        if solver == 'fixed':
+            pydgm.control.solver_type = 'fixed'.ljust(256)
+            pydgm.control.source_value = 1.0
+            pydgm.control.allow_fission = False
+        elif solver == 'eigen':
+            pydgm.control.solver_type = 'eigen'.ljust(256)
+            pydgm.control.source_value = 0.0
+            pydgm.control.allow_fission = True
 
+    def setMesh(self, mesh):
+        if mesh.isdigit():
+            N = int(mesh)
+            pydgm.control.fine_mesh = [N]
+            pydgm.control.coarse_mesh = [0.0, float(N)]
+        elif mesh == 'coarse_pin':
+            pydgm.control.fine_mesh = [3, 10, 3]
+            pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+        elif mesh == 'fine_pin':
+            pydgm.control.fine_mesh = [3, 22, 3]
+            pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+
+    def setBoundary(self, bounds):
+        if bounds == 'reflect':
+            pydgm.control.boundary_type = [1.0, 1.0]
+        elif bounds == 'vacuum':
+            pydgm.control.boundary_type = [0.0, 0.0]
+    
     def test_dgmsolver_2gtest(self):
         '''
         Test the 2g-1G dgm fixed source problem with vacuum conditions
@@ -42,6 +74,13 @@ class TestDGMSOLVER(unittest.TestCase):
         
         no fission
         '''
+        # Set the variables for the test
+        self.setGroups(2)
+        self.setSolver('fixed')
+        self.setMesh('1')
+        self.setBoundary('vacuum')
+        pydgm.control.material_map = [1]
+        
         phi_test = np.reshape([1.1420149990909008, 0.37464706668551212], (1, 2, 1), 'F')
         psi_test = np.reshape([0.81304488744042813, 0.29884810509581583, 1.31748796916478740, 0.41507830480599001, 1.31748796916478740, 0.41507830480599001, 0.81304488744042813, 0.29884810509581583], (2, 4, 1))
 
@@ -67,14 +106,13 @@ class TestDGMSOLVER(unittest.TestCase):
         with fission
         '''
         # Set the variables for the test
-        pydgm.control.fine_mesh = [3, 22, 3]
-        pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+        self.setGroups(7)
+        self.setSolver('fixed')
+        self.setMesh('fine_pin')
+        self.setBoundary('vacuum')
         pydgm.control.material_map = [6, 1, 6]
-        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
         pydgm.control.angle_order = 10
         pydgm.control.allow_fission = True
-        pydgm.control.energy_group_map = [4]
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
         pydgm.control.lamb = 0.75
 
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -103,14 +141,13 @@ class TestDGMSOLVER(unittest.TestCase):
         
         no fission
         '''
-        pydgm.control.fine_mesh = [3, 22, 3]
-        pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+        # Set the variables for the test
+        self.setGroups(7)
+        self.setSolver('fixed')
+        self.setMesh('fine_pin')
+        self.setBoundary('reflect')
         pydgm.control.material_map = [1, 1, 1]
-        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
         pydgm.control.angle_order = 10
-        pydgm.control.boundary_type = [1.0, 1.0]
-        pydgm.control.energy_group_map = [4]
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
         pydgm.control.lamb = 0.73
         pydgm.control.max_inner_iters = 10
 
@@ -141,18 +178,23 @@ class TestDGMSOLVER(unittest.TestCase):
         
         Uses one spatial cell, no fission
         '''
-        
-        pydgm.control.xs_name = 'test/testXS.anlxs'.ljust(256)
-        pydgm.control.energy_group_map = [4]
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
-        pydgm.control.lamb = 1.0
+        # Set the variables for the test
+        self.setGroups(7)
+        self.setSolver('fixed')
+        self.setMesh('1')
+        self.setBoundary('vacuum')
+        pydgm.control.material_map = [1]
 
+        # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
 
+        # Set the test flux
         phi_test = np.array([1.0396071685339883, 1.1598847130734862, 1.1042907473694785, 1.035767541702943, 0.9363281958603344, 0.8907827126246091, 0.3974913066660486])
 
+        # Solve the problem
         pydgm.dgmsolver.dgmsolve()
 
+        # Test the scalar flux
         np.testing.assert_array_almost_equal(pydgm.state.phi[0].flatten('F'), phi_test, 12)
 
         # Test the angular flux
@@ -169,11 +211,12 @@ class TestDGMSOLVER(unittest.TestCase):
         Test the 7g->2G, fixed source problem with infinite medium and one spatial cell
         '''
         
-        # Set problem conditions
-        pydgm.control.boundary_type = [1.0, 1.0]
-        pydgm.control.xs_name = 'test/testXS.anlxs'.ljust(256)
-        pydgm.control.energy_group_map = [4]
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
+        # Set the variables for the test
+        self.setGroups(7)
+        self.setSolver('fixed')
+        self.setMesh('1')
+        self.setBoundary('reflect')
+        pydgm.control.material_map = [1]
         pydgm.control.lamb = 0.82
         pydgm.control.equation_type = 'DD'
         pydgm.control.max_inner_iters = 10
@@ -204,12 +247,12 @@ class TestDGMSOLVER(unittest.TestCase):
         Test the 2g->1G, eigenvalue problem with 1 medium and vacuum conditions
         '''
         
-        # Set problem conditions
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        # Set the variables for the test
+        self.setGroups(2)
+        self.setSolver('eigen')
+        self.setMesh('10')
+        self.setBoundary('vacuum')
+        pydgm.control.material_map = [1]
         
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -239,19 +282,14 @@ class TestDGMSOLVER(unittest.TestCase):
         '''
         Test the 4g->2G, eigenvalue problem with 1 medium and vacuum conditions
         '''
-        
-        # Set problem conditions
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
-        pydgm.control.allow_fission = True
+        # Set the variables for the test
+        self.setGroups(4)
+        self.setSolver('eigen')
+        self.setMesh('10')
+        self.setBoundary('vacuum')
+        pydgm.control.material_map = [1]
         pydgm.control.lamb = 0.14
-        pydgm.control.xs_name = 'test/4gXS.anlxs'.ljust(256)
-        pydgm.control.energy_group_map = [2]
-        pydgm.control.dgm_basis_name = '4gbasis'.ljust(256)
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
         pydgm.control.max_inner_iters = 100
-#         pydgm.control.equation_type = 'SD'
         pydgm.control.max_outer_iters = 5000
         
         # Initialize the dependancies
@@ -282,21 +320,14 @@ class TestDGMSOLVER(unittest.TestCase):
         '''
         Test the 7g->2G, eigenvalue problem with 1 medium and vacuum conditions
         '''
-        
-        # Set problem conditions
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
-        pydgm.control.allow_fission = True
+        # Set the variables for the test
+        self.setGroups(7)
+        self.setSolver('eigen')
+        self.setMesh('10')
+        self.setBoundary('vacuum')
+        pydgm.control.material_map = [1]
         pydgm.control.lamb = 0.14
-        pydgm.control.xs_name = 'test/testXS.anlxs'.ljust(256)
-        pydgm.control.energy_group_map = [4]
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
         pydgm.control.max_inner_iters = 10
-#         pydgm.control.equation_type = 'SD'
-        #pydgm.control.max_outer_iters = 5000
-        #pydgm.control.outer_print = True
         
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -326,14 +357,12 @@ class TestDGMSOLVER(unittest.TestCase):
         '''
         Test the 2g->1G, eigenvalue problem with infinite medium
         '''
-        
-        # Set problem conditions
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.boundary_type = [1.0, 1.0]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        # Set the variables for the test
+        self.setGroups(2)
+        self.setSolver('eigen')
+        self.setMesh('10')
+        self.setBoundary('reflect')
+        pydgm.control.material_map = [1]
         
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -373,18 +402,12 @@ class TestDGMSOLVER(unittest.TestCase):
         '''
         Test the 4g->2G, eigenvalue problem with infinite medium
         '''
-        
-        # Set problem conditions
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.boundary_type = [1.0, 1.0]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
-        pydgm.control.xs_name = 'test/4gXS.anlxs'.ljust(256)
-        pydgm.control.energy_group_map = [2]
-        pydgm.control.dgm_basis_name = '4gbasis'.ljust(256)
-        pydgm.control.lamb = 1.0
+        # Set the variables for the test
+        self.setGroups(4)
+        self.setSolver('eigen')
+        self.setMesh('10')
+        self.setBoundary('reflect')
+        pydgm.control.material_map = [1]
         
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -424,17 +447,12 @@ class TestDGMSOLVER(unittest.TestCase):
         '''
         Test the 7g->2G, eigenvalue problem with infinite medium
         '''
-        
-        # Set problem conditions
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.boundary_type = [1.0, 1.0]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
-        pydgm.control.energy_group_map = [4]
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
-        pydgm.control.xs_name = 'test/testXS.anlxs'.ljust(256)
+        # Set the variables for the test
+        self.setGroups(7)
+        self.setSolver('eigen')
+        self.setMesh('10')
+        self.setBoundary('reflect')
+        pydgm.control.material_map = [1]
         pydgm.control.lamb = 0.1
         pydgm.control.max_inner_iters = 2
         pydgm.control.max_outer_iters = 5000
@@ -480,14 +498,11 @@ class TestDGMSOLVER(unittest.TestCase):
         with reflective conditions
         '''
         # Set the variables for the test
-        pydgm.control.fine_mesh = [3, 10, 3]
-        pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+        self.setGroups(2)
+        self.setSolver('eigen')
+        self.setMesh('coarse_pin')
+        self.setBoundary('reflect')
         pydgm.control.material_map = [2, 1, 2]
-        pydgm.control.boundary_type = [1.0, 1.0]
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
-        
         
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -522,18 +537,12 @@ class TestDGMSOLVER(unittest.TestCase):
         with reflective conditions
         '''
         # Set the variables for the test
-        pydgm.control.fine_mesh = [3, 10, 3]
-        pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+        self.setGroups(4)
+        self.setSolver('eigen')
+        self.setMesh('coarse_pin')
+        self.setBoundary('reflect')
         pydgm.control.material_map = [2, 1, 2]
-        pydgm.control.angle_order = 2
-        pydgm.control.boundary_type = [1.0, 1.0]
-        pydgm.control.allow_fission = True
         pydgm.control.lamb = 0.8
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
-        pydgm.control.xs_name = 'test/4gXS.anlxs'.ljust(256)
-        pydgm.control.energy_group_map = [2]
-        pydgm.control.dgm_basis_name = '4gbasis'.ljust(256)
         pydgm.control.max_inner_iters = 1
         pydgm.control.max_outer_iters = 5000
         
@@ -570,21 +579,15 @@ class TestDGMSOLVER(unittest.TestCase):
         with reflective conditions
         '''
         # Set the variables for the test
-        pydgm.control.fine_mesh = [3, 10, 3]
-        pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+        self.setGroups(7)
+        self.setSolver('eigen')
+        self.setMesh('coarse_pin')
+        self.setBoundary('reflect')
         pydgm.control.material_map = [6, 1, 6]
         pydgm.control.angle_order = 2
-        pydgm.control.boundary_type = [1.0, 1.0]
-        pydgm.control.allow_fission = True
         pydgm.control.lamb = 0.001
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
-        pydgm.control.energy_group_map = [4]
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
-        pydgm.control.xs_name = 'test/testXS.anlxs'.ljust(256)
         pydgm.control.max_inner_iters = 100
         pydgm.control.max_outer_iters = 5000
-        pydgm.control.outer_print = True
         
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
