@@ -12,7 +12,7 @@ class TestDGMSWEEPER(unittest.TestCase):
         pydgm.control.fine_mesh = [10]
         pydgm.control.coarse_mesh = [0.0, 10.0]
         pydgm.control.material_map = [1]
-        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
+        pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [1.0, 1.0]
@@ -29,7 +29,7 @@ class TestDGMSWEEPER(unittest.TestCase):
         pydgm.control.ignore_warnings = True
         pydgm.control.use_recondensation = False
         pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
+        pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
         pydgm.control.source_value = 0.0
         pydgm.control.equation_type = 'DD'
         pydgm.control.legendre_order = 0
@@ -54,7 +54,7 @@ class TestDGMSWEEPER(unittest.TestCase):
 
         # Solve the problem
         pydgm.dgm.compute_flux_moments()
-        phi_m_test = np.concatenate((np.loadtxt('basis').T.dot(phi_test), [0])).reshape((2, -1))
+        phi_m_test = np.concatenate((np.loadtxt('test/7gbasis').T.dot(phi_test), [0])).reshape((2, -1))
 
         for i in range(4):
             incoming = self.getIncoming(i)

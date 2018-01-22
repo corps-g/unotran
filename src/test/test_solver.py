@@ -12,7 +12,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.fine_mesh = [3, 22, 3]
         pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
         pydgm.control.material_map = [6, 1, 6]
-        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
+        pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 10
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [0.0, 0.0]

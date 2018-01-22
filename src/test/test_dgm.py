@@ -12,7 +12,7 @@ class TestDGM(unittest.TestCase):
         pydgm.control.fine_mesh = [1]
         pydgm.control.coarse_mesh = [0.0, 1.0]
         pydgm.control.material_map = [1]
-        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
+        pydgm.control.xs_name = 'test/7gXSaniso.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [0.0, 0.0]
@@ -23,7 +23,7 @@ class TestDGM(unittest.TestCase):
         pydgm.control.inner_tolerance = 1e-14
         pydgm.control.energy_group_map = [4]
         pydgm.control.use_dgm = True
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
+        pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
         pydgm.control.Lambda = 1.0
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'fixed'.ljust(256)
@@ -87,7 +87,7 @@ class TestDGM(unittest.TestCase):
         '''
         # Set the variables for the test
         pydgm.control.energy_group_map = [1, 2, 3, 4, 5, 6]
-        s = 'deltaBasis'
+        s = 'test/7gdelta'
         pydgm.control.dgm_basis_name = s + ' ' * (256 - len(s))
         pydgm.control.Lambda = 0.1
 

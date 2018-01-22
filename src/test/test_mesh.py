@@ -12,7 +12,7 @@ class TestMESH(unittest.TestCase):
         pydgm.control.fine_mesh = [2, 4, 2]
         pydgm.control.coarse_mesh = [0.0, 1.0, 2.0, 3.0]
         pydgm.control.material_map = [1, 2, 3]
-        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
+        pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 10
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [0.0, 0.0]

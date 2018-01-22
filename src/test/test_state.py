@@ -12,13 +12,13 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.fine_mesh = [1]
         pydgm.control.coarse_mesh = [0.0, 1.0]
         pydgm.control.material_map = [1]
-        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
+        pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [0.0, 0.0]
         pydgm.control.allow_fission = True
         pydgm.control.energy_group_map = [4]
-        pydgm.control.dgm_basis_name = 'basis'.ljust(256)
+        pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
         pydgm.control.outer_print = True
         pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14

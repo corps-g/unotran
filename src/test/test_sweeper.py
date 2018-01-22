@@ -12,7 +12,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.control.fine_mesh = [10]
         pydgm.control.coarse_mesh = [0.0, 10.0]
         pydgm.control.material_map = [1]
-        pydgm.control.xs_name = 'test.anlxs'.ljust(256)
+        pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [0.0, 0.0]
@@ -59,6 +59,9 @@ class TestSWEEPER(unittest.TestCase):
         
         self.assertAlmostEqual(inc[0], 0.686907416523104323, 12)
         self.assertAlmostEqual(Ps, 0.408479080928661801, 12)
+        
+    def test_sweeper_computeEQ_cd(self):
+        raise NotImplementedError
         
     def tearDown(self):
         pydgm.solver.finalize_solver()
