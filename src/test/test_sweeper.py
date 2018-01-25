@@ -36,7 +36,6 @@ class TestSWEEPER(unittest.TestCase):
         '''
         pydgm.control.equation_type = 'DD'
         
-        frac = 1 / (2 * 0.8611363115940526)
         Ps = 0.0
         inc = np.array([0.0])
         
@@ -51,7 +50,6 @@ class TestSWEEPER(unittest.TestCase):
         '''
         pydgm.control.equation_type = 'SC'
         
-        frac = 1 / (2 * 0.8611363115940526)
         Ps = 0.0
         inc = np.array([0.0])
         
@@ -60,8 +58,20 @@ class TestSWEEPER(unittest.TestCase):
         self.assertAlmostEqual(inc[0], 0.686907416523104323, 12)
         self.assertAlmostEqual(Ps, 0.408479080928661801, 12)
         
-    def test_sweeper_computeEQ_cd(self):
-        raise NotImplementedError
+    def test_sweeper_computeEQ_sd(self):
+        ''' 
+        Test the step difference equation
+        '''
+        pydgm.control.equation_type = 'SD'
+        
+        Ps = 0.0
+        inc = np.array([0.0])
+        
+        Ps = pydgm.sweeper.computeeq(1.0, inc, 1.0, 1.0, 0.8611363115940526)
+        
+        self.assertAlmostEqual(inc[0], 0.5373061574106336, 12)
+        self.assertAlmostEqual(Ps, 0.5373061574106336, 12)
+    
         
     def tearDown(self):
         pydgm.solver.finalize_solver()
