@@ -34,34 +34,26 @@ xdgm: $(objects) main.f90
 	$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o $@ 
 
 # executable tests
-test_angle: $(objects) ./test/test_angle.f90
-	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	@./test/$@.x
-test_dgm: $(objects) ./test/test_dgm.f90
-	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	@./test/$@.x
-test_dgmsolver: $(objects) ./test/test_dgmsolver.f90
-	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	@./test/$@.x
-test_dgmsweeper: $(objects) ./test/test_dgmsweeper.f90
-	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	@./test/$@.x
-test_material: $(objects) ./test/test_material.f90
-	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	@./test/$@.x
-test_mesh: $(objects) ./test/test_mesh.f90
-	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	@./test/$@.x
-test_solver: $(objects) ./test/test_solver.f90
-	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	@./test/$@.x
-test_state: $(objects) ./test/test_state.f90
-	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	@./test/$@.x
-test_sweeper: $(objects) ./test/test_sweeper.f90
-	@$(F90) $(F90FLAGS) $(LDFLAGS) $^ -o ./test/$@.x
-	@./test/$@.x
-test: test_angle test_mesh test_material test_state test_sweeper test_solver test_dgm test_dgmsweeper test_dgmsolver
+test_angle: pydgm
+	python test/test_angle.py
+test_dgm: pydgm
+	python test/test_dgm.py
+test_dgmsolver: pydgm
+	python test/test_dgmsolver.py
+test_dgmsweeper: pydgm
+	python test/test_dgmsweeper.py
+test_material: pydgm
+	python test/test_material.py
+test_mesh: pydgm
+	python test/test_mesh.py
+test_solver: pydgm
+	python test/test_solver.py
+test_state: pydgm
+	python test/test_state.py
+test_sweeper: pydgm
+	python test/test_sweeper.py
+test: pydgm
+	python test/test_all.py
 
 # f2py module
 pydgm: control.f90 angle.f90 material.f90 mesh.f90 state.f90 sweeper.f90 solver.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90
