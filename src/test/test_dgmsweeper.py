@@ -25,7 +25,7 @@ class TestDGMSWEEPER(unittest.TestCase):
         pydgm.control.store_psi = True
         pydgm.control.use_dgm = True
         pydgm.control.energy_group_map = [4]
-        pydgm.control.max_inner_iters = 500
+        pydgm.control.max_inner_iters = 5000
         pydgm.control.ignore_warnings = True
         pydgm.control.use_recondensation = False
         pydgm.control.solver_type = 'eigen'.ljust(256)
@@ -41,8 +41,8 @@ class TestDGMSWEEPER(unittest.TestCase):
         Test the inner solver in the dgm sweeper routine
         '''
 
-        keff_test = 0.9565644234498036
-        phi_test = np.array([0.10205049306413014, 3.811547533557704, 2.8640526343833463, 0.215268819588659, 0.006948383972629827, 0.0001320419273584021, 9.350617154875939e-08])
+        keff_test = 1.06748687099
+        phi_test = np.array([0.19893353556856153, 2.7231683533646662, 1.398660040999877, 1.0103619034299416, 0.8149441787223114, 0.85106974186841, 0.0028622460462300096])
         phi_m = np.reshape(np.zeros(20), (1, 2, 10), 'F')
         psi_m = np.reshape(np.zeros(80), (2, 4, 10), 'F')
 
@@ -60,7 +60,11 @@ class TestDGMSWEEPER(unittest.TestCase):
             incoming = self.getIncoming(i)
             pydgm.dgm.compute_xs_moments(order=i)
             pydgm.dgmsweeper.inner_solve(i, incoming, phi_m, psi_m)
-            np.testing.assert_array_almost_equal(phi_m[0, :, 0], phi_m_test[:, i], 12, 'order {} failed'.format(i))
+            p1 = phi_m[0, :, 0]
+            p2 = phi_m_test[:, i]
+            f1 = p1[1] / p1[0]
+            f2 = p2[1] / p2[0]
+            np.testing.assert_almost_equal(f1, f2, 12, 'order {} failed'.format(i))
 
     def getIncoming(self, o):
         incoming = np.reshape(np.zeros(4), (2, 2), 'F')
