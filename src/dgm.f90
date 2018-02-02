@@ -8,9 +8,11 @@ module dgm
 
   implicit none
 
-  double precision, allocatable :: basis(:,:), chi_m(:,:,:), source_m(:,:,:,:)
-  integer :: expansion_order, number_course_groups
-  integer, allocatable :: energyMesh(:), order(:), basismap(:)
+  double precision, allocatable, dimension(:, :) :: basis
+  double precision, allocatable, dimension(:, :, :) :: chi_m
+  double precision, allocatable, dimension(:, :, :, :) :: source_m
+  integer :: expansion_order, number_coarse_groups
+  integer, allocatable, dimension(:) :: energyMesh, order, basismap
 
   contains
 
@@ -18,20 +20,27 @@ module dgm
   subroutine initialize_moments()
     integer :: g, gp, cg
 
-    ! Get the number of course groups
-    number_course_groups = size(energy_group_map) + 1
+    ! Get the number of coarse groups
+    if (allocated(energy_group_map)) then
+      number_coarse_groups = size(energy_group_map) + 1
+    else
+      number_coarse_groups = 1
+    end if
 
-    ! Create the map of course groups and default to full expansion order
+    ! Create the map of coarse groups and default to full expansion order
     allocate(energyMesh(number_groups))
-    allocate(order(number_course_groups))
-    allocate(basismap(number_course_groups))
+    allocate(order(number_coarse_groups))
+    allocate(basismap(number_coarse_groups))
     order = -1
     g = 1
+
     do gp = 1, number_groups
       energyMesh(gp) = g
       order(g) = order(g) + 1
-      if (gp == energy_group_map(g)) then
-        g = g + 1
+      if (g < number_coarse_groups) then
+        if (gp == energy_group_map(g)) then
+          g = g + 1
+        end if
       end if
     end do
     basismap(:) = order(:)
@@ -39,11 +48,11 @@ module dgm
     ! Check if the optional argument for the truncation is present
     if (allocated(truncation_map)) then
       ! Check if the truncation array has the right number of entries
-      if (size(truncation_map) /= number_course_groups) then
+      if (size(truncation_map) /= number_coarse_groups) then
         error stop "Incorrect number of entries in truncation array"
       end if
       ! Update the order array with the truncated value if sensible
-      do cg = 1, number_course_groups
+      do cg = 1, number_coarse_groups
         if ((truncation_map(cg) < order(cg)) .and. (truncation_map(cg) >= 0)) then
           order(cg) = truncation_map(cg)
         end if
@@ -52,27 +61,27 @@ module dgm
 
     expansion_order = MAXVAL(order)
 
-    ! reallocate container arrays to number_course_groups
-    call reallocate_states(number_course_groups)
+    ! reallocate container arrays to number_coarse_groups
+    call reallocate_states(number_coarse_groups)
 
   end subroutine initialize_moments
 
   ! Load basis set from file
   subroutine initialize_basis()
     double precision, allocatable, dimension(:) :: array1
-    integer, allocatable :: cumsum(:)
+    integer, allocatable, dimension(:) :: cumsum
     integer :: g, cg, i
 
     ! allocate the basis array
     allocate(basis(number_groups, 0:expansion_order))
     allocate(array1(number_groups))
-    allocate(cumsum(number_course_groups))
+    allocate(cumsum(number_coarse_groups))
     ! initialize the basis to zero
     basis = 0.0
 
     cumsum = basismap + 1
 
-    do cg = 1, number_course_groups
+    do cg = 1, number_coarse_groups
       if (cg == 1) then
         cycle
       end if
@@ -145,6 +154,7 @@ module dgm
         end do
       end do
     end do
+
   end subroutine compute_flux_moments
 
   ! Expand the cross section moments using the basis functions
@@ -165,28 +175,36 @@ module dgm
       mat = mMap(c)
       do g = 1, number_groups
         cg = energyMesh(g)
-        ! total cross section moment
-        d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
-        ! fission cross section moment
-        d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+        ! Check if producing nan
+        if (d_phi(0, cg, c) /= 0.0) then
+          ! total cross section moment
+          d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+          ! fission cross section moment
+          d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+        end if
+
         ! Scattering cross section moment
         do gp = 1, number_groups
           cgp = energyMesh(gp)
-          d_sig_s(:, cgp, cg, c) = d_sig_s(:, cgp, cg, c) &
-                                   + basis(g, order) * sig_s(:, gp, g, mat) * phi(:, gp, c) / d_phi(:, cgp, c)
+          do l = 0, number_legendre
+            ! Check if producing nan
+            if (d_phi(l, cgp, c) /= 0.0) then
+              d_sig_s(l, cgp, cg, c) = d_sig_s(l, cgp, cg, c) &
+                                     + basis(g, order) * sig_s(l, gp, g, mat) * phi(l, gp, c) / d_phi(l, cgp, c)
+            end if
+          end do
         end do
       end do
 
+      ! angular total cross section moment (delta)
       do a = 1, number_angles * 2
         do g = 1, number_groups
           cg = energyMesh(g)
-          if (d_psi(cg, a, c) == 0.0) then
-            num = 0.0
-          else
-            num = basis(g, order) * (sig_t(g, mat) - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
+          ! Check if producing nan
+          if (d_psi(cg, a, c) /= 0.0) then
+            d_delta(cg, a, c) = d_delta(cg, a, c) + basis(g, order) * (sig_t(g, mat) &
+                                - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
           end if
-          ! angular total cross section moment (delta)
-          d_delta(cg, a, c) = d_delta(cg, a, c) + num
         end do
       end do
     end do
@@ -196,8 +214,8 @@ module dgm
   ! Expand the source and chi using the basis functions
   subroutine compute_source_moments()
     integer :: order, c, a, g, cg, mat
-    allocate(chi_m(number_course_groups, number_cells, 0:expansion_order))
-    allocate(source_m(number_course_groups, number_angles * 2, number_cells, 0:expansion_order))
+    allocate(chi_m(number_coarse_groups, number_cells, 0:expansion_order))
+    allocate(source_m(number_coarse_groups, number_angles * 2, number_cells, 0:expansion_order))
 
     chi_m = 0.0
     source_m = 0.0
@@ -219,7 +237,6 @@ module dgm
         end do
       end do
     end do
-
 
   end subroutine compute_source_moments
 

@@ -1,11 +1,11 @@
 module solver
-  use control, only : lambda, outer_print, outer_tolerance, store_psi
+  use control, only : lamb, outer_print, outer_tolerance, store_psi, solver_type
   use material, only : create_material, number_legendre, number_groups, finalize_material, &
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh, mMap
-  use state, only : initialize_state, phi, psi, source, finalize_state, output_state, &
-                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi
+  use state, only : initialize_state, phi, psi, source, finalize_state, output_state, update_density, &
+                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi, d_keff, d_density
   use sweeper, only : sweep
 
   implicit none
@@ -17,7 +17,7 @@ module solver
   
   ! Initialize all of the variables and solvers
   subroutine initialize_solver()
-    integer :: c
+    integer :: c, l
 
     ! initialize the mesh
     call create_mesh()
@@ -34,7 +34,9 @@ module solver
     do c = 1, number_cells
       d_nu_sig_f(:, c) = nu_sig_f(:, mMap(c))
       d_chi(:, c) = chi(:, mMap(c))
-      d_sig_s(:, :, :, c) = sig_s(:, :, :, mMap(c))
+      do l = 0, number_legendre
+        d_sig_s(l, :, :, c) = sig_s(l, :, :, mMap(c))
+      end do
       d_sig_t(:, c) = sig_t(:, mMap(c))
     end do
     d_source(:, :, :) = source(:, :, :)
@@ -45,40 +47,73 @@ module solver
     end if
 
     ! todo: move to state
-    allocate(incoming(number_groups, number_angles * 2))
+    allocate(incoming(number_groups, number_angles))
     incoming = 0.0
 
   end subroutine initialize_solver
 
   ! Interate equations until convergance
   subroutine solve()
-    ! Inputs
-    !   eps : error tolerance for convergance
-    !   lambda_arg (optional) : value of lambda for Krasnoselskii iteration
-
-    double precision :: norm, error, hold
-    integer :: counter
+    double precision :: error, fd_old(number_cells)
+    integer :: counter, a
 
     ! Error of current iteration
     error = 1.0
+
     ! interation number
     counter = 1
+
+    call normalize_flux()
+
     do while (error > outer_tolerance)  ! Interate to convergance tolerance
       ! save phi from previous iteration
       d_phi = phi
+
       ! Sweep through the mesh
       call sweep(number_groups, phi, psi, incoming)
-      ! error is the difference in the norm of phi for successive iterations
+
+      if (solver_type == 'eigen') then
+        ! Compute new eigenvalue if eigen problem
+        d_keff = d_keff * sum(abs(phi(0,:,:))) / sum(abs(d_phi(0,:,:)))
+      end if
+
+      ! error is the difference in phi between successive iterations
       error = sum(abs(phi - d_phi))
+
       ! output the current error and iteration number
       if (outer_print) then
-        print *, error, counter
+        if (solver_type == 'eigen') then
+          print *, 'Error = ', error, 'Iteration = ', counter, 'Eigenvalue = ', d_keff
+        else if (solver_type == 'fixed') then
+          print *, 'Error = ', error, 'Iteration = ', counter
+        end if
       end if
+
+      if (solver_type == 'eigen') then
+       call normalize_flux()
+      end if
+
       ! increment the iteration
       counter = counter + 1
     end do
 
   end subroutine solve
+
+  subroutine normalize_flux()
+
+    double precision :: frac
+
+    frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
+
+    ! normalize phi
+    phi = phi / frac
+
+    ! normalize psi
+    if (store_psi) then
+        psi = psi / frac
+    end if
+
+  end subroutine normalize_flux
 
   subroutine output()
 

@@ -9,9 +9,9 @@ program main
   character(80)  :: inputfile
   integer :: l, c, a, g, n
   ! fineMesh : vector of int for number of fine mesh divisions per cell
-  ! materialMap : vector of int with material index for each course region
+  ! materialMap : vector of int with material index for each coarse region
   integer, allocatable :: fm(:), mm(:), em(:)
-  ! courseMap : vector of float with bounds for course mesh regions
+  ! coarseMap : vector of float with bounds for coarse mesh regions
   double precision, allocatable :: cm(:)
   double precision :: boundary(2)
   
