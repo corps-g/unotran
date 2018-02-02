@@ -6,10 +6,22 @@ module state
 
   implicit none
 
-  double precision, allocatable :: psi(:,:,:), source(:,:,:), phi(:,:,:)
-  double precision, allocatable :: d_source(:,:,:), d_nu_sig_f(:,:), d_delta(:,:,:)
-  double precision, allocatable :: d_phi(:,:,:), d_chi(:,:), d_sig_s(:,:,:,:)
-  double precision, allocatable :: d_psi(:,:,:), d_sig_t(:,:), d_density(:)
+  double precision, allocatable, dimension(:,:,:,:) ::d_sig_s
+
+  double precision, allocatable, dimension(:,:,:) :: psi,                      &
+                                                     source,                   &
+                                                     phi,                      &
+                                                     d_source,                 &
+                                                     d_delta,                  &
+                                                     d_phi,                    &
+                                                     d_psi
+                                                                                                    
+  double precision, allocatable, dimension(:,:) :: d_nu_sig_f,                 &
+                                                   d_chi,                      &
+                                                   d_sig_t                                       
+                                                     
+  double precision, allocatable, dimension(:) :: d_density
+
   double precision :: d_keff
   
   contains

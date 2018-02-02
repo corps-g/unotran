@@ -1,5 +1,5 @@
 module solver
-  use control, only : lambda, outer_print, outer_tolerance, store_psi, solver_type
+  use control, only : lamb, outer_print, outer_tolerance, store_psi, solver_type
   use material, only : create_material, number_legendre, number_groups, finalize_material, &
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
@@ -89,7 +89,9 @@ module solver
         end if
       end if
 
-      call normalize_flux()
+      if (solver_type == 'eigen') then
+       call normalize_flux()
+      end if
 
       ! increment the iteration
       counter = counter + 1
@@ -101,16 +103,14 @@ module solver
 
     double precision :: frac
 
-    if (solver_type == 'eigen') then
-      frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
+    frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
 
-      ! normalize phi
-      phi = phi / frac
+    ! normalize phi
+    phi = phi / frac
 
-      ! normalize psi
-      if (store_psi) then
-          psi = psi / frac
-      end if
+    ! normalize psi
+    if (store_psi) then
+        psi = psi / frac
     end if
 
   end subroutine normalize_flux

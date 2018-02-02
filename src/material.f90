@@ -67,7 +67,7 @@ module material
       do l = 0, number_legendre
         do g = 1, number_groups
           read(5,*) array1
-          sig_s(l, :, g, mat) = array1(:)
+          sig_s(l, g, :, mat) = array1(:)
         end do
       end do
     end do

@@ -1,16 +1,20 @@
 module dgmsolver
   use control
-  use material, only : create_material, number_legendre, number_groups, finalize_material
-  use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
+  use material, only : create_material, number_legendre, &
+                       number_groups, finalize_material
+  use angle, only : initialize_angle, p_leg, number_angles, &
+                    initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh
-  use state, only : initialize_state, phi, source, psi, finalize_state, output_state, d_keff
-  use dgm, only : number_coarse_groups, initialize_moments, initialize_basis, finalize_moments, expansion_order, compute_source_moments
+  use state, only : initialize_state, phi, source, psi, finalize_state, &
+                    output_state, d_keff
+  use dgm, only : number_coarse_groups, initialize_moments, initialize_basis, &
+                  finalize_moments, expansion_order, compute_source_moments
   use dgmsweeper, only : dgmsweep
 
   implicit none
   
   logical :: printOption, use_fission
-  double precision, allocatable :: incoming(:,:,:)
+  double precision, allocatable, dimension(:,:,:) :: incoming
 
   contains
   
@@ -40,7 +44,8 @@ module dgmsolver
   ! Interate equations until convergance
   subroutine dgmsolve()
     double precision :: outer_error
-    double precision :: phi_new(0:number_legendre,number_groups,number_cells), psi_new(number_groups,2*number_angles,number_cells)
+    double precision :: phi_new(0:number_legendre,number_groups,number_cells), &
+                        psi_new(number_groups,2*number_angles,number_cells)
     integer :: counter
 
     ! Error of current iteration
@@ -49,7 +54,8 @@ module dgmsolver
     ! interation number
     counter = 1
 
-    do while (outer_error > outer_tolerance)  ! Interate to convergance tolerance
+    ! Interate to convergance tolerance
+    do while (outer_error > outer_tolerance)
       ! Sweep through the mesh
       call dgmsweep(phi_new, psi_new, incoming)
 
@@ -59,15 +65,16 @@ module dgmsolver
       ! output the current error and iteration number
       if (outer_print) then
         if (solver_type == 'eigen') then
-          print *, 'OuterError = ', outer_error, 'Iteration = ', counter, 'Eigenvalue = ', d_keff
+          print *, 'OuterError = ', outer_error, 'Iteration = ', counter, &
+                   'Eigenvalue = ', d_keff
         else if (solver_type == 'fixed') then
           print *, 'OuterError = ', outer_error, 'Iteration = ', counter
         end if
       end if
 
       ! Update flux using krasnoselskii iteration
-      phi = (1.0 - lambda) * phi + lambda * phi_new
-      psi = (1.0 - lambda) * psi + lambda * psi_new
+      phi = (1.0 - lamb) * phi + lamb * phi_new
+      psi = (1.0 - lamb) * psi + lamb * psi_new
 
       ! increment the iteration
       counter = counter + 1
