@@ -5,13 +5,14 @@ module solver
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh, mMap
   use state, only : initialize_state, phi, psi, source, finalize_state, output_state, update_density, &
-                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi, d_keff, d_density
+                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi, d_keff, density
   use sweeper, only : sweep
 
   implicit none
   
   logical :: printOption, use_fission
-  double precision, allocatable :: incoming(:,:)
+  double precision, allocatable :: &
+      incoming(:,:)  ! Incoming angular flux for a given spatial cell
 
   contains
   

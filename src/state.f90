@@ -1,4 +1,8 @@
 module state
+  ! ##########################################################################
+  ! Define the container classes for fluxes and cross sections
+  ! ##########################################################################
+
   use control, only : store_psi, source_value, file_name, initial_phi, initial_psi, use_dgm, solver_type
   use material, only : number_groups, number_legendre, nu_sig_f
   use mesh, only : number_cells, mMap
@@ -6,29 +10,42 @@ module state
 
   implicit none
 
-  double precision, allocatable, dimension(:,:,:,:) ::d_sig_s
+  double precision, allocatable, dimension(:,:,:,:) :: &
+      d_sig_s        ! Scattering cross section moments
 
-  double precision, allocatable, dimension(:,:,:) :: psi,                      &
-                                                     source,                   &
-                                                     phi,                      &
-                                                     d_source,                 &
-                                                     d_delta,                  &
-                                                     d_phi,                    &
-                                                     d_psi
+  double precision, allocatable, dimension(:,:,:) :: &
+      psi,        &  ! Angular flux
+      source,     &  ! External source
+      phi,        &  ! Scalar Flux
+      d_source,   &  ! Extermal source moments
+      d_delta,    &  ! Angular total cross section moments
+      d_phi,      &  ! Scalar flux moments
+      d_psi          ! Angular flux moments
                                                                                                     
-  double precision, allocatable, dimension(:,:) :: d_nu_sig_f,                 &
-                                                   d_chi,                      &
-                                                   d_sig_t                                       
+  double precision, allocatable, dimension(:,:) :: &
+      d_nu_sig_f, &  ! Fission cross section moments (times nu)
+      d_chi,      &  ! Chi spectrum moments
+      d_sig_t        ! Scalar total cross section moments
                                                      
-  double precision, allocatable, dimension(:) :: d_density
+  double precision, allocatable, dimension(:) :: &
+      density        ! Fission density
 
-  double precision :: d_keff
+  double precision :: &
+      d_keff         ! k-eigenvalue
   
   contains
   
   ! Allocate the variable containers
   subroutine initialize_state()
-    integer :: ios = 0, c, g
+    ! ##########################################################################
+    ! Initialize each of the container variables to default/entered values
+    ! ##########################################################################
+
+    integer :: &
+        ios = 0, & ! I/O error status
+        c,       & ! Cell index
+        g          ! Group index
+
     ! Allocate the scalar flux and source containers
     allocate(phi(0:number_legendre, number_groups, number_cells))
     ! Initialize phi
@@ -57,7 +74,7 @@ module state
     source = source_value
 
     ! Allocate space for the fission density
-    allocate(d_density(number_cells))
+    allocate(density(number_cells))
     call update_density()
 
     ! Only allocate psi if the option is to store psi    
@@ -93,6 +110,10 @@ module state
   
   ! Deallocate the variable containers
   subroutine finalize_state()
+    ! ##########################################################################
+    ! Deallocate all allocated arrays
+    ! ##########################################################################
+
     if (allocated(phi)) then
       deallocate(phi)
     end if
@@ -120,14 +141,19 @@ module state
     if (allocated(d_sig_s)) then
       deallocate(d_sig_s)
     end if
-    if (allocated(d_density)) then
-      deallocate(d_density)
+    if (allocated(density)) then
+      deallocate(density)
     end if
   end subroutine finalize_state
 
   ! Resize the container arrays to number of energy groups, nG
   subroutine reallocate_states(nG)
-    integer, intent(in) :: nG
+    ! ##########################################################################
+    ! Resize the moment containers to the coarse group structure when using DGM
+    ! ##########################################################################
+
+    integer, intent(in) :: &
+        nG  ! Number of energy groups
 
     ! Deallocate arrays if needed
     if (allocated(d_source)) then
@@ -169,22 +195,33 @@ module state
   end subroutine
   
   subroutine update_density()
+    ! ##########################################################################
+    ! Compute the fission density from the scalar flux and fission cross section
+    ! ##########################################################################
+
     use material, only : nu_sig_f
     use mesh, only : mMap
 
-    integer :: c, g
+    integer :: &
+        c,  & ! Cell index
+        g     ! Group index
 
-    d_density = 0
+    density = 0
     do c = 1, number_cells
       do g = 1, number_groups
-        d_density(c) = d_density(c) + phi(0, g, c) * nu_sig_f(g, mMap(c))
+        density(c) = density(c) + phi(0, g, c) * nu_sig_f(g, mMap(c))
       end do
     end do
 
   end subroutine update_density
 
   subroutine output_state()
-    character(:), allocatable :: fname
+    ! ##########################################################################
+    ! Save the scalar and angular flux objects to unformatted fortran file
+    ! ##########################################################################
+
+    character(:), allocatable :: &
+        fname  ! Base file name
 
     fname = trim(file_name) // "_phi.bin"
 
