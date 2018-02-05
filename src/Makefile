@@ -1,4 +1,4 @@
-# Makefile for linear algebra tests 
+# Makefile for Unotran and related tests
 
 #===============================================================================
 # Compilation settings
