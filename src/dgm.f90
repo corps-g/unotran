@@ -1,5 +1,9 @@
 module dgm
-  use control, only : energy_group_map, truncation_map, dgm_basis_name, dgm_expansion_order
+  ! ############################################################################
+  ! Compute the DGM Moments for fluxes and cross sections
+  ! ############################################################################
+
+  use control, only : energy_group_map, truncation_map, dgm_basis_name
   use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t, nu_sig_f, chi
   use mesh, only: number_cells, mMap
   use angle, only: number_angles
@@ -8,17 +12,31 @@ module dgm
 
   implicit none
 
-  double precision, allocatable, dimension(:, :) :: basis
-  double precision, allocatable, dimension(:, :, :) :: chi_m
-  double precision, allocatable, dimension(:, :, :, :) :: source_m
-  integer :: expansion_order, number_coarse_groups
-  integer, allocatable, dimension(:) :: energyMesh, order, basismap
+  double precision, allocatable, dimension(:,:) :: &
+      basis                ! Basis for expansion in energy
+  double precision, allocatable, dimension(:,:,:) :: &
+      chi_m                ! Chi spectrum moments
+  double precision, allocatable, dimension(:,:,:,:) :: &
+      source_m             ! Source moments
+  integer :: &
+      expansion_order,   & ! Maximum expansion order
+      number_coarse_groups ! Number of coarse groups in energy
+  integer, allocatable, dimension(:) :: &
+      energyMesh,        & ! Array of number of fine groups per coarse group
+      order,             & ! Expansion order for each coarse energy group
+      basismap             ! Starting index for fine group for each coarse group
 
   contains
 
-  ! Initialize the container for the cross section and flux moments
   subroutine initialize_moments()
-    integer :: g, gp, cg
+    ! ##########################################################################
+    ! Initialize the container for the cross section and flux moments
+    ! ##########################################################################
+
+    integer :: &
+        g,  & ! outer fine group index
+        gp, & ! inner coarse group index
+        cg    ! coarse group index
 
     ! Get the number of coarse groups
     if (allocated(energy_group_map)) then
@@ -66,19 +84,29 @@ module dgm
 
   end subroutine initialize_moments
 
-  ! Load basis set from file
   subroutine initialize_basis()
-    double precision, allocatable, dimension(:) :: array1
-    integer, allocatable, dimension(:) :: cumsum
-    integer :: g, cg, i
+    ! ##########################################################################
+    ! Load basis set from file
+    ! ##########################################################################
+
+    double precision, allocatable, dimension(:) :: &
+        array1 ! Temporary array
+    integer, allocatable, dimension(:) :: &
+        cumsum ! Temporary cumulative sum for energy groups
+    integer :: &
+        g,   & ! Fine group index
+        cg,  & ! Coarse group index
+        i      ! Cell index
 
     ! allocate the basis array
     allocate(basis(number_groups, 0:expansion_order))
     allocate(array1(number_groups))
     allocate(cumsum(number_coarse_groups))
+
     ! initialize the basis to zero
     basis = 0.0
 
+    ! Compute the cumulative sum for the coarse group indexes
     cumsum = basismap + 1
 
     do cg = 1, number_coarse_groups
@@ -99,6 +127,7 @@ module dgm
         basis(g, i) = array1(cumsum(cg) + i)
       end do
     end do
+
     ! clean up
     close(unit=5)
 
@@ -106,8 +135,11 @@ module dgm
 
   end subroutine initialize_basis
 
-  ! Deallocate the variable containers
   subroutine finalize_moments()
+    ! ##########################################################################
+    ! Deallocate the variable containers
+    ! ##########################################################################
+
     if (allocated(basis)) then
       deallocate(basis)
     end if
@@ -128,10 +160,20 @@ module dgm
     end if
   end subroutine finalize_moments
 
-  ! Expand the flux moments using the basis functions
   subroutine compute_flux_moments()
-    integer :: a, c, cg, cgp, g, gp, l, mat
-    double precision :: num
+    ! ##########################################################################
+    ! Expand the flux moments using the basis functions
+    ! ##########################################################################
+
+    integer :: &
+        a,   & ! Angle index
+        c,   & ! Cell index
+        cg,  & ! Outer coarse group index
+        cgp, & ! Inner coarse group index
+        g,   & ! Outer fine group index
+        gp,  & ! Inner fine group index
+        l,   & ! Legendre moment index
+        mat    ! Material index
 
     ! initialize all moments to zero
     d_phi = 0.0
@@ -157,11 +199,25 @@ module dgm
 
   end subroutine compute_flux_moments
 
-  ! Expand the cross section moments using the basis functions
   subroutine compute_xs_moments(order)
-    integer :: a, c, cg, cgp, g, gp, l, i, mat
-    integer, intent(in) :: order
-    double precision :: num
+    ! ##########################################################################
+    ! Expand the cross section moments using the basis functions
+    ! ##########################################################################
+
+    integer :: &
+        a,   & ! Angle index
+        c,   & ! Cell index
+        cg,  & ! Outer coarse group index
+        cgp, & ! Inner coarse group index
+        g,   & ! Outer fine group index
+        gp,  & ! Inner fine group index
+        l,   & ! Legendre moment index
+        mat    ! Material index
+    integer, intent(in) :: &
+        order  ! Expansion order
+    double precision :: &
+        num    ! Floating point number holder
+
     ! initialize all moments to zero
     d_sig_s = 0.0
     d_source(:, :, :) = source_m(:, :, :, order)
@@ -175,8 +231,8 @@ module dgm
       mat = mMap(c)
       do g = 1, number_groups
         cg = energyMesh(g)
-        ! Check if producing nan
-        if (d_phi(0, cg, c) /= 0.0) then
+        ! Check if producing nan and not computing with a nan
+        if (d_phi(0, cg, c) /= 0.0 .and. d_phi(0, cg, c) == d_phi(0, cg, c)) then
           ! total cross section moment
           d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
           ! fission cross section moment
@@ -200,8 +256,8 @@ module dgm
       do a = 1, number_angles * 2
         do g = 1, number_groups
           cg = energyMesh(g)
-          ! Check if producing nan
-          if (d_psi(cg, a, c) /= 0.0) then
+          ! Check if producing nan and not computing with a nan
+          if (d_psi(cg, a, c) /= 0.0 .and. d_psi(cg, a, c) == d_psi(cg, a, c)) then
             d_delta(cg, a, c) = d_delta(cg, a, c) + basis(g, order) * (sig_t(g, mat) &
                                 - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
           end if
@@ -211,9 +267,19 @@ module dgm
 
   end subroutine compute_xs_moments
 
-  ! Expand the source and chi using the basis functions
   subroutine compute_source_moments()
-    integer :: order, c, a, g, cg, mat
+    ! ##########################################################################
+    ! Expand the source and chi using the basis functions
+    ! ##########################################################################
+
+    integer :: &
+        order, & ! Expansion order index
+        c,     & ! Cell index
+        a,     & ! Angle index
+        g,     & ! Fine group index
+        cg,    & ! Coarse group index
+        mat      ! Material index
+
     allocate(chi_m(number_coarse_groups, number_cells, 0:expansion_order))
     allocate(source_m(number_coarse_groups, number_angles * 2, number_cells, 0:expansion_order))
 

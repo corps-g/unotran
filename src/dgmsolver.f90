@@ -1,4 +1,8 @@
 module dgmsolver
+  ! ############################################################################
+  ! Solve discrete ordinates using the Discrete Generalized Multigroup Method
+  ! ############################################################################
+
   use control
   use material, only : create_material, number_legendre, &
                        number_groups, finalize_material
@@ -13,13 +17,16 @@ module dgmsolver
 
   implicit none
   
-  logical :: printOption, use_fission
-  double precision, allocatable, dimension(:,:,:) :: incoming
+  double precision, allocatable, dimension(:,:,:) :: &
+      incoming ! Angular flux incident on a cell
 
   contains
   
-  ! Initialize all of the variables and solvers
   subroutine initialize_dgmsolver()
+    ! ##########################################################################
+    ! Initialize all of the variables and solvers
+    ! ##########################################################################
+
     ! initialize the mesh
     call create_mesh()
     ! read the material cross sections
@@ -41,12 +48,22 @@ module dgmsolver
 
   end subroutine initialize_dgmsolver
 
-  ! Interate equations until convergance
   subroutine dgmsolve()
-    double precision :: outer_error
-    double precision :: phi_new(0:number_legendre,number_groups,number_cells), &
-                        psi_new(number_groups,2*number_angles,number_cells)
-    integer :: counter
+    ! ##########################################################################
+    ! Interate DGM equations to convergance
+    ! ##########################################################################
+
+    double precision :: &
+        outer_error ! Error between successive iterations
+    double precision, allocatable, dimension(:,:,:) :: &
+        phi_new,  & ! Scalar flux for current iteration
+        psi_new     ! Angular flux for current iteration
+    integer :: &
+        counter     ! Iteration counter
+
+    ! Initialize the flux containers
+    allocate(phi_new(0:number_legendre, number_groups, number_cells))
+    allocate(psi_new(number_groups, 2 * number_angles, number_cells))
 
     ! Error of current iteration
     outer_error = 1.0
@@ -54,7 +71,7 @@ module dgmsolver
     ! interation number
     counter = 1
 
-    ! Interate to convergance tolerance
+    ! Interate to convergance
     do while (outer_error > outer_tolerance)
       ! Sweep through the mesh
       call dgmsweep(phi_new, psi_new, incoming)
@@ -92,12 +109,19 @@ module dgmsolver
   end subroutine dgmsolve
 
   subroutine dgmoutput()
+    ! ##########################################################################
+    ! Save the output for the fluxes to file
+    ! ##########################################################################
 
     call output_state()
 
   end subroutine dgmoutput
 
   subroutine finalize_dgmsolver()
+    ! ##########################################################################
+    ! Deallocate used arrays
+    ! ##########################################################################
+
     call finalize_angle()
     call finalize_mesh()
     call finalize_material()

@@ -1,4 +1,8 @@
 module solver
+  ! ############################################################################
+  ! Solve the transport equation using discrete ordinates
+  ! ############################################################################
+
   use control, only : lamb, outer_print, outer_tolerance, store_psi, solver_type
   use material, only : create_material, number_legendre, number_groups, finalize_material, &
                        sig_t, sig_s, nu_sig_f, chi
@@ -10,15 +14,23 @@ module solver
 
   implicit none
   
-  logical :: printOption, use_fission
+  logical :: &
+      printOption,  & ! Boolian flag to print to standard output or not
+      use_fission     ! Flag to allow fission in the problem
   double precision, allocatable :: &
-      incoming(:,:)  ! Incoming angular flux for a given spatial cell
+      incoming(:,:)  ! Angular flux incident on the current cell
 
   contains
   
   ! Initialize all of the variables and solvers
   subroutine initialize_solver()
-    integer :: c, l
+    ! ##########################################################################
+    ! Initialize the solver including mesh, quadrature, flux containers, etc.
+    ! ##########################################################################
+
+    integer :: &
+        c,  & ! Cell index
+        l     ! Legendre moment index
 
     ! initialize the mesh
     call create_mesh()
@@ -55,8 +67,16 @@ module solver
 
   ! Interate equations until convergance
   subroutine solve()
-    double precision :: error, fd_old(number_cells)
-    integer :: counter, a
+    ! ##########################################################################
+    ! Initialize the solver including mesh, quadrature, flux containers, etc.
+    ! ##########################################################################
+
+    double precision :: &
+        error,               & ! inter-iteration error
+        fd_old(number_cells)   ! fission density for previous iteration
+    integer :: &
+        counter,             & ! iteration counter
+        a                      ! angle index
 
     ! Error of current iteration
     error = 1.0
@@ -66,7 +86,8 @@ module solver
 
     call normalize_flux()
 
-    do while (error > outer_tolerance)  ! Interate to convergance tolerance
+    ! Interate to convergance
+    do while (error > outer_tolerance)
       ! save phi from previous iteration
       d_phi = phi
 
@@ -101,15 +122,19 @@ module solver
   end subroutine solve
 
   subroutine normalize_flux()
+    ! ##########################################################################
+    ! Normalize the scalar flux, used during eigenvalue solves
+    ! ##########################################################################
 
-    double precision :: frac
+    double precision :: &
+        frac  ! Normalization fraction
 
     frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
 
-    ! normalize phi
+    ! normalize scalar flux
     phi = phi / frac
 
-    ! normalize psi
+    ! normalize angular flux
     if (store_psi) then
         psi = psi / frac
     end if
@@ -117,12 +142,19 @@ module solver
   end subroutine normalize_flux
 
   subroutine output()
+    ! ##########################################################################
+    ! Output the fluxes to file
+    ! ##########################################################################
 
     call output_state()
 
   end subroutine output
 
   subroutine finalize_solver()
+    ! ##########################################################################
+    ! Deallocate all used variables
+    ! ##########################################################################
+
     call finalize_angle()
     call finalize_mesh()
     call finalize_material()

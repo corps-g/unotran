@@ -1,41 +1,84 @@
 module control
+  ! ############################################################################
+  ! Define the options for solving the transport equation
+  ! ############################################################################
+
   implicit none
 
   ! control variables
-  double precision, allocatable, dimension(:) :: coarse_mesh
-  integer, allocatable, dimension(:) :: fine_mesh, material_map, energy_group_map, truncation_map
-  double precision :: boundary_type(2), outer_tolerance, inner_tolerance, lamb=1.0, source_value=0.0
-  character(len=256) :: xs_name, dgm_basis_name, file_name, initial_phi, initial_psi, solver_type
-  character(len=2) :: equation_type
-  integer :: angle_order, angle_option, dgm_expansion_order=-1, legendre_order=-1, max_outer_iters=1000, max_inner_iters=1000
-  logical :: allow_fission=.false., outer_print=.true., inner_print=.false.
-  logical :: use_dgm=.false., store_psi=.false., use_recondensation=.false., ignore_warnings=.false.
+  double precision, allocatable, dimension(:) :: &
+      coarse_mesh                   ! Coarse mesh boundaries
+  integer, allocatable, dimension(:) :: &
+      fine_mesh,                  & ! Number of fine cells per coarse region
+      material_map,               & ! Material ID within each coarse region
+      energy_group_map,           & ! Coarse energy group boundaries
+      truncation_map                ! Expansion order within each coarse group (optional)
+  double precision :: &
+      boundary_type(2),           & ! Albedo value at [left, right] boundary
+      outer_tolerance,            & ! Convergance criteria for outer iteration
+      inner_tolerance,            & ! Convergance criteria for inner iteration
+      lamb=1.0,                   & ! Parameter (0 < lamb <= 1.0) for krasnoselskii iteration
+      source_value=0.0              ! Value of external source for the problem
+  character(len=256) :: &
+      xs_name,                    & ! Name of the cross section file
+      dgm_basis_name,             & ! Name of file containing energy basis
+      file_name,                  & ! Name of file containing the options
+      initial_phi,                & ! Name of file with initial scalar flux
+      initial_psi,                & ! Name of file with initial angular flux
+      solver_type                   ! Choice of [eigen, fixed] solver
+  character(len=2) :: &
+      equation_type="DD"            ! Closure equation for discrete ordinates [DD, SC, SD]
+  integer :: &
+      angle_order,                & ! Number of angles per octant
+      angle_option,               & ! Quadrature option [gl=0, dgl=1]
+      legendre_order=-1,          & ! Anisotropic scattering order
+      max_outer_iters=1000,       & ! Maximum iterations for outer loop
+      max_inner_iters=1000          ! Maximum iterations for inner loop
+  logical :: &
+      allow_fission=.false.,      & ! Enable/Disable fission in the problem
+      outer_print=.true.,         & ! Enable/Disable outer iteration printing
+      inner_print=.false.,        & ! Enable/Disable inner iteration printing
+      use_dgm=.false.,            & ! Enable/Disable DGM solver
+      store_psi=.false.,          & ! Enable/Disable storing the angular flux
+      ignore_warnings=.false.       ! Enable/Disable warning messages
 
   contains
 
   subroutine initialize_control(fname, silent)
-    ! Input variables
-    character(len=256) :: buffer, label
-    character(len=*), intent(in) :: fname
-    integer :: pos
-    integer, parameter :: fh = 15
-    integer :: ios = 0
-    integer :: line = 0
-    logical, optional :: silent
-    logical :: no_print
+    ! ##########################################################################
+    ! Read the options file and output the choices if not silent
+    ! ##########################################################################
 
+    ! Input variables
+    character(len=256) :: &
+        buffer, & ! Buffer to hold read-in strings
+        label     ! Contains the read-variable name
+    character(len=*), intent(in) :: &
+        fname     ! Name of the file containing options
+    integer :: &
+        pos,    & ! Position indicator in the line
+        ios=0,  & ! I/O file flag
+        line=0    ! Line number
+    integer, parameter :: &
+        fh=15     ! File number
+    logical, optional :: &
+        silent    ! Flag to prevent printing the read variables and values
+    logical :: &
+        no_print  ! Local flag to prevent printing the read variables and values
+
+    ! Set the local value of no_print from silent
     if (present(silent)) then
-      no_print = silent
+      no_print = silent   ! Use provided value
     else
-      no_print = .false.
+      no_print = .false.  ! Default value
     end if
 
+    ! Cut the trailing whitespace from fname
     file_name = trim(adjustl(fname))
 
+    ! Start reading the options file
     open(fh, file=file_name, action='read', iostat=ios)
     if (ios > 0) stop "*** ERROR: user input file not found ***"
-
-    equation_type = "DD"
 
     ! ios is negative if an end of record condition is encountered or if
     ! an endfile condition was detected.  It is positive if an error was
@@ -43,6 +86,7 @@ module control
     do while (ios == 0)
       read(fh, '(A)', iostat=ios) buffer
       if (ios == 0) then
+        ! Increment the line count
         line = line + 1
 
         ! Find the first whitespace and split label and data
@@ -50,6 +94,7 @@ module control
         label = buffer(1:pos)
         buffer = buffer(pos+1:)
 
+        ! Parse the label and save the value to the proper variable
         select case (label)
         case ('fine_mesh')
           allocate(fine_mesh(nitems(buffer)))
@@ -96,8 +141,6 @@ module control
           read(buffer, *, iostat=ios) use_DGM
         case ('store_psi')
           read(buffer, *, iostat=ios) store_psi
-        case ('use_recondensation')
-          read(buffer, *, iostat=ios) use_recondensation
         case ('ignore_warnings')
           read(buffer, *, iostat=ios) ignore_warnings
         case ('equation_type')
@@ -119,10 +162,12 @@ module control
     end do
     close(fh)
 
+    ! If DGM is enabled, angular flux must be stored
     if (use_DGM) then
       store_psi = .true.
     end if
 
+    ! Unless disabled, send the options to standard output
     if (.not. no_print) then
       call output_control()
     end if
@@ -140,6 +185,9 @@ module control
   end subroutine initialize_control
 
   subroutine output_control()
+    ! ##########################################################################
+    ! Output the variables/options to the standard output
+    ! ##########################################################################
 
     print *, 'MESH VARIABLES'
     print *, '  fine_mesh          = [', fine_mesh, ']'
@@ -175,7 +223,6 @@ module control
       print *, 'DGM OPTIONS'
       print *, '  dgm_basis_file     = "', dgm_basis_name, '"'
       print *, '  use_DGM            = ', use_DGM
-      print *, '  use_recondensation = ', use_recondensation
       if (allocated(truncation_map)) then
         print *, '  energy_group_map   = [', energy_group_map, ']'
       end if
@@ -189,6 +236,10 @@ module control
   end subroutine output_control
 
   subroutine finalize_control()
+    ! ##########################################################################
+    ! Deallocate all allocated arrays
+    ! ##########################################################################
+
     if (allocated(fine_mesh)) then
       deallocate(fine_mesh)
     end if
@@ -206,8 +257,13 @@ module control
     end if
   end subroutine finalize_control
 
-  ! number of space-separated items in a line
+  ! Copied from http://www.tek-tips.com/viewthread.cfm?qid=1688013
+  ! Credit to salgerman
   integer function nitems(line)
+    ! ##########################################################################
+    ! Compute the number of space-separated items in a line
+    ! ##########################################################################
+
     character line*(*)
     logical back
     integer length, k

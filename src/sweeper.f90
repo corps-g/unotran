@@ -1,4 +1,8 @@
 module sweeper
+  ! ############################################################################
+  ! Sweep through the cells,angles,groups to implement discrete ordinates
+  ! ############################################################################
+
   use control, only : boundary_type, store_psi, equation_type
   use material, only : number_groups, sig_t, number_legendre
   use mesh, only : dx, number_cells, mMap
@@ -10,12 +14,41 @@ module sweeper
   contains
   
   subroutine sweep(number_energy_groups, phi, psi, incoming)
-    integer :: o, c, a, g, l, an, cmin, cmax, cstep, amin, amax, astep
-    integer, intent(in) :: number_energy_groups
-    double precision :: Q(number_energy_groups, number_angles * 2, number_cells), Ps, invmu, fiss
-    double precision :: M(0:number_legendre)
-    double precision, intent(inout) :: phi(:,:,:), incoming(:,:), psi(:,:,:)
-    logical :: octant
+    ! ##########################################################################
+    ! Sweep over each cell, angle, group, and ocatant
+    ! ##########################################################################
+
+    integer, intent(in) :: &
+        number_energy_groups ! Number of energy groups
+    double precision, intent(inout), dimension(:,:,:) :: &
+        phi,               & ! Scalar flux for current iteration
+        psi                  ! Angular flux for current iteration
+    double precision, intent(inout), dimension(:,:) :: &
+        incoming             ! Angular flux incident on a spacial cell
+    integer :: &
+        o,                 & ! Octant index
+        c,                 & ! Cell index
+        a,                 & ! Angle index
+        g,                 & ! Group index
+        l,                 & ! Legendre index
+        an,                & ! Global angle index
+        cmin,              & ! Lower cell number
+        cmax,              & ! Upper cell number
+        cstep,             & ! Cell stepping direction
+        amin,              & ! Lower angle number
+        amax,              & ! Upper angle number
+        astep                ! Angle stepping direction
+    double precision, allocatable, dimension(:,:,:) :: &
+        Q                    ! Source
+    double precision, allocatable, dimension(:) :: &
+        M                    ! Legendre polynomial integration vector
+    double precision :: &
+        Ps                   ! Angular flux at cell center
+    logical :: &
+        octant               ! Positive/Negative octant flag
+
+    allocate(Q(number_energy_groups, number_angles * 2, number_cells))
+    allocate(M(0:number_legendre))
 
     phi = 0.0  ! Reset phi
 
@@ -23,7 +56,7 @@ module sweeper
     call updateRHS(Q, number_energy_groups)
 
     do o = 1, 2  ! Sweep over octants
-      ! Sweep in the correct direction in the octant
+      ! Sweep in the correct direction within the octant
       octant = o == 1
       cmin = merge(1, number_cells, octant)
       cmax = merge(number_cells, 1, octant)
@@ -58,15 +91,28 @@ module sweeper
       end do
     end do
 
+    deallocate(Q, M)
+
   end subroutine sweep
   
   subroutine computeEQ(S, incoming, sig, dx, mua, cellPsi)
-    implicit none
+    ! ##########################################################################
+    ! Compute the value for the closure reslationship
+    ! ##########################################################################
 
-    double precision, intent(inout) :: incoming
-    double precision, intent(in) :: S, sig, dx, mua
-    double precision, intent(out) :: cellPsi
-    double precision :: tau, A, invmu
+    double precision, intent(inout) :: &
+        incoming ! Angular flux incident on the cell
+    double precision, intent(in) :: &
+        S,     & ! Source within the cell
+        sig,   & ! Total cross section within the cell
+        dx,    & ! Width of the cell
+        mua      ! Angle for the cell
+    double precision, intent(out) :: &
+        cellPsi  ! Angular flux at cell center
+    double precision :: &
+        tau,   & ! Parameter used in step characteristics
+        A,     & ! Parameter used in step characteristics
+        invmu    ! Parameter used in diamond and step differences
 
     select case (equation_type)
     case ('DD')
@@ -92,13 +138,34 @@ module sweeper
   end subroutine computeEQ
   
   subroutine updateRHS(Q, number_groups)
+    ! ##########################################################################
+    ! Update the source including external, scattering, and fission
+    ! ##########################################################################
 
-    integer, intent(in) :: number_groups
-    double precision, intent(inout) :: Q(:, :, :)
-    double precision :: source(number_groups), scat(number_groups)
-    integer :: o, c, a, g, l, an, cmin, cmax, cstep, amin, amax, astep
-    logical :: octant
+    integer, intent(in) :: &
+        number_groups ! Number of energy groups
+    double precision, intent(inout), dimension(:,:,:) :: &
+        Q             ! Container for total source
+    double precision, dimension(number_groups) :: &
+        source,     & ! Array to hold the source per group
+        scat          ! Array to hold scattering source per group
+    integer :: &
+        o,          & ! Octant index
+        c,          & ! Cell index
+        a,          & ! Angle index
+        g,          & ! Group index
+        l,          & ! Legendre index
+        an,         & ! Global angle index
+        cmin,       & ! Lower cell number
+        cmax,       & ! Upper cell number
+        cstep,      & ! Cell stepping direction
+        amin,       & ! Lower angle number
+        amax,       & ! Upper angle number
+        astep         ! Angle stepping direction
+    logical :: &
+        octant        ! Positive/Negative octant flag
 
+    ! Initialize the source to zero
     Q = 0.0
 
     do o = 1, 2  ! Sweep over octants
@@ -115,6 +182,7 @@ module sweeper
           ! Get the correct angle index
           an = merge(a, 2 * number_angles - a + 1, octant)
 
+          ! Get the External source and possibly the angular total XS moment source
           if (allocated(d_psi)) then
             source(:) = d_source(:,an,c) - d_delta(:,an,c)  * d_psi(:,an,c)
           else
@@ -124,7 +192,7 @@ module sweeper
           ! Include the external source and the fission source
           Q(:,an,c) = source(:) + d_chi(:,c) / d_keff * dot_product(d_nu_sig_f(:,c), d_phi(0,:,c))
 
-          ! Add the scattering source for each legendre moment
+          ! Add the scattering source for each Legendre moment
           do l = 0, number_legendre
             scat(:) = 1 / (2 * l + 1) * p_leg(l, an) * matmul(transpose(d_sig_s(l, :, :, c)), d_phi(l,:,c))
             Q(:,an,c) = Q(:,an,c) + scat(:)

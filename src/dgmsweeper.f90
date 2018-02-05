@@ -1,4 +1,8 @@
 module dgmsweeper
+  ! ##########################################################################
+  ! Provide the sweeping through moments for the DGM solver
+  ! ##########################################################################
+
   use control
   use material, only : number_groups, number_legendre
   use mesh, only : dx, number_cells, mMap
@@ -14,11 +18,22 @@ module dgmsweeper
   contains
 
   subroutine dgmsweep(phi_new, psi_new, incoming)
-    double precision, intent(inout) :: phi_new(:,:,:), psi_new(:,:,:)
-    double precision, intent(inout) :: incoming(:,:,0:)
-    double precision, allocatable, dimension(:, :, :) :: phi_m, psi_m
-    integer :: i
+    ! ##########################################################################
+    ! Sweep through the moments for DGM solver
+    ! ##########################################################################
 
+    double precision, intent(inout), dimension(:,:,:) :: &
+        phi_new, & ! Scalar flux for current iteration
+        psi_new    ! Angular flux for current iteration
+    double precision, intent(inout), dimension(:,:,0:) :: &
+        incoming   ! Angular flux incident on the current cell
+    double precision, allocatable, dimension(:,:,:) :: &
+        phi_m,   & ! Scalar flux moment
+        psi_m      ! Angular flux moment
+    integer :: &
+        i          ! Expansion order index
+
+    ! Initialize the flux containers
     allocate(phi_m(0:number_legendre, number_coarse_groups, number_cells))
     allocate(psi_m(number_coarse_groups, number_angles * 2, number_cells))
     phi_new = 0.0
@@ -26,32 +41,44 @@ module dgmsweeper
     phi_m = 0.0
     psi_m = 0.0
 
-    ! Get the first guess for the flux moments
+    ! Get the initial 0th order the flux moments
     call compute_flux_moments()
 
+    ! Sweep through the moments
     do i = 0, expansion_order
-      ! Compute the order=0 cross section moments
+      ! Compute the cross section moments
       call compute_xs_moments(order=i)
 
-      ! Converge the 0th order flux moments
+      ! Converge the ith order flux moments
       call inner_solve(i, incoming(:,:,i), phi_m, psi_m)
 
-      ! Unfold 0th order flux
+      ! Unfold ith order flux
       call unfold_flux_moments(i, phi_m, psi_m, &
                                phi_new, psi_new, incoming(:,:,i))
     end do
 
     deallocate(phi_m, psi_m)
+
   end subroutine dgmsweep
 
   subroutine inner_solve(i, incoming, phi_m, psi_m)
+    ! ##########################################################################
+    ! Sweep through the cells, groups, and angles for discrete ordinates
+    ! ##########################################################################
 
-    integer, intent(in) :: i
-    double precision, intent(inout) :: incoming(:,:)
-    double precision, intent(inout) :: phi_m(0:,:,:)
-    double precision, intent(inout) :: psi_m(:,:,:)
-    double precision :: inner_error, frac
-    integer :: counter
+    integer, intent(in) :: &
+        i              ! Expansion order index
+    double precision, intent(inout), dimension(:,:) :: &
+        incoming       ! Angular flux incident on the current cell
+    double precision, intent(inout), dimension(0:,:,:) :: &
+        phi_m          ! Scalar flux moments
+    double precision, intent(inout), dimension(:,:,:) :: &
+        psi_m          ! Angular flux moments
+    double precision :: &
+        inner_error, & ! Error between successive iterations for moment i
+        frac           ! Normalization fraction
+    integer :: &
+        counter        ! Iteration counter
 
     ! Initialize iteration variables
     inner_error = 1.0
@@ -87,11 +114,6 @@ module dgmsweeper
         d_phi = phi_m
         d_psi = psi_m
 
-        ! If recondensation is active, break out of loop early
-        if (use_recondensation) then
-          call compute_xs_moments(order=i)
-        end if
-
         ! Break out of loop if exceeding maximum inner iterations
         if (counter > max_inner_iters) then
           if (.not. ignore_warnings) then
@@ -103,17 +125,34 @@ module dgmsweeper
         ! Higher orders converge in a single pass
         exit
       end if
+
     end do
+
   end subroutine inner_solve
 
   ! Unfold the flux moments
   subroutine unfold_flux_moments(order, phi_moment, psi_moment, &
                                  phi_new, psi_new, incoming)
-    integer, intent(in) :: order
-    double precision, intent(in) :: phi_moment(:,:,:), psi_moment(:,:,:)
-    double precision, intent(out) :: psi_new(:,:,:), phi_new(:,:,:)
-    double precision, intent(inout) :: incoming(:,:)
-    integer :: a, c, cg, g, mat
+    ! ##########################################################################
+    ! Compute the fluxes from the moments
+    ! ##########################################################################
+
+    integer, intent(in) :: &
+        order         ! Expansion order
+    double precision, intent(in), dimension(:,:,:) :: &
+        phi_moment, & ! Scalar flux moments
+        psi_moment    ! Angular flux moments
+    double precision, intent(out), dimension(:,:,:) :: &
+        psi_new,    & ! Scalar flux for current iteration
+        phi_new       ! Angular flux for current iteration
+    double precision, intent(inout), dimension(:,:) :: &
+        incoming      ! Angular flux incident on a cell
+    integer :: &
+        a,          & ! Angle index
+        c,          & ! Cell index
+        cg,         & ! Coarse group index
+        g,          & ! Fine group index
+        mat           ! Material index
 
     do c = 1, number_cells
       do a = 1, number_angles * 2
@@ -136,11 +175,18 @@ module dgmsweeper
 
   end subroutine unfold_flux_moments
   
-  ! Normalize the flux for the eigenvalue problem
   subroutine normalize_flux(phi, psi, incoming)
+    ! ##########################################################################
+    ! Normalize the flux for the eigenvalue problem
+    ! ##########################################################################
 
-    double precision, intent(inout) :: phi(:,:,:), psi(:,:,:), incoming(:,:)
-    double precision :: frac
+    double precision, intent(inout), dimension(:,:,:) :: &
+        phi, &   ! Scalar flux
+        psi      ! Angular flux
+    double precision, intent(inout), dimension(:,:) :: &
+        incoming ! Angular flux incident on a cell
+    double precision :: &
+        frac     ! Normalization fraction
 
     if (solver_type == 'eigen') then
       frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)

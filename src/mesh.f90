@@ -1,19 +1,36 @@
 module mesh
+  ! ############################################################################
+  ! Create the cell indexing for the problem
+  ! ############################################################################
+
   use control, only : fine_mesh, coarse_mesh, material_map, boundary_type
 
   implicit none
 
-  integer :: number_cells  ! Total number of cells in the mesh
-  double precision :: width  ! Total width of the problem
-  double precision, allocatable, dimension(:) :: dx  ! Width of each cell
-  integer, allocatable, dimension(:) :: mMap  ! Material within each cell
+  integer :: &
+      number_cells  ! Total number of cells in the mesh
+  double precision :: &
+      width         ! Total width of the problem
+  double precision, allocatable, dimension(:) :: &
+      dx            ! Width of each cell
+  integer, allocatable, dimension(:) :: &
+      mMap          ! Material within each cell
 
   contains
 
   ! Compute the cell size and material map for the problem
   subroutine create_mesh()
-    double precision :: ddx  ! Temporary variable
-    integer :: n, c, i, j
+    ! ##########################################################################
+    ! Compute the widths of each cell and the total number of cells
+    ! ##########################################################################
+
+    double precision :: &
+        ddx  ! Temporary variable for cell width
+    integer :: &
+        n, & ! number of coarse mesh regions
+        c, & ! counting index for total cells
+        i, & ! coarse cell index
+        j    ! fine cell index
 
     n = size(fine_mesh)  ! Number of coarse mesh regions
     c = 1  ! counting variable
@@ -37,6 +54,10 @@ module mesh
   end subroutine create_mesh
 
   subroutine finalize_mesh()
+    ! ##########################################################################
+    ! Deallocate any used arrays
+    ! ##########################################################################
+
     if (allocated(dx)) then
       deallocate(dx)
     end if

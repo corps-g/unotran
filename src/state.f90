@@ -1,7 +1,7 @@
 module state
-  ! ##########################################################################
+  ! ############################################################################
   ! Define the container classes for fluxes and cross sections
-  ! ##########################################################################
+  ! ############################################################################
 
   use control, only : store_psi, source_value, file_name, initial_phi, initial_psi, use_dgm, solver_type
   use material, only : number_groups, number_legendre, nu_sig_f
