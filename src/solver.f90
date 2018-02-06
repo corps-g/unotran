@@ -73,7 +73,6 @@ module solver
 
     double precision :: &
         error,               & ! inter-iteration error
-        fd_old(number_cells)   ! fission density for previous iteration
     integer :: &
         counter,             & ! iteration counter
         a                      ! angle index
