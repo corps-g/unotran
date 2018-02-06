@@ -232,7 +232,11 @@ module dgm
       do g = 1, number_groups
         cg = energyMesh(g)
         ! Check if producing nan and not computing with a nan
-        if (d_phi(0, cg, c) /= 0.0 .and. d_phi(0, cg, c) == d_phi(0, cg, c)) then
+        if (d_phi(0, cg, c) /= d_phi(0, cg, c)) then
+          ! Detected NaN
+          print *, "NaN detected, exiting"
+          exit
+        else if (d_phi(0, cg, c) /= 0.0)  then
           ! total cross section moment
           d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
           ! fission cross section moment
@@ -244,7 +248,10 @@ module dgm
           cgp = energyMesh(gp)
           do l = 0, number_legendre
             ! Check if producing nan
-            if (d_phi(l, cgp, c) /= 0.0) then
+            if (d_phi(l, cgp, c) /= d_phi(l, cgp, c)) then
+              ! Detected NaN
+              print *, "NaN detected, exiting"
+            else if (d_phi(l, cgp, c) /= 0.0) then
               d_sig_s(l, cgp, cg, c) = d_sig_s(l, cgp, cg, c) &
                                      + basis(g, order) * sig_s(l, gp, g, mat) * phi(l, gp, c) / d_phi(l, cgp, c)
             end if
@@ -257,7 +264,10 @@ module dgm
         do g = 1, number_groups
           cg = energyMesh(g)
           ! Check if producing nan and not computing with a nan
-          if (d_psi(cg, a, c) /= 0.0 .and. d_psi(cg, a, c) == d_psi(cg, a, c)) then
+          if (d_psi(cg, a, c) /= d_psi(cg, a, c)) then
+            ! Detected NaN
+              print *, "NaN detected, exiting"
+          else if (d_psi(cg, a, c) /= 0.0) then
             d_delta(cg, a, c) = d_delta(cg, a, c) + basis(g, order) * (sig_t(g, mat) &
                                 - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
           end if
