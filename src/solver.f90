@@ -72,7 +72,7 @@ module solver
     ! ##########################################################################
 
     double precision :: &
-        error,               & ! inter-iteration error
+        error                  ! inter-iteration error
     integer :: &
         counter,             & ! iteration counter
         a                      ! angle index
