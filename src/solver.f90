@@ -68,7 +68,7 @@ module solver
   ! Interate equations until convergance
   subroutine solve()
     ! ##########################################################################
-    ! Initialize the solver including mesh, quadrature, flux containers, etc.
+    ! Solve the neutron transport equation using discrete ordinates
     ! ##########################################################################
 
     double precision :: &
