@@ -9,7 +9,7 @@ module dgmsweeper
   use angle, only : number_angles
   use sweeper, only : sweep
   use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, &
-                    d_sig_t, d_psi, d_keff, d_incoming
+                    d_sig_t, d_psi, d_keff, d_incoming, normalize_flux
   use dgm, only : number_coarse_groups, expansion_order, &
                   energymesh, basis, compute_xs_moments, compute_flux_moments, &
                   compute_incoming_flux
@@ -176,28 +176,4 @@ module dgmsweeper
 
   end subroutine unfold_flux_moments
   
-  subroutine normalize_flux(phi, psi)
-    ! ##########################################################################
-    ! Normalize the flux for the eigenvalue problem
-    ! ##########################################################################
-
-    double precision, intent(inout), dimension(:,:,:) :: &
-        phi, &   ! Scalar flux
-        psi      ! Angular flux
-    double precision :: &
-        frac     ! Normalization fraction
-
-    if (solver_type == 'eigen') then
-      frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
-
-      ! normalize phi
-      phi = phi / frac
-
-      ! normalize psi
-      psi = psi / frac
-    end if
-
-  end subroutine normalize_flux
-
-
 end module dgmsweeper

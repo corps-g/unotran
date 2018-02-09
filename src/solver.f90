@@ -8,7 +8,8 @@ module solver
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh, mMap
-  use state, only : initialize_state, phi, psi, source, finalize_state, output_state, update_density, &
+  use state, only : initialize_state, phi, psi, source, finalize_state, output_state, &
+                    normalize_flux, update_density, &
                     d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi, d_keff, d_incoming
   use sweeper, only : sweep
 
@@ -77,8 +78,6 @@ module solver
     ! interation number
     counter = 1
 
-    call normalize_flux()
-
     ! Interate to convergance
     do while (error > outer_tolerance)
       ! save phi from previous iteration
@@ -104,35 +103,13 @@ module solver
         end if
       end if
 
-      if (solver_type == 'eigen') then
-       call normalize_flux()
-      end if
+      call normalize_flux(phi, psi)
 
       ! increment the iteration
       counter = counter + 1
     end do
 
   end subroutine solve
-
-  subroutine normalize_flux()
-    ! ##########################################################################
-    ! Normalize the scalar flux, used during eigenvalue solves
-    ! ##########################################################################
-
-    double precision :: &
-        frac  ! Normalization fraction
-
-    frac = sum(abs(phi(0,:,:))) / (number_cells * number_groups)
-
-    ! normalize scalar flux
-    phi = phi / frac
-
-    ! normalize angular flux
-    if (store_psi) then
-        psi = psi / frac
-    end if
-
-  end subroutine normalize_flux
 
   subroutine output()
     ! ##########################################################################

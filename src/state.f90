@@ -125,6 +125,8 @@ module state
       source = 0.0
     end if
 
+    call normalize_flux(phi, psi)
+
     call reallocate_states(number_groups)
 
   end subroutine initialize_state
@@ -274,5 +276,28 @@ module state
     end if
 
   end subroutine output_state
+
+  subroutine normalize_flux(phi, psi)
+    ! ##########################################################################
+    ! Normalize the flux for the eigenvalue problem
+    ! ##########################################################################
+
+    double precision, intent(inout), dimension(:,:,:) :: &
+        phi, &   ! Scalar flux
+        psi      ! Angular flux
+    double precision :: &
+        frac     ! Normalization fraction
+
+    if (solver_type == 'eigen') then
+      frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
+
+      ! normalize phi
+      phi = phi / frac
+
+      ! normalize psi
+      psi = psi / frac
+    end if
+
+  end subroutine normalize_flux
 
 end module state
