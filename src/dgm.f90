@@ -8,7 +8,7 @@ module dgm
   use mesh, only: number_cells, mMap
   use angle, only: number_angles
   use state, only: phi, psi, source, reallocate_states, d_source, d_nu_sig_f, d_sig_s, &
-                   d_chi, d_phi, d_delta, d_sig_t, d_psi
+                   d_chi, d_phi, d_delta, d_sig_t, d_psi, d_incoming
 
   implicit none
 
@@ -199,6 +199,27 @@ module dgm
 
   end subroutine compute_flux_moments
 
+  subroutine compute_incoming_flux(order)
+    ! ##########################################################################
+    ! Compute the incident angular flux at the boundary for the given order
+    ! ##########################################################################
+
+    integer :: &
+      order, & ! Expansion order
+      a,     & ! Angle index
+      g,     & ! Fine group index
+      cg       ! Coarse group index
+
+    d_incoming = 0.0
+    do a = 1, number_angles
+      do g = 1, number_groups
+        cg = energyMesh(g)
+        d_incoming(cg, a) = d_incoming(cg, a) +  basis(g, order) * psi(g, a + number_angles, 1)
+      end do
+    end do
+
+  end subroutine compute_incoming_flux
+
   subroutine compute_xs_moments(order)
     ! ##########################################################################
     ! Expand the cross section moments using the basis functions
@@ -234,8 +255,8 @@ module dgm
         ! Check if producing nan and not computing with a nan
         if (d_phi(0, cg, c) /= d_phi(0, cg, c)) then
           ! Detected NaN
-          print *, "NaN detected, exiting"
-          exit
+          print *, "NaN detected, limiting"
+          d_phi(0, cg, c) = 100.0
         else if (d_phi(0, cg, c) /= 0.0)  then
           ! total cross section moment
           d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
@@ -250,7 +271,8 @@ module dgm
             ! Check if producing nan
             if (d_phi(l, cgp, c) /= d_phi(l, cgp, c)) then
               ! Detected NaN
-              print *, "NaN detected, exiting"
+              print *, "NaN detected, limiting"
+              d_phi(l, cgp, c) = 100.0
             else if (d_phi(l, cgp, c) /= 0.0) then
               d_sig_s(l, cgp, cg, c) = d_sig_s(l, cgp, cg, c) &
                                      + basis(g, order) * sig_s(l, gp, g, mat) * phi(l, gp, c) / d_phi(l, cgp, c)
@@ -266,7 +288,8 @@ module dgm
           ! Check if producing nan and not computing with a nan
           if (d_psi(cg, a, c) /= d_psi(cg, a, c)) then
             ! Detected NaN
-              print *, "NaN detected, exiting"
+              print *, "NaN detected, limiting"
+              d_psi(cg, a, c) = 100.0
           else if (d_psi(cg, a, c) /= 0.0) then
             d_delta(cg, a, c) = d_delta(cg, a, c) + basis(g, order) * (sig_t(g, mat) &
                                 - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)

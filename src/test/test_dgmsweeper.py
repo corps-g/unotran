@@ -57,23 +57,14 @@ class TestDGMSWEEPER(unittest.TestCase):
         phi_m_test = np.concatenate((np.loadtxt('test/7gbasis').T.dot(phi_test), [0])).reshape((2, -1))
 
         for i in range(4):
-            incoming = self.getIncoming(i)
+            pydgm.dgm.compute_incoming_flux(order=i)
             pydgm.dgm.compute_xs_moments(order=i)
-            pydgm.dgmsweeper.inner_solve(i, incoming, phi_m, psi_m)
+            pydgm.dgmsweeper.inner_solve(i, phi_m, psi_m)
             p1 = phi_m[0, :, 0]
             p2 = phi_m_test[:, i]
             f1 = p1[1] / p1[0]
             f2 = p2[1] / p2[0]
             np.testing.assert_almost_equal(f1, f2, 12, 'order {} failed'.format(i))
-
-    def getIncoming(self, o):
-        incoming = np.reshape(np.zeros(4), (2, 2), 'F')
-
-        for a in range(pydgm.angle.number_angles):
-            for g in range(pydgm.material.number_groups):
-                cg = pydgm.dgm.energymesh[g]
-                incoming[cg - 1, a] += pydgm.dgm.basis[g, o] * pydgm.state.psi[g, a, 0]
-        return incoming
 
     def tearDown(self):
         pydgm.dgmsolver.finalize_dgmsolver()

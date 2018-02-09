@@ -7,13 +7,14 @@ module sweeper
   use material, only : number_groups, sig_t, number_legendre
   use mesh, only : dx, number_cells, mMap
   use angle, only : number_angles, p_leg, wt, mu
-  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, d_sig_t, d_psi, d_keff
+  use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, &
+                    d_sig_t, d_psi, d_keff, d_incoming
 
   implicit none
   
   contains
   
-  subroutine sweep(number_energy_groups, phi, psi, incoming)
+  subroutine sweep(number_energy_groups, phi, psi)
     ! ##########################################################################
     ! Sweep over each cell, angle, group, and ocatant
     ! ##########################################################################
@@ -23,8 +24,6 @@ module sweeper
     double precision, intent(inout), dimension(:,:,:) :: &
         phi,               & ! Scalar flux for current iteration
         psi                  ! Angular flux for current iteration
-    double precision, intent(inout), dimension(:,:) :: &
-        incoming             ! Angular flux incident on a spacial cell
     integer :: &
         o,                 & ! Octant index
         c,                 & ! Cell index
@@ -66,7 +65,7 @@ module sweeper
       astep = merge(1, -1, octant)
       
       ! set boundary conditions
-      incoming = boundary_type(o) * incoming  ! Set albedo conditions
+      d_incoming = boundary_type(o) * d_incoming  ! Set albedo conditions
 
       do c = cmin, cmax, cstep  ! Sweep over cells
         do a = amin, amax, astep  ! Sweep over angle
@@ -78,7 +77,7 @@ module sweeper
 
           do g = 1, number_energy_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD
-            call computeEQ(Q(g,an,c), incoming(g,a), d_sig_t(g, c), dx(c), mu(a), Ps)
+            call computeEQ(Q(g,an,c), d_incoming(g,a), d_sig_t(g, c), dx(c), mu(a), Ps)
 
             if (store_psi) then
               psi(g,an,c) = Ps

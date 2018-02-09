@@ -17,9 +17,6 @@ module dgmsolver
 
   implicit none
   
-  double precision, allocatable, dimension(:,:,:) :: &
-      incoming ! Angular flux incident on a cell
-
   contains
   
   subroutine initialize_dgmsolver()
@@ -41,10 +38,6 @@ module dgmsolver
     call initialize_moments()
     call initialize_basis()
     call compute_source_moments()
-
-    allocate(incoming(number_coarse_groups, number_angles, 0:expansion_order))
-
-    incoming = 0.0
 
   end subroutine initialize_dgmsolver
 
@@ -74,7 +67,7 @@ module dgmsolver
     ! Interate to convergance
     do while (outer_error > outer_tolerance)
       ! Sweep through the mesh
-      call dgmsweep(phi_new, psi_new, incoming)
+      call dgmsweep(phi_new, psi_new)
 
       ! error is the difference in phi between successive iterations
       outer_error = sum(abs(phi - phi_new))
@@ -127,9 +120,6 @@ module dgmsolver
     call finalize_material()
     call finalize_state()
     call finalize_moments()
-    if (allocated(incoming)) then
-      deallocate(incoming)
-    end if
   end subroutine finalize_dgmsolver
 
 end module dgmsolver

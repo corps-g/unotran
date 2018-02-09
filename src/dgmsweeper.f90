@@ -9,15 +9,16 @@ module dgmsweeper
   use angle, only : number_angles
   use sweeper, only : sweep
   use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, &
-                    d_sig_t, d_psi, d_keff
+                    d_sig_t, d_psi, d_keff, d_incoming
   use dgm, only : number_coarse_groups, expansion_order, &
-                  energymesh, basis, compute_xs_moments, compute_flux_moments
+                  energymesh, basis, compute_xs_moments, compute_flux_moments, &
+                  compute_incoming_flux
 
   implicit none
   
   contains
 
-  subroutine dgmsweep(phi_new, psi_new, incoming)
+  subroutine dgmsweep(phi_new, psi_new)
     ! ##########################################################################
     ! Sweep through the moments for DGM solver
     ! ##########################################################################
@@ -25,8 +26,6 @@ module dgmsweeper
     double precision, intent(inout), dimension(:,:,:) :: &
         phi_new, & ! Scalar flux for current iteration
         psi_new    ! Angular flux for current iteration
-    double precision, intent(inout), dimension(:,:,0:) :: &
-        incoming   ! Angular flux incident on the current cell
     double precision, allocatable, dimension(:,:,:) :: &
         phi_m,   & ! Scalar flux moment
         psi_m      ! Angular flux moment
@@ -46,30 +45,31 @@ module dgmsweeper
 
     ! Sweep through the moments
     do i = 0, expansion_order
+      ! Set Incoming to the proper order
+      call compute_incoming_flux(order=i)
+
       ! Compute the cross section moments
       call compute_xs_moments(order=i)
 
       ! Converge the ith order flux moments
-      call inner_solve(i, incoming(:,:,i), phi_m, psi_m)
+      call inner_solve(i, phi_m, psi_m)
 
       ! Unfold ith order flux
       call unfold_flux_moments(i, phi_m, psi_m, &
-                               phi_new, psi_new, incoming(:,:,i))
+                               phi_new, psi_new)
     end do
 
     deallocate(phi_m, psi_m)
 
   end subroutine dgmsweep
 
-  subroutine inner_solve(i, incoming, phi_m, psi_m)
+  subroutine inner_solve(i, phi_m, psi_m)
     ! ##########################################################################
     ! Sweep through the cells, groups, and angles for discrete ordinates
     ! ##########################################################################
 
     integer, intent(in) :: &
         i              ! Expansion order index
-    double precision, intent(inout), dimension(:,:) :: &
-        incoming       ! Angular flux incident on the current cell
     double precision, intent(inout), dimension(0:,:,:) :: &
         phi_m          ! Scalar flux moments
     double precision, intent(inout), dimension(:,:,:) :: &
@@ -87,7 +87,7 @@ module dgmsweeper
     ! Interate to convergance tolerance
     do while (inner_error > inner_tolerance)
       ! Use discrete ordinates to sweep over the moment equation
-      call sweep(number_coarse_groups, phi_m, psi_m, incoming)
+      call sweep(number_coarse_groups, phi_m, psi_m)
 
       ! Update the 0th order moments if working on converging zeroth moment
       if (i == 0) then
@@ -126,13 +126,16 @@ module dgmsweeper
         exit
       end if
 
+      ! Normalize the unfolded fluxes (if eigenvalue problem)
+      !call normalize_flux(d_phi, d_psi, incoming)
+
     end do
 
   end subroutine inner_solve
 
   ! Unfold the flux moments
   subroutine unfold_flux_moments(order, phi_moment, psi_moment, &
-                                 phi_new, psi_new, incoming)
+                                 phi_new, psi_new)
     ! ##########################################################################
     ! Compute the fluxes from the moments
     ! ##########################################################################
@@ -145,8 +148,6 @@ module dgmsweeper
     double precision, intent(out), dimension(:,:,:) :: &
         psi_new,    & ! Scalar flux for current iteration
         phi_new       ! Angular flux for current iteration
-    double precision, intent(inout), dimension(:,:) :: &
-        incoming      ! Angular flux incident on a cell
     integer :: &
         a,          & ! Angle index
         c,          & ! Cell index
@@ -171,11 +172,11 @@ module dgmsweeper
     end do
 
     ! Normalize the unfolded fluxes (if eigenvalue problem)
-    call normalize_flux(phi_new, psi_new, incoming)
+    call normalize_flux(phi_new, psi_new)
 
   end subroutine unfold_flux_moments
   
-  subroutine normalize_flux(phi, psi, incoming)
+  subroutine normalize_flux(phi, psi)
     ! ##########################################################################
     ! Normalize the flux for the eigenvalue problem
     ! ##########################################################################
@@ -183,8 +184,6 @@ module dgmsweeper
     double precision, intent(inout), dimension(:,:,:) :: &
         phi, &   ! Scalar flux
         psi      ! Angular flux
-    double precision, intent(inout), dimension(:,:) :: &
-        incoming ! Angular flux incident on a cell
     double precision :: &
         frac     ! Normalization fraction
 

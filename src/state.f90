@@ -25,7 +25,8 @@ module state
   double precision, allocatable, dimension(:,:) :: &
       d_nu_sig_f, &  ! Fission cross section moments (times nu)
       d_chi,      &  ! Chi spectrum moments
-      d_sig_t        ! Scalar total cross section moments
+      d_sig_t,    &  ! Scalar total cross section moments
+      d_incoming     ! Angular flux incident on the current cell
                                                      
   double precision, allocatable, dimension(:) :: &
       density        ! Fission density
@@ -44,6 +45,7 @@ module state
     integer :: &
         ios = 0, & ! I/O error status
         c,       & ! Cell index
+        a,       & ! Angle index
         g          ! Group index
 
     ! Allocate the scalar flux and source containers
@@ -87,11 +89,30 @@ module state
       if (ios > 0) then
         !print *, "initial psi file, ", initial_psi, " is missing, using default value"
         psi = 1.0  ! default value
+        if (solver_type == 'fixed') then
+          ! default to isotropic distribution
+          psi = 1.0 / (number_angles * 2)
+        else if (solver_type == 'eigen') then
+          ! default to isotropic distribution
+          psi = 0.0
+          do c = 1, number_cells
+            do a = 1, number_angles * 2
+              do g = 1, number_groups
+                psi(g, a, c) = phi(0, g, c) / (number_angles * 2)
+              end do
+            end do
+          end do
+        end if
+
+
       else
         read(10) psi ! read the data in array x to the file
       end if
       close(10) ! close the file
     end if
+
+    allocate(d_incoming(number_groups, number_angles))
+    d_incoming = 0.0
 
     ! Initialize the eigenvalue to unity
     d_keff = 1.0
@@ -144,6 +165,15 @@ module state
     if (allocated(density)) then
       deallocate(density)
     end if
+    if (allocated(d_psi)) then
+      deallocate(d_psi)
+    end if
+    if (allocated(d_sig_t)) then
+      deallocate(d_sig_t)
+    end if
+    if (allocated(d_incoming)) then
+      deallocate(d_incoming)
+    end if
   end subroutine finalize_state
 
   ! Resize the container arrays to number of energy groups, nG
@@ -180,6 +210,9 @@ module state
     if (allocated(d_sig_t)) then
       deallocate(d_sig_t)
     end if
+    if (allocated(d_incoming)) then
+      deallocate(d_incoming)
+    end if
 
     ! Reallocate with the specified number of groups, nG
     allocate(d_source(nG, number_angles * 2, number_cells))
@@ -192,6 +225,7 @@ module state
     if (store_psi) then
       allocate(d_psi(nG, number_angles * 2, number_cells))
     end if
+    allocate(d_incoming(nG, number_angles))
   end subroutine
   
   subroutine update_density()

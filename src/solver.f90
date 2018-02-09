@@ -9,7 +9,7 @@ module solver
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh, mMap
   use state, only : initialize_state, phi, psi, source, finalize_state, output_state, update_density, &
-                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi, d_keff, density
+                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi, d_keff, d_incoming
   use sweeper, only : sweep
 
   implicit none
@@ -17,8 +17,6 @@ module solver
   logical :: &
       printOption,  & ! Boolian flag to print to standard output or not
       use_fission     ! Flag to allow fission in the problem
-  double precision, allocatable :: &
-      incoming(:,:)  ! Angular flux incident on the current cell
 
   contains
   
@@ -59,10 +57,6 @@ module solver
       d_psi(:, :, :) = psi(:, :, :)
     end if
 
-    ! todo: move to state
-    allocate(incoming(number_groups, number_angles))
-    incoming = 0.0
-
   end subroutine initialize_solver
 
   ! Interate equations until convergance
@@ -91,7 +85,7 @@ module solver
       d_phi = phi
 
       ! Sweep through the mesh
-      call sweep(number_groups, phi, psi, incoming)
+      call sweep(number_groups, phi, psi)
 
       if (solver_type == 'eigen') then
         ! Compute new eigenvalue if eigen problem
@@ -158,9 +152,6 @@ module solver
     call finalize_mesh()
     call finalize_material()
     call finalize_state()
-    if (allocated(incoming)) then
-      deallocate(incoming)
-    end if
   end subroutine
 
 end module solver
