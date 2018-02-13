@@ -5,6 +5,7 @@ import unittest
 import pydgm
 import numpy as np
 
+
 class TestSOLVER(unittest.TestCase):
 
     def setUp(self):
@@ -67,10 +68,10 @@ class TestSOLVER(unittest.TestCase):
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:,0])
-        S = pydgm.material.sig_s[0,:,:,0].T
+        T = np.diag(pydgm.material.sig_t[:, 0])
+        S = pydgm.material.sig_s[0, :, :, 0].T
         phi_test = np.linalg.solve((T - S), np.ones(1))
         phi_test = np.array([phi_test for i in range(28)]).flatten()
 
@@ -88,7 +89,7 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
-    
+
     def test_solver_inf_med_2g(self):
         '''
         Test infinite medium fixed source problem with reflective conditions in 2g
@@ -100,10 +101,10 @@ class TestSOLVER(unittest.TestCase):
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:,0])
-        S = pydgm.material.sig_s[0,:,:,0].T
+        T = np.diag(pydgm.material.sig_t[:, 0])
+        S = pydgm.material.sig_s[0, :, :, 0].T
         phi_test = np.linalg.solve((T - S), np.ones(2))
         phi_test = np.array([phi_test for i in range(28)]).flatten()
 
@@ -132,10 +133,10 @@ class TestSOLVER(unittest.TestCase):
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:,0])
-        S = pydgm.material.sig_s[0,:,:,0].T
+        T = np.diag(pydgm.material.sig_t[:, 0])
+        S = pydgm.material.sig_s[0, :, :, 0].T
         phi_test = np.linalg.solve((T - S), np.ones(7))
         phi_test = np.array([phi_test for i in range(28)]).flatten()
 
@@ -144,7 +145,7 @@ class TestSOLVER(unittest.TestCase):
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten('F')
-        
+
         np.testing.assert_array_almost_equal(phi / phi_test, np.ones(28 * 7), 12)
 
         # Test the angular flux
@@ -187,7 +188,7 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
-        
+
     def test_solver_2med_ref_2g(self):
         '''
         Test fixed source problem with reflective conditions with 2g
@@ -219,7 +220,7 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
-        
+
     def test_solver_2med_ref_7g(self):
         '''
         Test fixed source problem with reflective conditions with 7g
@@ -230,16 +231,16 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1, 1]
         pydgm.control.angle_order = 4
         pydgm.control.boundary_type = [1.0, 1.0]
-        
+
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:,0])
-        S = pydgm.material.sig_s[0,:,:,0].T
+        T = np.diag(pydgm.material.sig_t[:, 0])
+        S = pydgm.material.sig_s[0, :, :, 0].T
         phi_test = np.linalg.solve((T - S), np.ones(7))
         phi_test = np.array([phi_test for i in range(10)]).flatten()
-        
+
         # Solve the problem
         pydgm.solver.solve()
 
@@ -368,7 +369,7 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
-        
+
     def test_solver_eigenR1g(self):
         '''
         Test eigenvalue source problem with reflective conditions and 1g
@@ -386,17 +387,17 @@ class TestSOLVER(unittest.TestCase):
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:,0])
-        S = pydgm.material.sig_s[0,:,:,0].T
-        X = np.outer(pydgm.material.chi[:,0], pydgm.material.nu_sig_f[:,0])
-        
+        T = np.diag(pydgm.material.sig_t[:, 0])
+        S = pydgm.material.sig_s[0, :, :, 0].T
+        X = np.outer(pydgm.material.chi[:, 0], pydgm.material.nu_sig_f[:, 0])
+
         keff, phi = np.linalg.eig(np.linalg.inv(T - S).dot(X))
         i = np.argmax(keff)
         keff_test = keff[i]
         phi_test = phi[i]
-        
+
         phi_test = np.array([phi_test for i in range(10)]).flatten()
 
         # Solve the problem
@@ -417,7 +418,7 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
-        
+
     def test_solver_eigenR2g(self):
         '''
         Test eigenvalue source problem with reflective conditions and 2g
@@ -435,17 +436,17 @@ class TestSOLVER(unittest.TestCase):
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:,0])
-        S = pydgm.material.sig_s[0,:,:,0].T
-        X = np.outer(pydgm.material.chi[:,0], pydgm.material.nu_sig_f[:,0])
-        
+        T = np.diag(pydgm.material.sig_t[:, 0])
+        S = pydgm.material.sig_s[0, :, :, 0].T
+        X = np.outer(pydgm.material.chi[:, 0], pydgm.material.nu_sig_f[:, 0])
+
         keff, phi = np.linalg.eig(np.linalg.inv(T - S).dot(X))
         i = np.argmax(keff)
         keff_test = keff[i]
-        phi_test = phi[:,i]
-        
+        phi_test = phi[:, i]
+
         phi_test = np.array([phi_test for i in range(10)]).flatten()
 
         # Solve the problem
@@ -457,7 +458,7 @@ class TestSOLVER(unittest.TestCase):
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
-        
+
         # Test the angular flux
         nAngles = pydgm.angle.number_angles
         phi_test = np.zeros((pydgm.mesh.number_cells, pydgm.material.number_groups))
@@ -466,7 +467,7 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
-        
+
     def test_solver_eigenR7g(self):
         '''
         Test eigenvalue source problem with reflective conditions and 7g
@@ -483,17 +484,18 @@ class TestSOLVER(unittest.TestCase):
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:,0])
-        S = pydgm.material.sig_s[0,:,:,0].T
-        X = np.outer(pydgm.material.chi[:,0], pydgm.material.nu_sig_f[:,0])
-        
+        T = np.diag(pydgm.material.sig_t[:, 0])
+        S = pydgm.material.sig_s[0, :, :, 0].T
+        X = np.outer(pydgm.material.chi[:, 0], pydgm.material.nu_sig_f[:, 0])
+
         keff, phi = np.linalg.eig(np.linalg.inv(T - S).dot(X))
+
         i = np.argmax(keff)
         keff_test = keff[i]
-        phi_test = phi[:,i]
-        
+        phi_test = phi[:, i]
+
         phi_test = np.array([phi_test for i in range(10)]).flatten()
 
         # Solve the problem
@@ -505,7 +507,7 @@ class TestSOLVER(unittest.TestCase):
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
-        
+
         # Test the angular flux
         nAngles = pydgm.angle.number_angles
         phi_test = np.zeros((pydgm.mesh.number_cells, pydgm.material.number_groups))
@@ -531,7 +533,7 @@ class TestSOLVER(unittest.TestCase):
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # set the test flux
         keff_test = 0.6824742039858390
         phi_test = [0.13341837652120125, 0.13356075080242463, 0.1338459024547955, 0.13470975320182185, 0.13591529539088204, 0.13679997220977602, 0.13738073107705168, 0.13766845210630752, 0.1376684521063075, 0.1373807310770516, 0.1367999722097759, 0.13591529539088193, 0.1347097532018217, 0.13384590245479533, 0.1335607508024245, 0.13341837652120114]
@@ -545,7 +547,7 @@ class TestSOLVER(unittest.TestCase):
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
-        
+
         # Test the angular flux
         nAngles = pydgm.angle.number_angles
         phi_test = np.zeros((pydgm.mesh.number_cells, pydgm.material.number_groups))
@@ -554,7 +556,7 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
-        
+
     def test_solver_eigenR2gPin(self):
         '''
         Test eigenvalue source problem with reflective conditions and 2g
@@ -571,7 +573,7 @@ class TestSOLVER(unittest.TestCase):
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # set the test flux
         keff_test = 0.8418546852484950
         phi_test = [0.13393183108467394, 0.04663240631432256, 0.13407552941360298, 0.04550808086281801, 0.13436333428621713, 0.043206841474147446, 0.1351651393398092, 0.0384434752119791, 0.13615737742196526, 0.03329929560434661, 0.13674284660888314, 0.030464508103354708, 0.13706978363298242, 0.028970199506203023, 0.13721638515632006, 0.028325674662651124, 0.13721638515632006, 0.028325674662651124, 0.1370697836329824, 0.028970199506203012, 0.13674284660888308, 0.0304645081033547, 0.13615737742196524, 0.03329929560434659, 0.13516513933980914, 0.03844347521197908, 0.13436333428621713, 0.043206841474147425, 0.13407552941360296, 0.045508080862818004, 0.1339318310846739, 0.046632406314322555]
@@ -585,7 +587,7 @@ class TestSOLVER(unittest.TestCase):
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
-        
+
         # Test the angular flux
         nAngles = pydgm.angle.number_angles
         phi_test = np.zeros((pydgm.mesh.number_cells, pydgm.material.number_groups))
@@ -594,7 +596,7 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
-        
+
     def test_solver_eigenR7gPin(self):
         '''
         Test eigenvalue source problem with reflective conditions and 7g
@@ -610,7 +612,7 @@ class TestSOLVER(unittest.TestCase):
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
-        
+
         # set the test flux
         keff_test = 1.0794314789325041
         phi_test = [0.18617101855192203, 2.858915338372074, 1.4772041911943246, 1.0299947729491368, 0.7782291112252604, 0.6601323950057741, 0.0018780861364841711, 0.18615912584783736, 2.8586649211715436, 1.4771766639520822, 1.030040359498237, 0.7782969794725844, 0.6603312122972236, 0.0018857945539742516, 0.18613533094381535, 2.858163988201594, 1.4771216026067822, 1.0301315410919691, 0.7784327301908717, 0.6607289506819793, 0.001901260571677254, 0.1860688679764812, 2.856246121648244, 1.4768054633757053, 1.0308126366153867, 0.7795349485104974, 0.6645605858759833, 0.0020390343478796447, 0.18597801819761287, 2.8534095558345967, 1.4763058823653368, 1.0319062100766097, 0.7813236329806805, 0.6707834262470258, 0.002202198406120643, 0.18591115233580913, 2.851306298580461, 1.4759330573010532, 1.0327026586727457, 0.7826354049117061, 0.6752310599415209, 0.002251216654318464, 0.18586715682184884, 2.8499152893733255, 1.4756853599772022, 1.0332225362074143, 0.7834960048959739, 0.6780933062272468, 0.0022716374303459433, 0.1858453299832966, 2.8492230801887986, 1.475561761882258, 1.0334791905008067, 0.7839221795374745, 0.6794942839316992, 0.002280077669362046, 0.18584532998329656, 2.8492230801887986, 1.475561761882258, 1.0334791905008065, 0.7839221795374745, 0.6794942839316991, 0.0022800776693620455, 0.18586715682184884, 2.8499152893733255, 1.4756853599772024, 1.0332225362074146, 0.7834960048959738, 0.6780933062272467, 0.002271637430345943, 0.18591115233580915, 2.851306298580461, 1.4759330573010532, 1.0327026586727457, 0.7826354049117062, 0.6752310599415207, 0.0022512166543184635, 0.1859780181976129, 2.853409555834596, 1.476305882365337, 1.0319062100766097, 0.7813236329806805, 0.6707834262470258, 0.002202198406120643, 0.1860688679764812, 2.856246121648244, 1.4768054633757055, 1.0308126366153867, 0.7795349485104973, 0.6645605858759831, 0.002039034347879644, 0.18613533094381537, 2.858163988201594, 1.4771216026067824, 1.0301315410919691, 0.7784327301908716, 0.6607289506819792, 0.0019012605716772534, 0.1861591258478374, 2.858664921171543, 1.4771766639520822, 1.0300403594982372, 0.7782969794725842, 0.6603312122972235, 0.0018857945539742511, 0.18617101855192209, 2.8589153383720736, 1.477204191194325, 1.0299947729491368, 0.7782291112252603, 0.660132395005774, 0.0018780861364841707]
@@ -624,7 +626,7 @@ class TestSOLVER(unittest.TestCase):
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
-        
+
         # Test the angular flux
         nAngles = pydgm.angle.number_angles
         phi_test = np.zeros((pydgm.mesh.number_cells, pydgm.material.number_groups))
@@ -633,12 +635,13 @@ class TestSOLVER(unittest.TestCase):
                 phi_test[c] += 0.5 * pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[c] += 0.5 * pydgm.angle.wt[nAngles - a - 1] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test.T, 12)
-    
+
     # TODO: Add anisotropic tests
-    
+
     def tearDown(self):
         pydgm.solver.finalize_solver()
         pydgm.control.finalize_control()
+
 
 if __name__ == '__main__':
 
