@@ -6,7 +6,7 @@ program main
   !     Eigenvalue Problems
   ! ############################################################################
 
-  use control, only : initialize_control, store_psi
+  use control, only : initialize_control
   use dgmsolver
   use solver
 

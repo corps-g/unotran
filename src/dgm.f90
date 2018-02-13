@@ -169,10 +169,7 @@ module dgm
         a,   & ! Angle index
         c,   & ! Cell index
         cg,  & ! Outer coarse group index
-        cgp, & ! Inner coarse group index
         g,   & ! Outer fine group index
-        gp,  & ! Inner fine group index
-        l,   & ! Legendre moment index
         mat    ! Material index
 
     ! initialize all moments to zero
@@ -214,7 +211,7 @@ module dgm
     do a = 1, number_angles
       do g = 1, number_groups
         cg = energyMesh(g)
-        d_incoming(cg, a) = d_incoming(cg, a) +  basis(g, order) * psi(g, a + number_angles, 1)
+        d_incoming(cg, a) = d_incoming(cg, a) + basis(g, order) * psi(g, a + number_angles, 1)
       end do
     end do
 
@@ -236,8 +233,6 @@ module dgm
         mat    ! Material index
     integer, intent(in) :: &
         order  ! Expansion order
-    double precision :: &
-        num    ! Floating point number holder
 
     ! initialize all moments to zero
     d_sig_s = 0.0

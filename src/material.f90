@@ -36,7 +36,6 @@ module material
     integer :: &
         mat,           & ! Material index
         g,             & ! Outer group index
-        gp,            & ! Inner group index
         L,             & ! Legendre moment index
         dataPresent      ! Flag deciding which cross sections are present
     double precision :: &

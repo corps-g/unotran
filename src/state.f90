@@ -3,7 +3,8 @@ module state
   ! Define the container classes for fluxes and cross sections
   ! ############################################################################
 
-  use control, only : store_psi, source_value, file_name, initial_phi, initial_psi, use_dgm, solver_type
+  use control, only : store_psi, source_value, file_name, initial_phi, &
+                      initial_psi, use_dgm, solver_type, initial_keff, ignore_warnings
   use material, only : number_groups, number_legendre, nu_sig_f
   use mesh, only : number_cells, mMap
   use angle, only : number_angles
@@ -54,7 +55,9 @@ module state
     ! Attempt to read file or use default if file does not exist
     open(unit = 10, status='old', file=initial_phi, form='unformatted', iostat=ios)
     if (ios > 0) then
-      !print *, "initial phi file, ", initial_phi, " is missing, using default value"
+      if (.not. ignore_warnings) then
+        print *, "initial phi file, ", initial_phi, " is missing, using default value"
+      end if
       if (solver_type == 'fixed') then
         phi = 1.0  ! default value
       else if (solver_type == 'eigen') then
@@ -65,7 +68,6 @@ module state
           end do
         end do
       end if
-
     else
       read(10) phi ! read the data in array x to the file
     end if
@@ -87,7 +89,9 @@ module state
       ! Attempt to read file or use default if file does not exist
       open(unit = 10, status='old', file=initial_psi, form='unformatted', iostat=ios)
       if (ios > 0) then
-        !print *, "initial psi file, ", initial_psi, " is missing, using default value"
+        if (.not. ignore_warnings) then
+          print *, "initial psi file, ", initial_psi, " is missing, using default value"
+        end if
         psi = 1.0  ! default value
         if (solver_type == 'fixed') then
           ! default to isotropic distribution
@@ -103,19 +107,21 @@ module state
             end do
           end do
         end if
-
-
       else
         read(10) psi ! read the data in array x to the file
       end if
       close(10) ! close the file
     end if
 
+    ! Initialize the angular flux incident on the boundary
     allocate(d_incoming(number_groups, number_angles))
-    d_incoming = 0.0
 
-    ! Initialize the eigenvalue to unity
-    d_keff = 1.0
+    ! Initialize the eigenvalue to unity if fixed problem or default for eigen
+    if (solver_type == 'fixed') then
+      d_keff = 1.0
+    else
+      d_keff = initial_keff
+    end if
 
     ! Set external source to zero if eigen problem
     if (solver_type == 'eigen') then
@@ -125,7 +131,7 @@ module state
       source = 0.0
     end if
 
-    call normalize_flux(phi, psi)
+    call normalize_flux(number_groups, phi, psi)
 
     call reallocate_states(number_groups)
 
@@ -277,11 +283,13 @@ module state
 
   end subroutine output_state
 
-  subroutine normalize_flux(phi, psi)
+  subroutine normalize_flux(nG, phi, psi)
     ! ##########################################################################
     ! Normalize the flux for the eigenvalue problem
     ! ##########################################################################
 
+    integer, intent(in) :: &
+        nG       ! Number of groups
     double precision, intent(inout), dimension(:,:,:) :: &
         phi, &   ! Scalar flux
         psi      ! Angular flux
@@ -289,7 +297,7 @@ module state
         frac     ! Normalization fraction
 
     if (solver_type == 'eigen') then
-      frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
+      frac = sum(abs(phi(1,:,:))) / (number_cells * nG)
 
       ! normalize phi
       phi = phi / frac

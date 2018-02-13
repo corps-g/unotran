@@ -29,7 +29,6 @@ module sweeper
         c,                 & ! Cell index
         a,                 & ! Angle index
         g,                 & ! Group index
-        l,                 & ! Legendre index
         an,                & ! Global angle index
         cmin,              & ! Lower cell number
         cmax,              & ! Upper cell number
@@ -152,7 +151,6 @@ module sweeper
         o,          & ! Octant index
         c,          & ! Cell index
         a,          & ! Angle index
-        g,          & ! Group index
         l,          & ! Legendre index
         an,         & ! Global angle index
         cmin,       & ! Lower cell number
