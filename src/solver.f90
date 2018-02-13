@@ -29,6 +29,7 @@ module solver
 
     integer :: &
         c,  & ! Cell index
+        a,  & ! Angle index
         l     ! Legendre moment index
 
     ! initialize the mesh
@@ -56,6 +57,13 @@ module solver
     d_phi(:, :, :) = phi(:, :, :)
     if (store_psi) then
       d_psi(:, :, :) = psi(:, :, :)
+      ! Default the incoming flux to be equal to the outgoing if present
+      d_incoming = psi(:,(number_angles+1):,1)
+    else
+      ! Assume isotropic scalar flux for incident flux
+      do a=1, number_angles
+        d_incoming(:,a) = phi(0,:,1) / (number_angles * 2)
+      end do
     end if
 
   end subroutine initialize_solver
@@ -69,8 +77,7 @@ module solver
     double precision :: &
         error                  ! inter-iteration error
     integer :: &
-        counter,             & ! iteration counter
-        a                      ! angle index
+        counter                ! iteration counter
 
     ! Error of current iteration
     error = 1.0
@@ -86,6 +93,7 @@ module solver
       ! Sweep through the mesh
       call sweep(number_groups, phi, psi)
 
+      ! Compute the eigenvalue
       if (solver_type == 'eigen') then
         ! Compute new eigenvalue if eigen problem
         d_keff = d_keff * sum(abs(phi(0,:,:))) / sum(abs(d_phi(0,:,:)))
@@ -103,7 +111,7 @@ module solver
         end if
       end if
 
-      call normalize_flux(phi, psi)
+      call normalize_flux(number_groups, phi, psi)
 
       ! increment the iteration
       counter = counter + 1

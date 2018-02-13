@@ -18,7 +18,8 @@ module control
       outer_tolerance,            & ! Convergance criteria for outer iteration
       inner_tolerance,            & ! Convergance criteria for inner iteration
       lamb=1.0,                   & ! Parameter (0 < lamb <= 1.0) for krasnoselskii iteration
-      source_value=0.0              ! Value of external source for the problem
+      source_value=0.0,           & ! Value of external source for the problem
+      initial_keff=1.0              ! Initial value for the eigenvalue
   character(len=256) :: &
       xs_name,                    & ! Name of the cross section file
       dgm_basis_name,             & ! Name of file containing energy basis
@@ -40,7 +41,7 @@ module control
       inner_print=.false.,        & ! Enable/Disable inner iteration printing
       use_dgm=.false.,            & ! Enable/Disable DGM solver
       store_psi=.false.,          & ! Enable/Disable storing the angular flux
-      ignore_warnings=.false.       ! Enable/Disable warning messages
+      ignore_warnings=.true.        ! Enable/Disable warning messages
 
   contains
 
@@ -111,6 +112,8 @@ module control
           initial_phi=trim(adjustl(buffer))
         case ('initial_psi')
           initial_psi=trim(adjustl(buffer))
+        case ('initial_keff')
+          read(buffer, *, iostat=ios) initial_keff
         case ('angle_order')
           read(buffer, *, iostat=ios) angle_order
         case ('angle_option')
@@ -195,15 +198,18 @@ module control
     print *, '  material_map       = [', material_map, ']'
     print *, '  boundary_type      = [', boundary_type, ']'
     print *, 'MATERIAL VARIABLES'
-    print *, '  xs_file_name       = "', xs_name, '"'
+    print *, '  xs_file_name       = "', trim(xs_name), '"'
     print *, 'ANGLE VARIABLES'
     print *, '  angle_order        = ', angle_order
     print *, '  angle_option       = ', angle_option
     print *, 'SOURCE'
     print *, '  constant source    = ', source_value
     print *, 'OPTIONS'
-    print *, '  solver_type        = "', solver_type, '"'
-    print *, '  equation_type      = "', equation_type, '"'
+    print *, '  initial_phi        = ', trim(initial_phi)
+    print *, '  initial_psi        = ', trim(initial_psi)
+    print *, '  initial_keff       = ', initial_keff
+    print *, '  solver_type        = "', trim(solver_type), '"'
+    print *, '  equation_type      = "', trim(equation_type), '"'
     print *, '  store_psi          = ', store_psi
     print *, '  allow_fission      = ', allow_fission
     print *, '  outer_print        = ', outer_print
@@ -221,7 +227,7 @@ module control
     end if
     if (use_DGM) then
       print *, 'DGM OPTIONS'
-      print *, '  dgm_basis_file     = "', dgm_basis_name, '"'
+      print *, '  dgm_basis_file     = "', trim(dgm_basis_name), '"'
       print *, '  use_DGM            = ', use_DGM
       if (allocated(truncation_map)) then
         print *, '  energy_group_map   = [', energy_group_map, ']'
