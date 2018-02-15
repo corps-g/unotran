@@ -3,7 +3,8 @@ module solver
   ! Solve the transport equation using discrete ordinates
   ! ############################################################################
 
-  use control, only : lamb, outer_print, outer_tolerance, store_psi, solver_type
+  use control, only : lamb, outer_print, outer_tolerance, store_psi, solver_type, &
+                      max_outer_iters, ignore_warnings
   use material, only : create_material, number_legendre, number_groups, finalize_material, &
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
@@ -62,7 +63,7 @@ module solver
     else
       ! Assume isotropic scalar flux for incident flux
       do a=1, number_angles
-        d_incoming(:,a) = phi(0,:,1) / (number_angles * 2)
+        d_incoming(:,a) = phi(0,:,1) / 2
       end do
     end if
 
@@ -115,6 +116,15 @@ module solver
 
       ! increment the iteration
       counter = counter + 1
+
+      ! Break out of loop if exceeding maximum outer iterations
+      if (counter > max_outer_iters) then
+        if (.not. ignore_warnings) then
+          print *, 'warning: exceeded maximum outer iterations'
+        end if
+        exit
+      end if
+
     end do
 
   end subroutine solve
@@ -124,6 +134,8 @@ module solver
     ! Output the fluxes to file
     ! ##########################################################################
 
+    print *, phi
+    print *, psi
     call output_state()
 
   end subroutine output

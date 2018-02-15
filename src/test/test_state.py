@@ -57,7 +57,7 @@ class TestSTATE(unittest.TestCase):
         pydgm.state.initialize_state()
         
         phi_test = np.ones((7, 1))
-        psi_test = np.ones((7, 4, 1)) / 4
+        psi_test = np.ones((7, 4, 1)) / 2
         source_test = np.zeros((7, 4, 1))
         
         np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test, 12)

@@ -92,17 +92,16 @@ module state
         if (.not. ignore_warnings) then
           print *, "initial psi file, ", initial_psi, " is missing, using default value"
         end if
-        psi = 1.0  ! default value
         if (solver_type == 'fixed') then
           ! default to isotropic distribution
-          psi = 1.0 / (number_angles * 2)
-        else if (solver_type == 'eigen') then
+          psi = 0.5
+        else
           ! default to isotropic distribution
           psi = 0.0
           do c = 1, number_cells
             do a = 1, number_angles * 2
               do g = 1, number_groups
-                psi(g, a, c) = phi(0, g, c) / (number_angles * 2)
+                psi(g, a, c) = phi(0, g, c) / 2
               end do
             end do
           end do

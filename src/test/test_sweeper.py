@@ -94,7 +94,7 @@ class TestSWEEPER(unittest.TestCase):
                 
         pydgm.sweeper.updaterhs(Q, 7)
         
-        np.testing.assert_array_almost_equal(Q, source, 12)
+        np.testing.assert_array_almost_equal(Q, 0.5 * source, 12)
         
     def tearDown(self):
         pydgm.solver.finalize_solver()

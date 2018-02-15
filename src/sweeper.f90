@@ -72,7 +72,7 @@ module sweeper
           an = merge(a, number_angles + a, octant)
 
           ! legendre polynomial integration vector
-          M = 0.5 * wt(a) * p_leg(:,an)
+          M = wt(a) * p_leg(:,an)
 
           do g = 1, number_energy_groups  ! Sweep over group
             ! Use the specified equation.  Defaults to DD
@@ -187,11 +187,11 @@ module sweeper
           end if
 
           ! Include the external source and the fission source
-          Q(:,an,c) = source(:) + d_chi(:,c) / d_keff * dot_product(d_nu_sig_f(:,c), d_phi(0,:,c))
+          Q(:,an,c) = 0.5 * (source(:) + d_chi(:,c) / d_keff * dot_product(d_nu_sig_f(:,c), d_phi(0,:,c)))
 
           ! Add the scattering source for each Legendre moment
           do l = 0, number_legendre
-            scat(:) = 1 / (2 * l + 1) * p_leg(l, an) * matmul(transpose(d_sig_s(l, :, :, c)), d_phi(l,:,c))
+            scat(:) = 0.5 / (2 * l + 1) * p_leg(l, an) * matmul(transpose(d_sig_s(l, :, :, c)), d_phi(l,:,c))
             Q(:,an,c) = Q(:,an,c) + scat(:)
           end do
         end do
