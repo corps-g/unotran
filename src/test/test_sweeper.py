@@ -16,7 +16,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [0.0, 0.0]
-        pydgm.control.allow_fission = False
+        pydgm.control.allow_fission = True
         pydgm.control.outer_print = False
         pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
@@ -72,6 +72,29 @@ class TestSWEEPER(unittest.TestCase):
         self.assertAlmostEqual(inc[0], 0.5373061574106336, 12)
         self.assertAlmostEqual(Ps, 0.5373061574106336, 12)
     
+    def test_sweeper_updateRHS(self):
+        '''
+        Check for correct source assuming a flat flux and fission allowed
+        '''
+        
+        # Set scalar flux
+        pydgm.state.d_phi[:] = 1.0
+        phi = pydgm.state.d_phi[0]
+        chi = pydgm.material.chi[:,0]
+        f = pydgm.material.nu_sig_f[:,0]
+        s = pydgm.material.sig_s[0,:,:,0].T
+        Q = np.reshape(np.zeros(7*4*10), (7, 4, 10), 'F')
+        
+        source = np.ones(Q.shape)
+        for c in range(10):
+            F = chi * f.dot(phi[:,c])
+            S = s.dot(phi[:,c])
+            for a in range(4):
+                source[:,a,c] += F + S
+                
+        pydgm.sweeper.updaterhs(Q, 7)
+        
+        np.testing.assert_array_almost_equal(Q, source, 12)
         
     def tearDown(self):
         pydgm.solver.finalize_solver()
