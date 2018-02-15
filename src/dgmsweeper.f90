@@ -6,13 +6,13 @@ module dgmsweeper
   use control
   use material, only : number_groups, number_legendre
   use mesh, only : dx, number_cells, mMap
-  use angle, only : number_angles
+  use angle, only : number_angles, p_leg, wt
   use sweeper, only : sweep
   use state, only : d_source, d_nu_sig_f, d_chi, d_sig_s, d_phi, d_delta, &
                     d_sig_t, d_psi, d_keff, d_incoming, normalize_flux
   use dgm, only : number_coarse_groups, expansion_order, &
                   energymesh, basis, compute_xs_moments, compute_flux_moments, &
-                  compute_incoming_flux
+                  compute_incoming_flux, cumsum, order
 
   implicit none
   
@@ -55,9 +55,11 @@ module dgmsweeper
       call inner_solve(i, phi_m, psi_m)
 
       ! Unfold ith order flux
-      call unfold_flux_moments(i, phi_m, psi_m, &
-                               phi_new, psi_new)
+      call unfold_flux_moments(i, psi_m, phi_new, psi_new)
     end do
+
+    ! Normalize the unfolded fluxes (if eigenvalue problem)
+    call normalize_flux(number_groups, phi_new, psi_new)
 
     deallocate(phi_m, psi_m)
 
@@ -76,7 +78,7 @@ module dgmsweeper
         psi_m          ! Angular flux moments
     double precision :: &
         inner_error, & ! Error between successive iterations for moment i
-        frac           ! Normalization fraction
+        frac           ! Fraction for computing the eigenvalue
     integer :: &
         counter        ! Iteration counter
 
@@ -88,9 +90,15 @@ module dgmsweeper
     do while (inner_error > inner_tolerance)
       ! Use discrete ordinates to sweep over the moment equation
       call sweep(number_coarse_groups, phi_m, psi_m)
-
       ! Update the 0th order moments if working on converging zeroth moment
       if (i == 0) then
+        if (solver_type == 'eigen') then
+          frac = sum(abs(phi_m(0,:,:))) / sum(abs(d_phi(0,:,:)))
+          d_keff = d_keff * frac
+          phi_m = phi_m / frac
+          psi_m = psi_m / frac
+        end if
+
         ! error is the difference in the norm of phi for successive iterations
         inner_error = sum(abs(d_phi - phi_m))
 
@@ -100,19 +108,10 @@ module dgmsweeper
                    ' order = ', i, phi_m(0,:,1)
         end if
 
+        !call normalize_flux(number_coarse_groups, d_phi, d_psi)
+
         ! increment the iteration
         counter = counter + 1
-
-        if (solver_type == 'eigen') then
-          frac = sum(abs(phi_m(0,:,:))) / sum(abs(d_phi(0,:,:)))
-          d_keff = d_keff * frac
-          !phi_m = phi_m * frac
-        end if
-
-        !d_phi = (1.0 - lamb) * d_phi + lamb * phi_m
-        !d_psi = (1.0 - lamb) * d_psi + lamb * psi_m
-        d_phi = phi_m
-        d_psi = psi_m
 
         ! Break out of loop if exceeding maximum inner iterations
         if (counter > max_inner_iters) then
@@ -126,53 +125,75 @@ module dgmsweeper
         exit
       end if
 
-      ! Normalize the unfolded fluxes (if eigenvalue problem)
-      !call normalize_flux(d_phi, d_psi, incoming)
-
     end do
 
   end subroutine inner_solve
 
   ! Unfold the flux moments
-  subroutine unfold_flux_moments(order, phi_moment, psi_moment, &
-                                 phi_new, psi_new)
+  subroutine unfold_flux_moments(ord, psi_moment, phi_new, psi_new)
     ! ##########################################################################
     ! Compute the fluxes from the moments
     ! ##########################################################################
 
     integer, intent(in) :: &
-        order         ! Expansion order
+        ord           ! Expansion order
     double precision, intent(in), dimension(:,:,:) :: &
-        phi_moment, & ! Scalar flux moments
         psi_moment    ! Angular flux moments
-    double precision, intent(out), dimension(:,:,:) :: &
+    double precision, intent(inout), dimension(:,:,:) :: &
         psi_new,    & ! Scalar flux for current iteration
         phi_new       ! Angular flux for current iteration
+    double precision, allocatable, dimension(:) :: &
+        M                    ! Legendre polynomial integration vector
     integer :: &
+        limit,      & ! Limiting expansion order for basis
+        o,          & ! Octant index
         a,          & ! Angle index
         c,          & ! Cell index
         cg,         & ! Coarse group index
         g,          & ! Fine group index
-        mat           ! Material index
+        gp,         & ! Alternate fine group index
+        an,         & ! Global angle index
+        cmin,       & ! Lower cell number
+        cmax,       & ! Upper cell number
+        cstep,      & ! Cell stepping direction
+        amin,       & ! Lower angle number
+        amax,       & ! Upper angle number
+        astep         ! Angle stepping direction
+    logical :: &
+        octant        ! Positive/Negative octant flag
+    double precision :: &
+        val           ! Variable to hold a double value
 
+    allocate(M(0:number_legendre))
+
+    ! Recover the angular flux from moments
     do c = 1, number_cells
       do a = 1, number_angles * 2
-        do g = 1, number_groups
-          cg = energyMesh(g)
-          ! Scalar flux
-          if (a == 1) then
-            phi_new(:, g, c) = phi_new(:, g, c) &
-                               + basis(g, order) * phi_moment(:, cg, c)
+        ! legendre polynomial integration vector
+        an = merge(a, 2 * number_angles - a + 1, a <= number_angles)
+        M = wt(an) * p_leg(:,a)
+        do cg = 1, number_coarse_groups
+          g = ord + cumsum(cg)
+          ! Get the limiting order with respect to the coarse group
+          if (cg == number_coarse_groups) then
+            limit = number_groups + 1
+          else
+            limit = cumsum(cg + 1)
           end if
-          ! Angular flux
-          psi_new(g, a, c) = psi_new(g, a, c) &
-                             + basis(g, order) * psi_moment(cg, a, c)
+          ! Check if there is a basis for this order
+          if (g < limit) then
+            ! Loop over the fine groups within the coarse group
+            do gp = cumsum(cg), order(cg) + cumsum(cg)
+              val = basis(ord + cumsum(cg), gp - cumsum(cg)) * psi_moment(cg, a, c)
+              psi_new(gp, a, c) = psi_new(gp, a, c) + val
+              phi_new(:, gp, c) = phi_new(:, gp, c) + M(:) * val
+            end do
+          end if
         end do
       end do
     end do
 
-    ! Normalize the unfolded fluxes (if eigenvalue problem)
-    call normalize_flux(phi_new, psi_new)
+    deallocate(M)
 
   end subroutine unfold_flux_moments
   

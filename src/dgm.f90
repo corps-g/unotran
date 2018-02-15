@@ -24,7 +24,8 @@ module dgm
   integer, allocatable, dimension(:) :: &
       energyMesh,        & ! Array of number of fine groups per coarse group
       order,             & ! Expansion order for each coarse energy group
-      basismap             ! Starting index for fine group for each coarse group
+      basismap,          & ! Starting index for fine group for each coarse group
+      cumsum               ! Temporary cumulative sum for energy groups
 
   contains
 
@@ -91,8 +92,6 @@ module dgm
 
     double precision, allocatable, dimension(:) :: &
         array1 ! Temporary array
-    integer, allocatable, dimension(:) :: &
-        cumsum ! Temporary cumulative sum for energy groups
     integer :: &
         g,   & ! Fine group index
         cg,  & ! Coarse group index
@@ -131,7 +130,7 @@ module dgm
     ! clean up
     close(unit=5)
 
-    deallocate(array1, cumsum)
+    deallocate(array1)
 
   end subroutine initialize_basis
 
@@ -157,6 +156,9 @@ module dgm
     end if
     if (allocated(source_m)) then
       deallocate(source_m)
+    end if
+    if (allocated(cumsum)) then
+      deallocate(cumsum)
     end if
   end subroutine finalize_moments
 
