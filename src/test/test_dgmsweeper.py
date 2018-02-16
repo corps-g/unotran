@@ -37,43 +37,10 @@ class TestDGMSWEEPER(unittest.TestCase):
 
         pydgm.dgmsolver.initialize_dgmsolver()
 
-    def test_dgmsweeper_innersolver(self):
-        ''' 
-        Test the inner solver in the dgm sweeper routine
-        '''
-
-        keff_test = 1.06748687099
-        phi_test = np.array([0.19893353556856153, 2.7231683533646662, 1.398660040999877, 1.0103619034299416, 0.8149441787223114, 0.85106974186841, 0.0028622460462300096])
-        phi_m = np.reshape(np.zeros(2), (1, 2, 1), 'F')
-        psi_m = np.reshape(np.zeros(8), (2, 4, 1), 'F')
-
-        # Provide the values for the scalar and angular flux
-        for c in range(pydgm.mesh.number_cells):
-            pydgm.state.phi[0, :, c] = phi_test
-            for a in range(pydgm.angle.number_angles * 2):
-                pydgm.state.psi[:, a, c] = phi_test / 2
-
-        # Solve the problem
-        pydgm.dgm.compute_flux_moments()
-        phi_m_test = np.concatenate((np.loadtxt('test/7gbasis').T.dot(phi_test), [0])).reshape((2, -1))
-
-        print phi_m_test
-
-        for i in range(4):
-            pydgm.dgm.compute_incoming_flux(order=i)
-            pydgm.dgm.compute_xs_moments(order=i)
-            pydgm.dgmsweeper.inner_solve(i, phi_m, psi_m)
-            p1 = phi_m[0, :, 0]
-            p2 = phi_m_test[:, i]
-            f1 = p1[1] / p1[0]
-            f2 = p2[1] / p2[0]
-            np.testing.assert_almost_equal(f1, f2, 12, 'order {} failed'.format(i))
-
     def test_dgmsweeper_dgmsweep(self):
         '''
         Test the dgm iteration function
         '''
-        pydgm.control.inner_print = False
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
         S = pydgm.material.sig_s[0, :, :, 0].T
@@ -86,6 +53,7 @@ class TestDGMSWEEPER(unittest.TestCase):
         phi_test = np.abs(phi[:, i])
         # Normalize the flux
         phi_test = phi_test / sum(phi_test) * 7
+        np.set_printoptions(16)
 
         # Set the values for the scalar and angular flux
         for c in range(pydgm.mesh.number_cells):
@@ -108,18 +76,129 @@ class TestDGMSWEEPER(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(pydgm.state.phi.flatten(), phi_new.flatten(), 12)
 
-    def test_dgmsweeper_inner_solve(self):
+    def test_dgmsweeper_inner_solve_order0(self):
         '''
-        No good way to test this function...
+        Test order 0 returns the same value when given the converged input
         '''
+        order = 0
+        # Set the converged fluxes
+        phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
+        pydgm.state.phi[0, :, 0] = phi
+        for a in range(4):
+            pydgm.state.psi[:, a, 0] = phi / 2.0
+        pydgm.state.d_keff = 1.0674868709852505 
+            
+        # Get the moments from the fluxes
+        pydgm.dgm.compute_flux_moments()
+        
+        phi_m_test = np.array([2.6655619166815265, 0.9635261040519922])
+        
+        pydgm.dgm.compute_incoming_flux(order)
+        pydgm.dgm.compute_xs_moments(order)
+
+        phi_m = np.reshape(np.zeros(2), (1, 2, 1), 'F')
+        psi_m = np.reshape(np.zeros(8), (2, 4, 1), 'F')
+
+        pydgm.dgmsweeper.inner_solve(order, phi_m, psi_m)
+
+        np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
+        for a in range(4):
+            np.testing.assert_array_almost_equal(psi_m[:,a,0].flatten(), 0.5 * phi_m_test, 12)
+        
+    def test_dgmsweeper_inner_solve_order1(self):
+        '''
+        Test order 1 returns the same value when given the converged input
+        '''
+        order = 1
+        # Set the converged fluxes
+        phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
+        pydgm.state.phi[0, :, 0] = phi
+        for a in range(4):
+            pydgm.state.psi[:, a, 0] = phi / 2.0
+        pydgm.state.d_keff = 1.0674868709852505 
+            
+        # Get the moments from the fluxes
+        pydgm.dgm.compute_flux_moments()
+        
+        phi_m_test = np.array([-0.2481536345018054, 0.5742286414743346])
+        
+        pydgm.dgm.compute_incoming_flux(order)
+        pydgm.dgm.compute_xs_moments(order)
+
+        phi_m = np.reshape(np.zeros(2), (1, 2, 1), 'F')
+        psi_m = np.reshape(np.zeros(8), (2, 4, 1), 'F')
+
+        pydgm.dgmsweeper.inner_solve(order, phi_m, psi_m)
+
+        np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
+        for a in range(4):
+            np.testing.assert_array_almost_equal(psi_m[:,a,0].flatten(), 0.5 * phi_m_test, 12)
+
+    def test_dgmsweeper_inner_solve_order2(self):
+        '''
+        Test order 2 returns the same value when given the converged input
+        '''
+        order = 2
+        # Set the converged fluxes
+        phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
+        pydgm.state.phi[0, :, 0] = phi
+        for a in range(4):
+            pydgm.state.psi[:, a, 0] = phi / 2.0
+        pydgm.state.d_keff = 1.0674868709852505 
+            
+        # Get the moments from the fluxes
+        pydgm.dgm.compute_flux_moments()
+        
+        phi_m_test = np.array([-1.4562664776830221, -0.3610274595244746])
+        
+        pydgm.dgm.compute_incoming_flux(order)
+        pydgm.dgm.compute_xs_moments(order)
+
+        phi_m = np.reshape(np.zeros(2), (1, 2, 1), 'F')
+        psi_m = np.reshape(np.zeros(8), (2, 4, 1), 'F')
+
+        pydgm.dgmsweeper.inner_solve(order, phi_m, psi_m)
+
+        np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
+        for a in range(4):
+            np.testing.assert_array_almost_equal(psi_m[:,a,0].flatten(), 0.5 * phi_m_test, 12)
+
+    def test_dgmsweeper_inner_solve_order3(self):
+        '''
+        Test order 3 returns the same value when given the converged input
+        '''
+        order = 3
+        # Set the converged fluxes
+        phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
+        pydgm.state.phi[0, :, 0] = phi
+        for a in range(4):
+            pydgm.state.psi[:, a, 0] = phi / 2.0
+        pydgm.state.d_keff = 1.0674868709852505 
+            
+        # Get the moments from the fluxes
+        pydgm.dgm.compute_flux_moments()
+        
+        phi_m_test = np.array([-1.0699480859043353, 0.0])
+        
+        pydgm.dgm.compute_incoming_flux(order)
+        pydgm.dgm.compute_xs_moments(order)
+
+        phi_m = np.reshape(np.zeros(2), (1, 2, 1), 'F')
+        psi_m = np.reshape(np.zeros(8), (2, 4, 1), 'F')
+
+        pydgm.dgmsweeper.inner_solve(order, phi_m, psi_m)
+
+        np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
+        for a in range(4):
+            np.testing.assert_array_almost_equal(psi_m[:,a,0].flatten(), 0.5 * phi_m_test, 12)
 
     def test_dgmsweeper_unfold_flux_moments(self):
         '''
         Test unfolding flux moments into the scalar and angular fluxes
         '''
         order = 0
-        psi_moments = np.array([[0.428191466212384, -0.07050405620345324, -0.21879413525733196, -0.11751528764617786],
-                                [0.0004299727459136011, 0.0004201812076152387, 0.000410413659723487, 0.0]])
+        psi_moments = np.array([[1.3327809583407633, -0.1240768172509027, -0.728133238841511, -0.5349740429521677],
+                                [0.4817630520259961, 0.2871143207371673, -0.1805137297622373, 0.0]])
         psi = np.reshape(np.zeros(8), (2, 4, 1), 'F')
         phi_new = np.reshape(np.zeros(7), (1, 7, 1), 'F')
         psi_new = np.reshape(np.zeros(28), (7, 4, 1), 'F')
@@ -127,10 +206,10 @@ class TestDGMSWEEPER(unittest.TestCase):
         for order in range(4):
             for a in range(4):
                 psi[:, a, 0] = psi_moments[:, order]
-            
+
             pydgm.dgmsweeper.unfold_flux_moments(order, psi, phi_new, psi_new)
 
-        phi_test = np.array([ 0.021377987105421 , 0.7984597778757521, 0.5999743700269914, 0.0450954611897237, 0.0014555781016859, 0.0000276607249577, 0.000000019588085 ])
+        phi_test = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
         np.testing.assert_array_almost_equal(phi_new.flatten(), phi_test, 12)
         for a in range(4):
             np.testing.assert_array_almost_equal(psi_new[:, a].flatten(), phi_test * 0.5)

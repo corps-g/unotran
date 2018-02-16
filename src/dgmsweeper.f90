@@ -12,7 +12,7 @@ module dgmsweeper
                     d_sig_t, d_psi, d_keff, d_incoming, normalize_flux
   use dgm, only : number_coarse_groups, expansion_order, &
                   energymesh, basis, compute_xs_moments, compute_flux_moments, &
-                  compute_incoming_flux, cumsum, order
+                  compute_incoming_flux
 
   implicit none
   
@@ -130,13 +130,13 @@ module dgmsweeper
   end subroutine inner_solve
 
   ! Unfold the flux moments
-  subroutine unfold_flux_moments(ord, psi_moment, phi_new, psi_new)
+  subroutine unfold_flux_moments(order, psi_moment, phi_new, psi_new)
     ! ##########################################################################
     ! Compute the fluxes from the moments
     ! ##########################################################################
 
     integer, intent(in) :: &
-        ord           ! Expansion order
+        order         ! Expansion order
     double precision, intent(in), dimension(:,:,:) :: &
         psi_moment    ! Angular flux moments
     double precision, intent(inout), dimension(:,:,:) :: &
@@ -145,22 +145,11 @@ module dgmsweeper
     double precision, allocatable, dimension(:) :: &
         M                    ! Legendre polynomial integration vector
     integer :: &
-        limit,      & ! Limiting expansion order for basis
-        o,          & ! Octant index
         a,          & ! Angle index
         c,          & ! Cell index
         cg,         & ! Coarse group index
         g,          & ! Fine group index
-        gp,         & ! Alternate fine group index
-        an,         & ! Global angle index
-        cmin,       & ! Lower cell number
-        cmax,       & ! Upper cell number
-        cstep,      & ! Cell stepping direction
-        amin,       & ! Lower angle number
-        amax,       & ! Upper angle number
-        astep         ! Angle stepping direction
-    logical :: &
-        octant        ! Positive/Negative octant flag
+        an            ! Global angle index
     double precision :: &
         val           ! Variable to hold a double value
 
@@ -172,23 +161,13 @@ module dgmsweeper
         ! legendre polynomial integration vector
         an = merge(a, 2 * number_angles - a + 1, a <= number_angles)
         M = wt(an) * p_leg(:,a)
-        do cg = 1, number_coarse_groups
-          g = ord + cumsum(cg)
-          ! Get the limiting order with respect to the coarse group
-          if (cg == number_coarse_groups) then
-            limit = number_groups + 1
-          else
-            limit = cumsum(cg + 1)
-          end if
-          ! Check if there is a basis for this order
-          if (g < limit) then
-            ! Loop over the fine groups within the coarse group
-            do gp = cumsum(cg), order(cg) + cumsum(cg)
-              val = basis(ord + cumsum(cg), gp - cumsum(cg)) * psi_moment(cg, a, c)
-              psi_new(gp, a, c) = psi_new(gp, a, c) + val
-              phi_new(:, gp, c) = phi_new(:, gp, c) + M(:) * val
-            end do
-          end if
+        do g = 1, number_groups
+          ! Get the coarse group index
+          cg = energyMesh(g)
+          ! Unfold the moments
+          val = basis(g, order) * psi_moment(cg, a, c)
+          psi_new(g, a, c) = psi_new(g, a, c) + val
+          phi_new(:, g, c) = phi_new(:, g, c) + M(:) * val
         end do
       end do
     end do

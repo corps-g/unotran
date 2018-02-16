@@ -181,13 +181,13 @@ module sweeper
 
           ! Get the External source and possibly the angular total XS moment source
           if (allocated(d_psi)) then
-            source(:) = d_source(:,an,c) - d_delta(:,an,c)  * d_psi(:,an,c)
+            source(:) = 0.5 * d_source(:,an,c) - d_delta(:,an,c)  * d_psi(:,an,c)
           else
-            source(:) = d_source(:,an,c)
+            source(:) = 0.5 * d_source(:,an,c)
           end if
 
           ! Include the external source and the fission source
-          Q(:,an,c) = 0.5 * (source(:) + d_chi(:,c) / d_keff * dot_product(d_nu_sig_f(:,c), d_phi(0,:,c)))
+          Q(:,an,c) = source(:) + 0.5 * d_chi(:,c) / d_keff * dot_product(d_nu_sig_f(:,c), d_phi(0,:,c))
 
           ! Add the scattering source for each Legendre moment
           do l = 0, number_legendre

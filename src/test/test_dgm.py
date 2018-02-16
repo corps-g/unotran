@@ -121,13 +121,23 @@ class TestDGM(unittest.TestCase):
         phi_m_test = [2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776]
         np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten('F'), phi_m_test, 12)
 
-        psi_m_test = 0.25 * np.array([2.0, 1.7320508075688776, 2.0, 1.7320508075688776, 2.0, 1.7320508075688776, 2.0, 1.7320508075688776])
+        psi_m_test = 0.5 * np.array([2.0, 1.7320508075688776, 2.0, 1.7320508075688776, 2.0, 1.7320508075688776, 2.0, 1.7320508075688776])
         np.testing.assert_array_almost_equal(pydgm.state.d_psi.flatten('F'), psi_m_test, 12)
 
-        # TODO: Check for the values when phi/psi != 0
-
     def test_dgm_compute_incoming_flux(self):
-        raise NotImplementedError
+        '''
+        Check that the higher order angular flux moments are computed correctly
+        '''
+        phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
+        for a in range(4):
+            pydgm.state.psi[:,a,0] = phi / 2
+            
+        test = np.array([[1.3327809583407633, -0.1240768172509027, -0.728133238841511, -0.5349740429521677],
+                         [0.4817630520259961,  0.2871143207371673, -0.1805137297622373, 0.0]])
+        for i in range(4):
+            pydgm.dgm.compute_incoming_flux(i)
+            for a in range(2):
+                np.testing.assert_array_almost_equal(pydgm.state.d_incoming[:,a], test[:,i], 12)
 
     def test_dgm_compute_xs_moments(self):
         '''
@@ -211,11 +221,10 @@ class TestDGM2(unittest.TestCase):
 
         # Set a value for the flux
         phi = np.array([0.021377987105421, 0.7984597778757521, 0.5999743700269914, 0.0450954611897237, 0.0014555781016859, 0.0000276607249577, 0.000000019588085])
-        psi = phi * 0.25
 
         pydgm.state.phi = np.reshape(phi, (1, 7, 1), 'F')
         for a in range(4):
-            pydgm.state.psi[:, a, 0] = psi
+            pydgm.state.psi[:, a, 0] = phi * 0.5
 
     def test_dgm_compute_flux_moments(self):
         ''' 
@@ -228,7 +237,7 @@ class TestDGM2(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten(), phi_m_test, 12)
 
-        psi_m_test = 0.25 * phi_m_test
+        psi_m_test = 0.5 * phi_m_test
         for a in range(4):
             np.testing.assert_array_almost_equal(pydgm.state.d_psi[:, a, 0].flatten('F'), psi_m_test, 12)
 
