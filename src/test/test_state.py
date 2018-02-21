@@ -43,8 +43,8 @@ class TestSTATE(unittest.TestCase):
         '''
         pydgm.state.initialize_state()
         
-        phi_test = np.ones((7, 1))
-        source_test = np.zeros((7, 4, 1))
+        phi_test = np.ones((1, 7))
+        source_test = np.zeros((1, 4, 7))
         
         np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test, 12)
         np.testing.assert_array_almost_equal(pydgm.state.source, source_test, 12)
@@ -56,9 +56,9 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.store_psi = True
         pydgm.state.initialize_state()
         
-        phi_test = np.ones((7, 1))
-        psi_test = np.ones((7, 4, 1)) / 2
-        source_test = np.zeros((7, 4, 1))
+        phi_test = np.ones((1, 7))
+        psi_test = np.ones((1, 4, 7)) / 2
+        source_test = np.zeros((1, 4, 7))
         
         np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test, 12)
         np.testing.assert_array_almost_equal(pydgm.state.psi, psi_test, 12)
