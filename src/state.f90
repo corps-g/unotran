@@ -13,7 +13,6 @@ module state
 
   double precision, allocatable, dimension(:,:,:,:) :: &
       d_sig_s        ! Scattering cross section moments
-
   double precision, allocatable, dimension(:,:,:) :: &
       psi,        &  ! Angular flux
       source,     &  ! External source
@@ -22,16 +21,11 @@ module state
       d_delta,    &  ! Angular total cross section moments
       d_phi,      &  ! Scalar flux moments
       d_psi          ! Angular flux moments
-                                                                                                    
   double precision, allocatable, dimension(:,:) :: &
       d_nu_sig_f, &  ! Fission cross section moments (times nu)
       d_chi,      &  ! Chi spectrum moments
       d_sig_t,    &  ! Scalar total cross section moments
       d_incoming     ! Angular flux incident on the current cell
-                                                     
-  double precision, allocatable, dimension(:) :: &
-      density        ! Fission density
-
   double precision :: &
       d_keff         ! k-eigenvalue
   
@@ -50,7 +44,7 @@ module state
         g          ! Group index
 
     ! Allocate the scalar flux and source containers
-    allocate(phi(0:number_legendre, number_groups, number_cells))
+    allocate(phi(0:number_legendre, number_cells, number_groups))
     ! Initialize phi
     ! Attempt to read file or use default if file does not exist
     open(unit = 10, status='old', file=initial_phi, form='unformatted', iostat=ios)
@@ -62,9 +56,9 @@ module state
         phi = 1.0  ! default value
       else if (solver_type == 'eigen') then
         phi = 0.0
-        do c = 1, number_cells
-          do g = 1, number_groups
-            phi(0, g, c) = nu_sig_f(g, mMap(c))
+        do g = 1, number_groups
+          do c = 1, number_cells
+            phi(0, c, g) = nu_sig_f(g, mMap(c))
           end do
         end do
       end if
@@ -73,17 +67,13 @@ module state
     end if
     close(10) ! close the file
 
-    allocate(source(number_groups, number_angles * 2, number_cells))
-    ! Initialize source
-    source = source_value
-
-    ! Allocate space for the fission density
-    allocate(density(number_cells))
-    call update_density()
+    allocate(source(number_cells, 2 * number_angles, number_groups))
+    ! Initialize source as isotropic
+    source = 0.5 * source_value
 
     ! Only allocate psi if the option is to store psi    
     if (store_psi) then
-      allocate(psi(number_groups, number_angles * 2, number_cells))
+      allocate(psi(number_cells, 2 * number_angles, number_groups))
 
       ! Initialize psi
       ! Attempt to read file or use default if file does not exist
@@ -98,10 +88,10 @@ module state
         else
           ! default to isotropic distribution
           psi = 0.0
-          do c = 1, number_cells
-            do a = 1, number_angles * 2
-              do g = 1, number_groups
-                psi(g, a, c) = phi(0, g, c) / 2
+          do g = 1, number_groups
+            do a = 1, 2 * number_angles
+              do c = 1, number_cells
+                psi(c, a, g) = phi(0, c, g) / 2
               end do
             end do
           end do
@@ -113,7 +103,7 @@ module state
     end if
 
     ! Initialize the angular flux incident on the boundary
-    allocate(d_incoming(number_groups, number_angles))
+    allocate(d_incoming(number_angles, number_groups))
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen
     if (solver_type == 'fixed') then
@@ -169,9 +159,6 @@ module state
     if (allocated(d_sig_s)) then
       deallocate(d_sig_s)
     end if
-    if (allocated(density)) then
-      deallocate(density)
-    end if
     if (allocated(d_psi)) then
       deallocate(d_psi)
     end if
@@ -183,7 +170,6 @@ module state
     end if
   end subroutine finalize_state
 
-  ! Resize the container arrays to number of energy groups, nG
   subroutine reallocate_states(nG)
     ! ##########################################################################
     ! Resize the moment containers to the coarse group structure when using DGM
@@ -222,40 +208,19 @@ module state
     end if
 
     ! Reallocate with the specified number of groups, nG
-    allocate(d_source(nG, number_angles * 2, number_cells))
-    allocate(d_nu_sig_f(nG, number_cells))
-    allocate(d_sig_t(nG, number_cells))
-    allocate(d_delta(nG, number_angles * 2, number_cells))
-    allocate(d_phi(0:number_legendre, nG, number_cells))
-    allocate(d_chi(nG, number_cells))
-    allocate(d_sig_s(0:number_legendre, nG, nG, number_cells))
+    allocate(d_source(number_cells, 2 * number_angles, nG))
+    allocate(d_nu_sig_f(number_cells, nG))
+    allocate(d_sig_t(number_cells, nG))
+    allocate(d_delta(number_cells, 2 * number_angles, nG))
+    allocate(d_phi(0:number_legendre, number_cells, nG))
+    allocate(d_chi(number_cells, nG))
+    allocate(d_sig_s(0:number_legendre, number_cells, nG, nG))
     if (store_psi) then
-      allocate(d_psi(nG, number_angles * 2, number_cells))
+      allocate(d_psi(number_cells, 2 * number_angles, nG))
     end if
-    allocate(d_incoming(nG, number_angles))
-  end subroutine
+    allocate(d_incoming(number_angles, nG))
+  end subroutine reallocate_states
   
-  subroutine update_density()
-    ! ##########################################################################
-    ! Compute the fission density from the scalar flux and fission cross section
-    ! ##########################################################################
-
-    use material, only : nu_sig_f
-    use mesh, only : mMap
-
-    integer :: &
-        c,  & ! Cell index
-        g     ! Group index
-
-    density = 0
-    do c = 1, number_cells
-      do g = 1, number_groups
-        density(c) = density(c) + phi(0, g, c) * nu_sig_f(g, mMap(c))
-      end do
-    end do
-
-  end subroutine update_density
-
   subroutine output_state()
     ! ##########################################################################
     ! Save the scalar and angular flux objects to unformatted fortran file

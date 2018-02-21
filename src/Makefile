@@ -16,13 +16,12 @@ LDFLAGS =
 objects =        \
 angle.o          \
 control.o        \
-dgm.o            \
-dgmsolver.o      \
-dgmsweeper.o     \
 material.o       \
 mesh.o           \
 solver.o         \
 state.o          \
+mg_solver.o      \
+wg_solver.o      \
 sweeper.o
  
 #===============================================================================
@@ -56,7 +55,7 @@ test: pydgm
 	python test/test_all.py
 
 # f2py module
-pydgm: control.f90 angle.f90 material.f90 mesh.f90 state.f90 sweeper.f90 solver.f90 dgm.f90 dgmsweeper.f90 dgmsolver.f90
+pydgm: control.f90 angle.f90 material.f90 mesh.f90 state.f90 sweeper.f90 solver.f90 mg_solver.f90 wg_solver.f90
 	@rm -f pydgm*so
 	f2py --f90flags="$(F90FLAGS)" -c -m $@ $^
 
@@ -105,12 +104,19 @@ main.o: dgmsolver.o
 main.o: solver.o
 material.o: control.o
 mesh.o: control.o
+mg_solver.o: wg_solver.o
+mg_solver.o: control.o
+mg_solver.o: angle.o
+mg_solver.o: mesh.o
+mg_solver.o: material.o
+mg_solver.o: state.o
 solver.o: control.o
 solver.o: material.o
 solver.o: angle.o
 solver.o: mesh.o
 solver.o: state.o
 solver.o: sweeper.o
+solver.o: mg_solver.o
 state.o: control.o
 state.o: material.o
 state.o: mesh.o
@@ -120,3 +126,9 @@ sweeper.o: material.o
 sweeper.o: mesh.o
 sweeper.o: angle.o
 sweeper.o: state.o
+wg_solver.o: sweeper.o
+wg_solver.o: control.o
+wg_solver.o: material.o
+wg_solver.o: mesh.o
+wg_solver.o: angle.o
+wg_solver.o: state.o 
