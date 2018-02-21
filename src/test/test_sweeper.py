@@ -9,20 +9,21 @@ class TestSWEEPER(unittest.TestCase):
     
     def setUp(self):
         # Set the variables for the test
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
+        pydgm.control.fine_mesh = [1]
+        pydgm.control.coarse_mesh = [0.0, 1.0]
         pydgm.control.material_map = [1]
-        pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
+        pydgm.control.xs_name = 'test/3gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_type = [0.0, 0.0]
+        pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.allow_fission = True
         pydgm.control.outer_print = False
         pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
         pydgm.control.inner_tolerance = 1e-14
+        pydgm.control.equation_type = 'DD'
         pydgm.control.lamb = 1.0
-        pydgm.control.store_psi = False
+        pydgm.control.store_psi = True
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.legendre_order = 0
@@ -72,29 +73,41 @@ class TestSWEEPER(unittest.TestCase):
         self.assertAlmostEqual(inc[0], 0.5373061574106336, 12)
         self.assertAlmostEqual(Ps, 0.5373061574106336, 12)
     
-    def test_sweeper_updateRHS(self):
+    def test_sweeper_sweep_R(self):
         '''
-        Check for correct source assuming a flat flux and fission allowed
+        Test the sweep through cells and angles with reflecting conditions and DD
+        '''
+        g = 1
+        source = np.ones((1, 4), order='F') * 1.2760152893 * 0.5
+        phi_g = np.array([1.0])
+        psi_g = np.ones((1, 4), order='F') * 0.5
+        incident = np.ones((2), order='F') * 0.5
+
+        pydgm.sweeper.sweep(g, source, phi_g, psi_g, incident)
+        
+        np.testing.assert_array_almost_equal(phi_g, 2.4702649838962234, 12)
+        psi_test = np.array([0.74789724066688767, 1.0164427642376821, 1.1738899625537731, 1.7463807889213092])
+        np.testing.assert_array_almost_equal(psi_g.flatten(), psi_test, 12)
+        np.testing.assert_array_almost_equal(incident, [1.3519854437737708, 1.9598760493672542])
+        
+    def test_sweeper_sweep_V(self):
+        '''
+        Test the sweep through cells and angles with vacuum conditions and DD
         '''
         
-        # Set scalar flux
-        pydgm.state.d_phi[:] = 1.0
-        phi = pydgm.state.d_phi[0]
-        chi = pydgm.material.chi[:,0]
-        f = pydgm.material.nu_sig_f[:,0]
-        s = pydgm.material.sig_s[0,:,:,0].T
-        Q = np.reshape(np.zeros(7*4*10), (7, 4, 10), 'F')
+        pydgm.control.boundary_type = [0.0, 0.0]
+        g = 1
+        source = np.ones((1, 4), order='F') * 1.2760152893 * 0.5
+        phi_g = np.array([1.0])
+        psi_g = np.ones((1, 4), order='F') * 0.5
+        incident = np.ones((2), order='F') * 0.5
+
+        pydgm.sweeper.sweep(g, source, phi_g, psi_g, incident)
         
-        source = np.ones(Q.shape)
-        for c in range(10):
-            F = chi * f.dot(phi[:,c])
-            S = s.dot(phi[:,c])
-            for a in range(4):
-                source[:,a,c] += F + S
-                
-        pydgm.sweeper.updaterhs(Q, 7)
-        
-        np.testing.assert_array_almost_equal(Q, 0.5 * source, 12)
+        np.testing.assert_array_almost_equal(phi_g, 1.0863050345964158, 12)
+        psi_test = np.array([0.31829108536954637, 0.6630938187058939, 0.31829108536954637, 0.6630938187058939])
+        np.testing.assert_array_almost_equal(psi_g.flatten(), psi_test, 12)
+        np.testing.assert_array_almost_equal(incident, [0.6365821707390927, 1.3261876374117878])
         
     def tearDown(self):
         pydgm.solver.finalize_solver()
