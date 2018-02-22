@@ -97,10 +97,10 @@ class TestWG_SOLVER(unittest.TestCase):
         source_test = [0.63800764465, 0.7266715137, 0.6411932185]
         
         for g in range(3):
-            source = np.ones((10, 4), order='F') * 0.5
+            source = np.ones((1, 4), order='F') * 0.5
             pydgm.wg_solver.compute_within_scattering(g + 1, phi, source)
             
-            np.testing.assert_array_almost_equal(source, np.ones((10,4), order='F') * source_test[g], 12)
+            np.testing.assert_array_almost_equal(source, np.ones((1,4), order='F') * source_test[g], 12)
             
     def tearDown(self):
         pydgm.solver.finalize_solver()

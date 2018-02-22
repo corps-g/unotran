@@ -38,16 +38,18 @@ module mg_solver
 
     ! Save the scalar flux from previous iteration
     allocate(phi_old(0:number_legendre, number_cells, number_energy_groups))
-    phi_old = phi
-
-    total_S = source
+    phi_old = 0.0
 
     ! Begin loop to converge on the in-scattering source
     do outer_count = 1, max_outer_iters
+      ! save old value of scalar flux
+      phi_old = phi
+
+      total_S = source
 
       ! Loop over the energy groups
       do g = 1, number_energy_groups
-        call compute_source(g, number_energy_groups, total_S(:,:,g))
+        call compute_source(g, number_energy_groups, phi, total_S(:,:,g))
 
         ! Solve the within group problem
         call wg_solve(g, total_S(:,:,g), phi(:,:,g), psi(:,:,g), incident(:,g))
@@ -56,9 +58,6 @@ module mg_solver
 
       ! Update the error
       outer_error = maxval(abs(phi_old - phi))
-
-      ! save old value of scalar flux
-      phi_old = phi
 
       ! Print output
       if (outer_print) then
@@ -82,7 +81,7 @@ module mg_solver
 
   end subroutine mg_solve
 
-  subroutine compute_source(g, nG, source)
+  subroutine compute_source(g, nG, phi, source)
     ! ##########################################################################
     ! Get the source including external, fission, and in-scatter
     ! ##########################################################################
@@ -91,12 +90,14 @@ module mg_solver
     use material, only : number_legendre
     use mesh, only : number_cells
     use angle, only : number_angles, p_leg
-    use state, only : d_phi, d_nu_sig_f, d_sig_s, d_keff, d_chi
+    use state, only : d_nu_sig_f, d_sig_s, d_keff, d_chi
 
     ! Variable definitions
     integer, intent(in) :: &
         g,    & ! Group index
         nG      ! Number of energy groups
+    double precision, intent(in), dimension(0:,:,:) :: &
+        phi     ! Scalar flux
     double precision, intent(inout), dimension(:,:) :: &
         source  ! Container to hold the computed source
     integer :: &
@@ -107,15 +108,20 @@ module mg_solver
 
     ! Add the fission source
     do c = 1, number_cells
-      source(c,:) = source(c,:) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), d_phi(0,c,:)) / d_keff
+      source(c,:) = source(c,:) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:)) / d_keff
     end do
 
     ! Add the in-scattering source for each Legendre moment
     do gp = 1, nG
+      ! Ignore the within-group terms
+      if (g == gP) then
+        cycle
+      end if
+
       do a = 1, 2 * number_angles
         do c = 1, number_cells
           do l = 0, number_legendre
-            source(c,a) = source(c,a) + 0.5 / (2 * l + 1) * p_leg(l, a) * d_sig_s(l, c, gp, g) * d_phi(l,c,gp)
+            source(c,a) = source(c,a) + 0.5 / (2 * l + 1) * p_leg(l, a) * d_sig_s(l, c, gp, g) * phi(l,c,gp)
           end do
         end do
       end do
