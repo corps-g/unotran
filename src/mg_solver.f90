@@ -45,10 +45,11 @@ module mg_solver
     ! Begin loop to converge on the in-scattering source
     do outer_count = 1, max_outer_iters
 
+      ! Loop over the energy groups
       do g = 1, number_energy_groups
         call compute_source(g, number_energy_groups, total_S(:,:,g))
 
-        ! TODO: Check incident
+        ! Solve the within group problem
         call wg_solve(g, total_S(:,:,g), phi(:,:,g), psi(:,:,g), incident(:,g))
 
       end do

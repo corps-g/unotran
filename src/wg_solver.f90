@@ -36,18 +36,20 @@ module wg_solver
     double precision, dimension(number_cells, 2 * number_angles) :: &
         total_S    ! Sum of all sources
 
+    ! Initialize container to hold the old scalar flux for error calculations
     allocate(phi_g_old(0:number_legendre, number_cells))
-
-    total_S = source
     phi_g_old = 0.0
 
     ! Begin loop to converge on the within-group scattering source
     do inner_count = 1, max_inner_iters
+      ! Reset the source to only be in-scattering, fission, and external
+      total_S = source
+
       ! Add the within-group scattering to the source
-      call compute_in_scattering(g, phi_g, total_S)
+      call compute_within_scattering(g, phi_g, total_S)
 
       ! Sweep through the mesh
-      call sweep(g, source, phi_g, psi_g, incident)
+      call sweep(g, total_S, phi_g, psi_g, incident)
 
       ! Update the error
       inner_error = maxval(abs(phi_g_old - phi_g))
@@ -77,7 +79,7 @@ module wg_solver
 
   end subroutine wg_solve
 
-  subroutine compute_in_scattering(g, phi_g, source)
+  subroutine compute_within_scattering(g, phi_g, source)
     ! ##########################################################################
     ! Compute the within-group scattering and add to the source term
     ! ##########################################################################
@@ -111,6 +113,6 @@ module wg_solver
     end do
 
 
-  end subroutine compute_in_scattering
+  end subroutine compute_within_scattering
 
 end module wg_solver
