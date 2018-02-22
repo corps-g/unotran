@@ -55,7 +55,7 @@ test: pydgm
 	python test/test_all.py
 
 # f2py module
-pydgm: control.f90 angle.f90 material.f90 mesh.f90 state.f90 sweeper.f90 solver.f90 mg_solver.f90 wg_solver.f90
+pydgm: control.f90 angle.f90 material.f90 mesh.f90 state.f90 sweeper.f90 wg_solver.f90 mg_solver.f90 solver.f90 
 	@rm -f pydgm*so
 	f2py --f90flags="$(F90FLAGS)" -c -m $@ $^
 
