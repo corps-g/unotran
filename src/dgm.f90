@@ -3,13 +3,6 @@ module dgm
   ! Compute the DGM Moments for fluxes and cross sections
   ! ############################################################################
 
-  use control, only : energy_group_map, truncation_map, dgm_basis_name
-  use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t, nu_sig_f, chi
-  use mesh, only: number_cells, mMap
-  use angle, only: number_angles
-  use state, only: phi, psi, source, reallocate_states, d_source, d_nu_sig_f, d_sig_s, &
-                   d_chi, d_phi, d_delta, d_sig_t, d_psi, d_incoming
-
   implicit none
 
   double precision, allocatable, dimension(:,:) :: &
@@ -34,6 +27,12 @@ module dgm
     ! Initialize the container for the cross section and flux moments
     ! ##########################################################################
 
+    ! Use Statements
+    use material, only : number_groups
+    use control, only : energy_group_map, truncation_map
+    use state, only : reallocate_states
+
+    ! Variable definitions
     integer :: &
         g,  & ! outer fine group index
         gp, & ! inner coarse group index
@@ -90,6 +89,11 @@ module dgm
     ! Load basis set from file
     ! ##########################################################################
 
+    ! Use Statements
+    use control, only : dgm_basis_name
+    use material, only : number_groups
+
+    ! Variable definitions
     double precision, allocatable, dimension(:) :: &
         array1 ! Temporary array
     integer :: &
@@ -167,6 +171,13 @@ module dgm
     ! Expand the flux moments using the basis functions
     ! ##########################################################################
 
+    ! Use Statements
+    use state, only : d_phi, d_psi, phi, psi
+    use material, only : number_groups
+    use angle, only : number_angles
+    use mesh, only : number_cells, mMap
+
+    ! Variable definitions
     integer :: &
         a,   & ! Angle index
         c,   & ! Cell index
@@ -179,19 +190,18 @@ module dgm
     d_psi = 0.0
 
     ! Get moments for the fluxes
-    do c = 1, number_cells
-      ! get the material for the current cell
-      mat = mMap(c)
-
+    do g = 1, number_groups
+      cg = energyMesh(g)
       do a = 1, number_angles * 2
-        do g = 1, number_groups
-          cg = energyMesh(g)
+        do c = 1, number_cells
+          ! get the material for the current cell
+          mat = mMap(c)
           ! Scalar flux
           if (a == 1) then
-            d_phi(:, cg, c) = d_phi(:, cg, c) + basis(g, 0) * phi(:, g, c)
+            d_phi(:, c, cg) = d_phi(:, c, cg) + basis(g, 0) * phi(:, c, g)
           end if
           ! Angular flux
-          d_psi(cg, a, c) = d_psi(cg, a, c) +  basis(g, 0) * psi(g, a, c)
+          d_psi(c, a, cg) = d_psi(c, a, cg) +  basis(g, 0) * psi(c, a, g)
         end do
       end do
     end do
@@ -203,6 +213,12 @@ module dgm
     ! Compute the incident angular flux at the boundary for the given order
     ! ##########################################################################
 
+    ! Use Statements
+    use state, only : d_incoming, psi
+    use angle, only : number_angles
+    use material, only : number_groups
+
+    ! Variable definitions
     integer :: &
       order, & ! Expansion order
       a,     & ! Angle index
@@ -210,10 +226,10 @@ module dgm
       cg       ! Coarse group index
 
     d_incoming = 0.0
-    do a = 1, number_angles
-      do g = 1, number_groups
-        cg = energyMesh(g)
-        d_incoming(cg, a) = d_incoming(cg, a) + basis(g, order) * psi(g, a + number_angles, 1)
+    do g = 1, number_groups
+      cg = energyMesh(g)
+      do a = 1, number_angles
+        d_incoming(a, cg) = d_incoming(a, cg) + basis(g, order) * psi(1, a + number_angles, g)
       end do
     end do
 
@@ -224,6 +240,15 @@ module dgm
     ! Expand the cross section moments using the basis functions
     ! ##########################################################################
 
+    ! Use Statements
+    use state, only : d_sig_s, d_delta, d_sig_t, d_nu_sig_f, d_source, d_chi, &
+                      d_phi, d_psi
+    use material, only : number_groups, number_legendre, sig_t, nu_sig_f, sig_s
+    use angle, only : number_angles
+    use mesh, only : number_cells, mMap
+    use state, only : phi, psi
+
+    ! Variable definitions
     integer :: &
         a,   & ! Angle index
         c,   & ! Cell index
@@ -238,58 +263,68 @@ module dgm
 
     ! initialize all moments to zero
     d_sig_s = 0.0
-    d_source(:, :, :) = source_m(:, :, :, order)
     d_delta = 0.0
     d_sig_t = 0.0
     d_nu_sig_f = 0.0
+    ! Slice the precomputed moments
+    d_source(:, :, :) = source_m(:, :, :, order)
     d_chi(:, :) = chi_m(:, :, order)
 
-    do c = 1, number_cells
-      ! get the material for the current cell
-      mat = mMap(c)
-      do g = 1, number_groups
-        cg = energyMesh(g)
+
+    do g = 1, number_groups
+      cg = energyMesh(g)
+      do c = 1, number_cells
+        ! get the material for the current cell
+        mat = mMap(c)
+
         ! Check if producing nan and not computing with a nan
-        if (d_phi(0, cg, c) /= d_phi(0, cg, c)) then
+        if (d_phi(0, c, cg) /= d_phi(0, c, cg)) then
           ! Detected NaN
           print *, "NaN detected, limiting"
-          d_phi(0, cg, c) = 100.0
-        else if (d_phi(0, cg, c) /= 0.0)  then
+          d_phi(0, c, cg) = 100.0
+        else if (d_phi(0, c, cg) /= 0.0)  then
           ! total cross section moment
-          d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+          d_sig_t(c, cg) = d_sig_t(c, cg) + basis(g, 0) * sig_t(g, mat) * phi(0, c, g) / d_phi(0, c, cg)
           ! fission cross section moment
-          d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+          d_nu_sig_f(c, cg) = d_nu_sig_f(c, cg) + nu_sig_f(g, mat) * phi(0, c, g) / d_phi(0, c, cg)
         end if
+      end do
+    end do
 
-        ! Scattering cross section moment
-        do gp = 1, number_groups
-          cgp = energyMesh(gp)
+    ! Scattering cross section moment
+    do g = 1, number_groups
+      cg = energyMesh(g)
+      do gp = 1, number_groups
+        cgp = energyMesh(gp)
+        do c = 1, number_cells
           do l = 0, number_legendre
             ! Check if producing nan
-            if (d_phi(l, cgp, c) /= d_phi(l, cgp, c)) then
+            if (d_phi(l, c, cgp) /= d_phi(l, c, cgp)) then
               ! Detected NaN
               print *, "NaN detected, limiting"
-              d_phi(l, cgp, c) = 100.0
-            else if (d_phi(l, cgp, c) /= 0.0) then
-              d_sig_s(l, cgp, cg, c) = d_sig_s(l, cgp, cg, c) &
-                                     + basis(g, order) * sig_s(l, gp, g, mat) * phi(l, gp, c) / d_phi(l, cgp, c)
+              d_phi(l, c, cgp) = 100.0
+            else if (d_phi(l, c, cgp) /= 0.0) then
+              d_sig_s(l, c, cgp, cg) = d_sig_s(l, c, cgp, cg) &
+                                     + basis(g, order) * sig_s(l, gp, g, mat) * phi(l, c, gp) / d_phi(l, c, cgp)
             end if
           end do
         end do
       end do
+    end do
 
-      ! angular total cross section moment (delta)
+    ! angular total cross section moment (delta)
+    do g = 1, number_groups
+      cg = energyMesh(g)
       do a = 1, number_angles * 2
-        do g = 1, number_groups
-          cg = energyMesh(g)
+        do c = 1, number_cells
           ! Check if producing nan and not computing with a nan
-          if (d_psi(cg, a, c) /= d_psi(cg, a, c)) then
+          if (d_psi(c, a, cg) /= d_psi(c, a, cg)) then
             ! Detected NaN
               print *, "NaN detected, limiting"
-              d_psi(cg, a, c) = 100.0
-          else if (d_psi(cg, a, c) /= 0.0) then
-            d_delta(cg, a, c) = d_delta(cg, a, c) + basis(g, order) * (sig_t(g, mat) &
-                                - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
+              d_psi(c, a, cg) = 100.0
+          else if (d_psi(c, a, cg) /= 0.0) then
+            d_delta(c, a, cg) = d_delta(c, a, cg) + basis(g, order) * (sig_t(g, mat) &
+                                - d_sig_t(c, cg)) * psi(c, a, g) / d_psi(c, a, cg)
           end if
         end do
       end do
@@ -302,6 +337,13 @@ module dgm
     ! Expand the source and chi using the basis functions
     ! ##########################################################################
 
+    ! Use Statements
+    use material, only : number_groups, chi
+    use state, only : source
+    use mesh, only : number_cells, mMap
+    use angle, only : number_angles
+
+    ! Variable definitions
     integer :: &
         order, & ! Expansion order index
         c,     & ! Cell index
@@ -310,25 +352,25 @@ module dgm
         cg,    & ! Coarse group index
         mat      ! Material index
 
-    allocate(chi_m(number_coarse_groups, number_cells, 0:expansion_order))
-    allocate(source_m(number_coarse_groups, number_angles * 2, number_cells, 0:expansion_order))
+    allocate(chi_m(number_cells, number_coarse_groups, 0:expansion_order))
+    allocate(source_m(number_cells, number_angles * 2, number_coarse_groups, 0:expansion_order))
 
     chi_m = 0.0
     source_m = 0.0
 
     do order = 0, expansion_order
-      do c = 1, number_cells
-        mat = mMap(c)
+      do g = 1, number_groups
+        cg = energyMesh(g)
         do a = 1, number_angles * 2
-          do g = 1, number_groups
-            cg = energyMesh(g)
+          do c = 1, number_cells
+            mat = mMap(c)
             if (a == 1) then
               ! chi moment
-              chi_m(cg, c, order) = chi_m(cg, c, order) + basis(g, order) * chi(g, mat)
+              chi_m(c, cg, order) = chi_m(c, cg, order) + basis(g, order) * chi(g, mat)
             end if
 
             ! Source moment
-            source_m(cg, a, c, order) = source_m(cg, a, c, order) + basis(g, order) * source(g, a, c)
+            source_m(c, a, cg, order) = source_m(c, a, cg, order) + basis(g, order) * source(c, a, g)
           end do
         end do
       end do
