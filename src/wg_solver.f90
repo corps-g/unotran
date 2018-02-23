@@ -60,7 +60,7 @@ module wg_solver
       ! Print output
       if (inner_print) then
         write(*, 1001) inner_count, inner_error
-        1001 format ( "    Inner: ", i3, " Error: ", f12.9)
+        1001 format ( "    Inner: ", i3, " Error: ", es12.5E2)
       end if
 
       ! Check if tolerance is reached
@@ -76,6 +76,9 @@ module wg_solver
         1002 format ('inner iteration did not converge in ', i3, ' iterations')
       end if
     end if
+
+    ! Deallocate memory
+    deallocate(phi_g_old)
 
   end subroutine wg_solve
 

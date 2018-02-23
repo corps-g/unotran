@@ -7,7 +7,6 @@ module solver
   
   contains
   
-  ! Initialize all of the variables and solvers
   subroutine initialize_solver()
     ! ##########################################################################
     ! Initialize the solver including mesh, quadrature, flux containers, etc.
@@ -72,60 +71,98 @@ module solver
 
     ! Use Statements
     use mg_solver, only : mg_solve
-    use state, only : d_source, d_phi, d_psi, d_incoming
+    use state, only : d_source, d_phi, d_incoming, phi, psi, d_keff, normalize_flux
     use material, only : number_groups
+    use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
+                        eigen_tolerance
 
+    ! Variable definitions
     double precision :: &
-        error                  ! inter-iteration error
+        eigen_error            ! inter-iteration error
     integer :: &
-        counter                ! iteration counter
+        eigen_count            ! iteration counter
 
-    call mg_solve(number_groups, d_source, d_phi, d_psi, d_incoming)
+    ! Run eigen loop only if eigen problem
+    if (solver_type == 'fixed') then
+      call mg_solve(number_groups, d_source, phi, psi, d_incoming)
+    else if (solver_type == 'eigen') then
+      do eigen_count = 1, max_eigen_iters
 
-    print *, d_phi
+        ! Save the old value of the scalar flux
+        d_phi = phi
 
-!    ! Interate to convergance
-!    do while (error > outer_tolerance)
-!      ! save phi from previous iteration
-!      d_phi = phi
-!
-!      ! Sweep through the mesh
-!      call sweep(number_groups, phi, psi)
-!
-!      ! Compute the eigenvalue
-!      if (solver_type == 'eigen') then
-!        ! Compute new eigenvalue if eigen problem
-!        d_keff = d_keff * sum(abs(phi(0,:,:))) / sum(abs(d_phi(0,:,:)))
-!      end if
-!
-!      ! error is the difference in phi between successive iterations
-!      error = sum(abs(phi - d_phi))
-!
-!      ! output the current error and iteration number
-!      if (outer_print) then
-!        if (solver_type == 'eigen') then
-!          print *, 'Error = ', error, 'Iteration = ', counter, 'Eigenvalue = ', d_keff
-!        else if (solver_type == 'fixed') then
-!          print *, 'Error = ', error, 'Iteration = ', counter
-!        end if
-!      end if
-!
-!      call normalize_flux(number_groups, phi, psi)
-!
-!      ! increment the iteration
-!      counter = counter + 1
-!
-!      ! Break out of loop if exceeding maximum outer iterations
-!      if (counter > max_outer_iters) then
-!        if (.not. ignore_warnings) then
-!          print *, 'warning: exceeded maximum outer iterations'
-!        end if
-!        exit
-!      end if
-!
-!    end do
+        ! Update the fission source
+        call compute_source(number_groups, phi, d_source)
+
+        ! Solve the multigroup problem
+        call mg_solve(number_groups, d_source, phi, psi, d_incoming)
+
+        ! Compute new eigenvalue if eigen problem
+        d_keff = d_keff * sum(abs(phi(0,:,:))) / sum(abs(d_phi(0,:,:)))
+
+        ! Update the error
+        eigen_error = maxval(abs(d_phi - phi))
+
+        ! Normalize the fluxes
+        call normalize_flux(number_groups, phi, psi)
+
+        ! Print output
+        if (eigen_print) then
+          write(*, 1001) eigen_count, eigen_error, d_keff
+          1001 format ( "eigen: ", i3, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+        end if
+
+        ! Check if tolerance is reached
+        if (eigen_error < eigen_tolerance) then
+          exit
+        end if
+
+      end do
+
+      if (eigen_count == max_eigen_iters) then
+        if (.not. ignore_warnings) then
+          ! Warning if more iterations are required
+          write(*, 1002) eigen_count
+          1002 format ('eigen iteration did not converge in ', i3, ' iterations')
+        end if
+      end if
+    end if
 
   end subroutine solve
+
+  subroutine compute_source(nG, phi, source)
+    ! ##########################################################################
+    ! Add the fission and external sources
+    ! ##########################################################################
+
+    ! Use Statements
+    use mesh, only : number_cells
+    use state, only : d_chi, d_nu_sig_f, d_keff
+    use control, only : source_value
+
+    ! Variable definitions
+    integer, intent(in) :: &
+      nG      ! Number of energy groups
+    double precision, intent(in), dimension(0:,:,:) :: &
+      phi     ! Scalar flux
+    double precision, intent(inout), dimension(:,:,:) :: &
+      source  ! Container to hold the computed source
+    integer :: &
+      c,    & ! Cell index
+      g       ! Energy index
+
+
+    ! Set the external source
+    source = 0.5 * source_value
+
+    ! Add the isotropic fission source
+    do g = 1, nG
+      do c = 1, number_cells
+        source(c,:,g) = source(c,:,g) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:)) / d_keff
+      end do
+    end do
+
+  end subroutine compute_source
 
   subroutine output()
     ! ##########################################################################

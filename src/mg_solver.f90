@@ -62,7 +62,7 @@ module mg_solver
       ! Print output
       if (outer_print) then
         write(*, 1001) outer_count, outer_error
-        1001 format ( "  outer: ", i3, " Error: ", f12.9)
+        1001 format ( "  outer: ", i3, " Error: ", es12.5E2)
       end if
 
       ! Check if tolerance is reached
@@ -75,9 +75,12 @@ module mg_solver
       if (.not. ignore_warnings) then
         ! Warning if more iterations are required
         write(*, 1002) outer_count
-        1002 format ('inner iteration did not converge in ', i3, ' iterations')
+        1002 format ('outer iteration did not converge in ', i3, ' iterations')
       end if
     end if
+
+    ! Deallocate memory
+    deallocate(phi_old)
 
   end subroutine mg_solve
 
@@ -91,6 +94,7 @@ module mg_solver
     use mesh, only : number_cells
     use angle, only : number_angles, p_leg
     use state, only : d_nu_sig_f, d_sig_s, d_keff, d_chi
+    use control, only : solver_type
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -106,10 +110,12 @@ module mg_solver
         a,    & ! Angle index
         l       ! Legendre index
 
-    ! Add the fission source
-    do c = 1, number_cells
-      source(c,:) = source(c,:) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:)) / d_keff
-    end do
+    ! Add the fission source if fixed source problem
+    if (solver_type == 'fixed') then
+      do c = 1, number_cells
+        source(c,:) = source(c,:) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:)) / d_keff
+      end do
+    end if
 
     ! Add the in-scattering source for each Legendre moment
     do gp = 1, nG
