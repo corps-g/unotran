@@ -10,39 +10,39 @@ module sweeper
     ! ##########################################################################
 
     ! Use Statements
-    use angle, only : p_leg, number_angles, wt, mu
-    use mesh, only : number_cells, dx
-    use material, only : number_legendre
-    use control, only : store_psi, boundary_type
+    use angle, only : p_leg, wt, mu
+    use mesh, only : dx
+    use control, only : store_psi, boundary_type, number_angles, number_cells, &
+                        number_legendre
     use state, only : d_sig_t
 
     ! Variable definitions
     integer, intent(in) :: &
-        g                  ! Group index
+        g           ! Group index
     double precision, intent(in), dimension(:,:) :: &
-        source             ! Fission, In-Scattering, External source in group g
+        source      ! Fission, In-Scattering, External source in group g
     double precision, intent(inout), dimension(:,:) :: &
-        phi_g,           & ! Scalar flux for current iteration and group g
-        psi_g              ! Angular flux for current iteration and group g
+        phi_g,    & ! Scalar flux for current iteration and group g
+        psi_g       ! Angular flux for current iteration and group g
     double precision, intent(inout), dimension(:) :: &
-        incident           ! Angular flux incident on the cell in group g
+        incident    ! Angular flux incident on the cell in group g
     integer :: &
-        o,               & ! Octant index
-        c,               & ! Cell index
-        a,               & ! Angle index
-        an,              & ! Global angle index
-        cmin,            & ! Lower cell number
-        cmax,            & ! Upper cell number
-        cstep,           & ! Cell stepping direction
-        amin,            & ! Lower angle number
-        amax,            & ! Upper angle number
-        astep              ! Angle stepping direction
+        o,        & ! Octant index
+        c,        & ! Cell index
+        a,        & ! Angle index
+        an,       & ! Global angle index
+        cmin,     & ! Lower cell number
+        cmax,     & ! Upper cell number
+        cstep,    & ! Cell stepping direction
+        amin,     & ! Lower angle number
+        amax,     & ! Upper angle number
+        astep       ! Angle stepping direction
     double precision, allocatable, dimension(:) :: &
-        M                  ! Legendre polynomial integration vector
+        M           ! Legendre polynomial integration vector
     double precision :: &
-        psi_center         ! Angular flux at cell center
+        psi_center  ! Angular flux at cell center
     logical :: &
-        octant             ! Positive/Negative octant flag
+        octant      ! Positive/Negative octant flag
 
     ! Allocations
     allocate(M(0:number_legendre))

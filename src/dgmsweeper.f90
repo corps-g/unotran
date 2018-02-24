@@ -102,6 +102,10 @@ module dgmsweeper
         ! error is the difference in the norm of phi for successive iterations
         inner_error = sum(abs(d_phi - phi_m))
 
+        ! Update the old flux moments
+        d_phi = phi_m
+        d_psi = psi_m
+
         ! output the current error and iteration number
         if (inner_print) then
           print *, '    ', 'eps = ', inner_error, ' counter = ', counter, &
@@ -129,51 +133,4 @@ module dgmsweeper
 
   end subroutine inner_solve
 
-  ! Unfold the flux moments
-  subroutine unfold_flux_moments(order, psi_moment, phi_new, psi_new)
-    ! ##########################################################################
-    ! Compute the fluxes from the moments
-    ! ##########################################################################
-
-    integer, intent(in) :: &
-        order         ! Expansion order
-    double precision, intent(in), dimension(:,:,:) :: &
-        psi_moment    ! Angular flux moments
-    double precision, intent(inout), dimension(:,:,:) :: &
-        psi_new,    & ! Scalar flux for current iteration
-        phi_new       ! Angular flux for current iteration
-    double precision, allocatable, dimension(:) :: &
-        M                    ! Legendre polynomial integration vector
-    integer :: &
-        a,          & ! Angle index
-        c,          & ! Cell index
-        cg,         & ! Coarse group index
-        g,          & ! Fine group index
-        an            ! Global angle index
-    double precision :: &
-        val           ! Variable to hold a double value
-
-    allocate(M(0:number_legendre))
-
-    ! Recover the angular flux from moments
-    do c = 1, number_cells
-      do a = 1, number_angles * 2
-        ! legendre polynomial integration vector
-        an = merge(a, 2 * number_angles - a + 1, a <= number_angles)
-        M = wt(an) * p_leg(:,a)
-        do g = 1, number_groups
-          ! Get the coarse group index
-          cg = energyMesh(g)
-          ! Unfold the moments
-          val = basis(g, order) * psi_moment(cg, a, c)
-          psi_new(g, a, c) = psi_new(g, a, c) + val
-          phi_new(:, g, c) = phi_new(:, g, c) + M(:) * val
-        end do
-      end do
-    end do
-
-    deallocate(M)
-
-  end subroutine unfold_flux_moments
-  
 end module dgmsweeper

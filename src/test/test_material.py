@@ -27,6 +27,7 @@ class TestMATERIAL(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.legendre_order = 8
+        pydgm.control.use_DGM = False
 
         # Initialize the dependancies
         pydgm.material.create_material()
@@ -40,10 +41,11 @@ class TestMATERIAL(unittest.TestCase):
         self.assertEqual(pydgm.material.number_materials, 6)
 
         # Test the number of groups
-        self.assertEqual(pydgm.material.number_groups, 7)
+        self.assertEqual(pydgm.control.number_fine_groups, 7)
+        self.assertEqual(pydgm.control.number_coarse_groups, 7)
 
         # Test the number of legendre moments
-        self.assertEqual(pydgm.material.number_legendre, 8)
+        self.assertEqual(pydgm.control.number_legendre, 8)
 
         # Test the energy bounds
         ebounds_test = [1.0e+37, 4.0, 2.0e-01, 3.0e-03, 4.0e-05, 5.0e-07, 6.0e-09, 0.0]

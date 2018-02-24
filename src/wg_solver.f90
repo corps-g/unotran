@@ -10,31 +10,29 @@ module wg_solver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : ignore_warnings, max_inner_iters, inner_print, inner_tolerance
-    use material, only : number_legendre
-    use mesh, only : number_cells
-    use angle, only : number_angles
+    use control, only : ignore_warnings, max_inner_iters, inner_print, &
+                        inner_tolerance, number_cells, number_legendre, number_angles
     use sweeper, only : sweep
 
     ! Variable definitions
     integer, intent(in) :: &
-        g         ! Group index
+        g           ! Group index
     double precision, intent(in), dimension(:,:) :: &
-        source    ! Fission, In-Scattering, External source in group g
+        source      ! Fission, In-Scattering, External source in group g
     double precision, intent(inout), dimension(0:,:) :: &
-        phi_g     ! Scalar flux
+        phi_g       ! Scalar flux
     double precision, intent(inout), dimension(:,:) :: &
-        psi_g     ! Angular flux
+        psi_g       ! Angular flux
     double precision, intent(inout), dimension(:) :: &
-        incident  ! Angular flux incident on the cell in group g
+        incident    ! Angular flux incident on the cell in group g
     double precision, allocatable, dimension(:,:) :: &
-        phi_g_old ! Save the previous scalar flux
+        phi_g_old   ! Save the previous scalar flux
     integer :: &
-        inner_count  ! Counter for the inner loop
+        inner_count ! Counter for the inner loop
     double precision :: &
-        inner_error  ! Residual error between iterations
+        inner_error ! Residual error between iterations
     double precision, dimension(number_cells, 2 * number_angles) :: &
-        total_S    ! Sum of all sources
+        total_S     ! Sum of all sources
 
     ! Initialize container to hold the old scalar flux for error calculations
     allocate(phi_g_old(0:number_legendre, number_cells))
@@ -88,22 +86,21 @@ module wg_solver
     ! ##########################################################################
 
     ! Use Statements
-    use angle, only : p_leg, number_angles
-    use mesh, only : number_cells
-    use material, only : number_legendre
+    use angle, only : p_leg
     use state, only : d_sig_s
+    use control, only : number_cells, number_angles, number_legendre
 
     ! Variable definitions
     integer, intent(in) :: &
-        g        ! Group index
+        g       ! Group index
     double precision, intent(in), dimension(0:,:) :: &
-        phi_g    ! Scalar flux for group g
+        phi_g   ! Scalar flux for group g
     double precision, intent(inout), dimension(:,:) :: &
-        source   ! Fission, Scattering, and External sources for group g
+        source  ! Fission, Scattering, and External sources for group g
     integer :: &
-        a,     & ! Angle index
-        c,     & ! Cell index
-        l        ! Legendre index
+        a,    & ! Angle index
+        c,    & ! Cell index
+        l       ! Legendre index
 
     ! Include the within-group scattering into source
     do a = 1, 2 * number_angles

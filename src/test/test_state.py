@@ -30,13 +30,8 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 0.0
         pydgm.control.legendre_order = 0
+        pydgm.control.use_DGM = False
         
-        # Initialize the dependancies
-        pydgm.mesh.create_mesh()
-        pydgm.material.create_material()
-        pydgm.angle.initialize_angle()
-        pydgm.angle.initialize_polynomials(pydgm.material.number_legendre)
-    
     def test_state_initialize(self):
         ''' 
         Test initializing of state arrays, no psi
@@ -66,9 +61,6 @@ class TestSTATE(unittest.TestCase):
         
     def tearDown(self):
         # Finalize the dependancies
-        pydgm.mesh.finalize_mesh()
-        pydgm.material.finalize_material()
-        pydgm.angle.finalize_angle()
         pydgm.state.finalize_state()
         pydgm.control.finalize_control()
         

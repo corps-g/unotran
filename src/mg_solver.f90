@@ -4,40 +4,36 @@ module mg_solver
   
   contains
   
-  subroutine mg_solve(number_energy_groups, source, phi, psi, incident)
+  subroutine mg_solve(source, phi, psi, incident)
     ! ##########################################################################
     ! Solve the within group equation
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance
-    use angle, only : number_angles
-    use mesh, only : number_cells
-    use material, only : number_legendre
+    use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
+                        number_groups, number_cells, number_angles, number_legendre
     use wg_solver, only : wg_solve
 
     ! Variable definitions
-    integer, intent(in) :: &
-        number_energy_groups         ! Group index
     double precision, intent(in), dimension(:,:,:) :: &
-        source  ! External source
+        source               ! External source
     double precision, intent(inout), dimension(:,:,:) :: &
-        phi,    & ! Scalar flux
-        psi       ! Angular flux
+        phi,               & ! Scalar flux
+        psi                  ! Angular flux
     double precision, intent(inout), dimension(:,:) :: &
-        incident  ! Angular flux incident on the cell
+        incident             ! Angular flux incident on the cell
     double precision, allocatable, dimension(:,:,:) :: &
-        phi_old   ! Save the previous scalar flux
-    double precision, dimension(number_cells, 2 * number_angles, number_energy_groups) :: &
-        total_S    ! Sum of all sources
+        phi_old              ! Save the previous scalar flux
+    double precision, dimension(number_cells, 2 * number_angles, number_groups) :: &
+        total_S              ! Sum of all sources
     integer :: &
-        outer_count, & ! Counter for the outer loop
-        g ! Group index
+        outer_count,       & ! Counter for the outer loop
+        g                    ! Group index
     double precision :: &
-        outer_error  ! Residual error between iterations
+        outer_error          ! Residual error between iterations
 
     ! Save the scalar flux from previous iteration
-    allocate(phi_old(0:number_legendre, number_cells, number_energy_groups))
+    allocate(phi_old(0:number_legendre, number_cells, number_groups))
     phi_old = 0.0
 
     ! Begin loop to converge on the in-scattering source
@@ -48,8 +44,8 @@ module mg_solver
       total_S = source
 
       ! Loop over the energy groups
-      do g = 1, number_energy_groups
-        call compute_source(g, number_energy_groups, phi, total_S(:,:,g))
+      do g = 1, number_groups
+        call compute_source(g, phi, total_S(:,:,g))
 
         ! Solve the within group problem
         call wg_solve(g, total_S(:,:,g), phi(:,:,g), psi(:,:,g), incident(:,g))
@@ -84,22 +80,20 @@ module mg_solver
 
   end subroutine mg_solve
 
-  subroutine compute_source(g, nG, phi, source)
+  subroutine compute_source(g, phi, source)
     ! ##########################################################################
     ! Get the source including external, fission, and in-scatter
     ! ##########################################################################
 
     ! Use Statements
-    use material, only : number_legendre
-    use mesh, only : number_cells
-    use angle, only : number_angles, p_leg
+    use angle, only : p_leg
     use state, only : d_nu_sig_f, d_sig_s, d_keff, d_chi
-    use control, only : solver_type
+    use control, only : solver_type, number_groups, number_cells, number_angles, &
+                        number_legendre
 
     ! Variable definitions
     integer, intent(in) :: &
-        g,    & ! Group index
-        nG      ! Number of energy groups
+        g       ! Group index
     double precision, intent(in), dimension(0:,:,:) :: &
         phi     ! Scalar flux
     double precision, intent(inout), dimension(:,:) :: &
@@ -118,7 +112,7 @@ module mg_solver
     end if
 
     ! Add the in-scattering source for each Legendre moment
-    do gp = 1, nG
+    do gp = 1, number_groups
       ! Ignore the within-group terms
       if (g == gP) then
         cycle

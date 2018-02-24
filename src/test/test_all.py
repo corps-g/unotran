@@ -4,8 +4,10 @@ from test_mesh import TestMESH
 from test_material import TestMATERIAL
 from test_state import TestSTATE
 from test_sweeper import TestSWEEPER
+from test_wg_solver import TestWG_SOLVER
+from test_mg_solver import TestMG_SOLVER
 from test_solver import TestSOLVER
-from test_dgm import TestDGM
+from test_dgm import TestDGM, TestDGM2
 from test_dgmsweeper import TestDGMSWEEPER
 from test_dgmsolver import TestDGMSOLVER
 
@@ -16,9 +18,11 @@ def AllSuite():
     suite.addTests(unittest.makeSuite(TestMATERIAL))
     suite.addTests(unittest.makeSuite(TestSTATE))
     suite.addTests(unittest.makeSuite(TestSWEEPER))
+    suite.addTests(unittest.makeSuite(TestWG_SOLVER))
+    suite.addTests(unittest.makeSuite(TestMG_SOLVER))
     suite.addTests(unittest.makeSuite(TestSOLVER))
     suite.addTests(unittest.makeSuite(TestDGM))
-    suite.addTests(unittest.makeSuite(TestDGMSWEEPER))
+    suite.addTests(unittest.makeSuite(TestDGM2))
     suite.addTests(unittest.makeSuite(TestDGMSOLVER))
     
     return suite

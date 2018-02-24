@@ -41,13 +41,12 @@ class TestMG_SOLVER(unittest.TestCase):
         pydgm.control.max_outer_iters = 2
         pydgm.control.max_inner_iters = 10
 
-        nG = pydgm.material.number_groups
         source = pydgm.state.d_source
         phi = pydgm.state.d_phi
         psi = pydgm.state.d_psi
         incident = pydgm.state.d_incoming
 
-        pydgm.mg_solver.mg_solve(nG, source, phi, psi, incident)
+        pydgm.mg_solver.mg_solve(source, phi, psi, incident)
         
         phi_test = [33.7869910712284636, 16.21623617487068, 6.7810024622273959]
         incident_test = np.array([[16.7848315072878371, 17.4223043071873391],
@@ -64,13 +63,12 @@ class TestMG_SOLVER(unittest.TestCase):
         
         pydgm.control.max_inner_iters = 10
 
-        nG = pydgm.material.number_groups
         source = pydgm.state.d_source
         phi = pydgm.state.d_phi
         psi = pydgm.state.d_psi
         incident = pydgm.state.d_incoming
 
-        pydgm.mg_solver.mg_solve(nG, source, phi, psi, incident)
+        pydgm.mg_solver.mg_solve(source, phi, psi, incident)
         
         phi_test = [161.534959460539, 25.4529297193052813, 6.9146161770064944]
         incident_test = np.array([[80.7674797302686329, 80.7674797302685761],
@@ -88,13 +86,12 @@ class TestMG_SOLVER(unittest.TestCase):
         pydgm.control.max_inner_iters = 10
         pydgm.control.boundary_type = [0.0, 0.0]
 
-        nG = pydgm.material.number_groups
         source = pydgm.state.d_source
         phi = pydgm.state.d_phi
         psi = pydgm.state.d_psi
         incident = pydgm.state.d_incoming
 
-        pydgm.mg_solver.mg_solve(nG, source, phi, psi, incident)
+        pydgm.mg_solver.mg_solve(source, phi, psi, incident)
         
         phi_test = [1.1128139420344907, 1.0469097961254414, 0.9493149657672653]
         incident_test = np.array([[0.6521165715780991, 1.3585503570955177],
@@ -115,7 +112,7 @@ class TestMG_SOLVER(unittest.TestCase):
         source_test = np.array([0.5, 0.50058041595, 0.5007291251])
 
         for g in range(3):
-            pydgm.mg_solver.compute_source(g + 1, 3, phi, source[:,:,g])
+            pydgm.mg_solver.compute_source(g + 1, phi, source[:,:,g])
             np.testing.assert_array_almost_equal(source[:,:,g].flatten(), np.ones(4) * source_test[g], 12)
 
     def tearDown(self):

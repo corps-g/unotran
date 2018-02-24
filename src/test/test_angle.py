@@ -39,9 +39,10 @@ class TestANGLE(unittest.TestCase):
         nAngle = 8
         pydgm.control.angle_order = nAngle
         pydgm.control.angle_option = pydgm.angle.gl
+        pydgm.control.number_legendre = 7
 
         pydgm.angle.initialize_angle()        
-        pydgm.angle.initialize_polynomials(7)
+        pydgm.angle.initialize_polynomials()
         
         # Get the basis set
         basis = pydgm.angle.p_leg

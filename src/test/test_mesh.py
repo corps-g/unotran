@@ -27,6 +27,7 @@ class TestMESH(unittest.TestCase):
         pydgm.control.legendre_order = 0
         pydgm.control.source_value = 1.0
         pydgm.control.equation_type = 'DD'
+        pydgm.control.use_DGM = False
         
         # Initialize the dependancies
         pydgm.mesh.create_mesh()
@@ -37,7 +38,7 @@ class TestMESH(unittest.TestCase):
         '''
         
         # Test the number of cells
-        self.assertEqual(pydgm.mesh.number_cells, 8)
+        self.assertEqual(pydgm.control.number_cells, 8)
         
         # Test the cell size
         dx_test = [0.5, 0.5, 0.25, 0.25, 0.25, 0.25, 0.5, 0.5]

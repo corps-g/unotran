@@ -27,6 +27,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.legendre_order = 0
+        pydgm.control.use_dgm = False
         
         # Initialize the dependancies
         pydgm.solver.initialize_solver()

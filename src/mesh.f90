@@ -3,12 +3,8 @@ module mesh
   ! Create the cell indexing for the problem
   ! ############################################################################
 
-  use control, only : fine_mesh, coarse_mesh, material_map, boundary_type
-
   implicit none
 
-  integer :: &
-      number_cells  ! Total number of cells in the mesh
   double precision :: &
       width         ! Total width of the problem
   double precision, allocatable, dimension(:) :: &
@@ -24,6 +20,10 @@ module mesh
     ! Compute the widths of each cell and the total number of cells
     ! ##########################################################################
 
+    ! Use Statements
+    use control, only : number_cells, fine_mesh, coarse_mesh, material_map
+
+    ! Variable definitions
     double precision :: &
         ddx  ! Temporary variable for cell width
     integer :: &
