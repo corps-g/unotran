@@ -12,7 +12,10 @@ module dgm
       phi_m_zero,        & ! Zeroth moment of scalar flux
       psi_m_zero           ! Zeroth moment of angular flux
   double precision, allocatable, dimension(:,:,:,:) :: &
+      delta_m,           & ! Angular total XS moments
       source_m             ! Source moments
+  double precision, allocatable, dimension(:,:,:,:,:) :: &
+      sig_s_m              ! Scattering XS moments
   integer :: &
       expansion_order      ! Maximum expansion order
   integer, allocatable, dimension(:) :: &
@@ -168,6 +171,12 @@ module dgm
     end if
     if (allocated(source_m)) then
       deallocate(source_m)
+    end if
+    if (allocated(delta_m)) then
+      deallocate(delta_m)
+    end if
+    if (allocated(sig_s_m)) then
+      deallocate(sig_s_m)
     end if
     if (allocated(cumsum)) then
       deallocate(cumsum)

@@ -17,6 +17,7 @@ module dgmsolver
 
     ! allocate the solutions variables
     call initialize_state()
+    call compute_source_moments()
 
   end subroutine initialize_dgmsolver
 
@@ -27,11 +28,11 @@ module dgmsolver
 
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
-                        ignore_warnings, lamb, number_cells, number_groups, &
+                        ignore_warnings, lamb, number_cells, number_fine_groups, &
                         number_legendre, number_angles
-    use state, only : d_keff, phi, psi, d_phi, d_psi
+    use state, only : d_keff, phi, psi, d_phi, d_psi, normalize_flux
     use dgm, only : expansion_order, phi_m_zero, psi_m_zero
-    use solver, only : solve
+    use solver, only : solve, dgm_bypass
 
     ! Variable definitions
     integer :: &
@@ -39,12 +40,10 @@ module dgmsolver
         i                 ! Expansion index
     double precision :: &
         recon_error       ! Error between successive iterations
-    double precision, dimension(0:number_legendre, number_cells, number_groups) :: &
+    double precision, dimension(0:number_legendre, number_cells, number_fine_groups) :: &
         old_phi        ! Scalar flux from previous iteration
-    double precision, dimension(number_cells, 2 * number_angles, number_groups) :: &
+    double precision, dimension(number_cells, 2 * number_angles, number_fine_groups) :: &
         old_psi        ! Angular flux from previous iteration
-
-    call compute_source_moments()
 
     do recon_count = 1, max_recon_iters
       ! Save the old value of the scalar flux
@@ -54,25 +53,40 @@ module dgmsolver
       ! Expand the fluxes into moment form
       call compute_flux_moments()
 
+      ! Compute the cross section moments
+      call compute_xs_moments()
+
       ! Fill the initial moments
       d_phi = phi_m_zero
       d_psi = psi_m_zero
 
-      ! Solve for each expansion order
+      ! Solve for order 0
       do i = 0, expansion_order
+        ! Turn the problem to fixed source type for higher moments
+        dgm_bypass = merge(.false., .true., i==0)
+
         ! Set Incoming to the proper order
         call compute_incoming_flux(order=i)
 
         ! Compute the cross section moments
-        call compute_xs_moments(order=i)
+        call slice_xs_moments(order=i)
 
         ! Converge the ith order flux moments
         call solve()
 
+        if (i == 0) then
+          ! Save the new flux moments as the zeroth moments
+          phi_m_zero = d_phi
+          psi_m_zero = d_psi
+        end if
+
         ! Unfold ith order flux
         call unfold_flux_moments(i, d_psi, phi, psi)
-
+        print *, d_phi
       end do
+
+      print *, phi
+      print *, old_phi
 
       ! Update the error
       recon_error = maxval(abs(old_phi - phi))
@@ -82,6 +96,8 @@ module dgmsolver
       if (store_psi) then
         psi = (1.0 - lamb) * old_psi + lamb * psi
       end if
+
+      call normalize_flux(phi, psi)
 
       ! Print output
       if (recon_print) then
@@ -103,66 +119,6 @@ module dgmsolver
         1002 format ('recon iteration did not converge in ', i3, ' iterations')
       end if
     end if
-
-
-!    double precision :: &
-!        outer_error ! Error between successive iterations
-!    double precision, allocatable, dimension(:,:,:) :: &
-!        phi_new,  & ! Scalar flux for current iteration
-!        psi_new     ! Angular flux for current iteration
-!    integer :: &
-!        counter     ! Iteration counter
-!
-!    ! Initialize the flux containers
-!    allocate(phi_new(0:number_legendre, number_groups, number_cells))
-!    allocate(psi_new(number_groups, 2 * number_angles, number_cells))
-!
-!    ! Error of current iteration
-!    outer_error = 1.0
-!
-!    ! interation number
-!    counter = 1
-!
-!    ! Interate to convergance
-!    do while (outer_error > outer_tolerance)
-!      ! Sweep through the mesh
-!      call dgmsweep(phi_new, psi_new)
-!
-!      ! error is the difference in phi between successive iterations
-!      outer_error = sum(abs(phi - phi_new))
-!
-!      ! output the current error and iteration number
-!      if (outer_print) then
-!        if (solver_type == 'eigen') then
-!          print *, 'OuterError = ', outer_error, 'Iteration = ', counter, &
-!                   'Eigenvalue = ', d_keff
-!        else if (solver_type == 'fixed') then
-!          print *, 'OuterError = ', outer_error, 'Iteration = ', counter
-!        end if
-!      end if
-!
-!      ! Compute the eigenvalue
-!      if (solver_type == 'eigen') then
-!        ! Compute new eigenvalue if eigen problem
-!        d_keff = d_keff * sum(abs(phi_new(0,:,:))) / sum(abs(phi(0,:,:)))
-!      end if
-!
-!      ! Update flux using krasnoselskii iteration
-!      phi = (1.0 - lamb) * phi + lamb * phi_new
-!      psi = (1.0 - lamb) * psi + lamb * psi_new
-!
-!      ! increment the iteration
-!      counter = counter + 1
-!
-!      ! Break out of loop if exceeding maximum outer iterations
-!      if (counter > max_outer_iters) then
-!        if (.not. ignore_warnings) then
-!          print *, 'warning: exceeded maximum outer iterations'
-!        end if
-!        exit
-!      end if
-!
-!    end do
 
   end subroutine dgmsolve
 
@@ -314,20 +270,42 @@ module dgmsolver
 
   end subroutine compute_incoming_flux
 
-  subroutine compute_xs_moments(order)
+  subroutine slice_xs_moments(order)
+    ! ##########################################################################
+    ! Fill the XS containers with precomputed values
+    ! ##########################################################################
+
+    ! Use Statements
+    use state, only : d_source, d_chi, d_sig_s
+    use dgm, only : source_m, delta_m, chi_m, sig_s_m
+
+    ! Variable definitions
+    integer, intent(in) :: &
+        order  ! Expansion order
+
+    ! Slice the precomputed moments
+    d_source(:, :, :) = source_m(:, :, :, order) - delta_m(:, :, :, order)
+    d_chi(:, :) = chi_m(:, :, order)
+    d_sig_s(:,:,:,:) = sig_s_m(:, :, :, :, order)
+
+  end subroutine slice_xs_moments
+
+  subroutine compute_xs_moments()
     ! ##########################################################################
     ! Expand the cross section moments using the basis functions
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_fine_groups, number_cells, number_legendre
-    use state, only : d_sig_s, d_delta, d_sig_t, d_nu_sig_f, d_source, d_chi, phi, psi
+    use control, only : number_angles, number_fine_groups, number_cells, number_legendre, number_groups
+    use state, only : d_sig_t, d_nu_sig_f, phi, psi
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap
-    use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis
+    use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis, &
+                    sig_s_m, delta_m, expansion_order
 
     ! Variable definitions
     integer :: &
+        o,   & ! Order index
         a,   & ! Angle index
         c,   & ! Cell index
         cg,  & ! Outer coarse group index
@@ -336,74 +314,73 @@ module dgmsolver
         gp,  & ! Inner fine group index
         l,   & ! Legendre moment index
         mat    ! Material index
-    integer, intent(in) :: &
-        order  ! Expansion order
+
+    allocate(delta_m(number_cells, 2 * number_angles, number_groups, 0:expansion_order))
+    allocate(sig_s_m(0:number_legendre, number_cells, number_groups, number_groups, 0:expansion_order))
 
     ! initialize all moments to zero
-    d_sig_s = 0.0
-    d_delta = 0.0
+    sig_s_m = 0.0
     d_sig_t = 0.0
-    d_nu_sig_f = 0.0
-    ! Slice the precomputed moments
-    d_source(:, :, :) = source_m(:, :, :, order)
-    d_chi(:, :) = chi_m(:, :, order)
+    delta_m = 0.0
 
-
-    do g = 1, number_fine_groups
-      cg = energyMesh(g)
-      do c = 1, number_cells
-        ! get the material for the current cell
-        mat = mMap(c)
-
-        ! Check if producing nan and not computing with a nan
-        if (phi_m_zero(0, c, cg) /= phi_m_zero(0, c, cg)) then
-          ! Detected NaN
-          print *, "NaN detected, limiting"
-          phi_m_zero(0, c, cg) = 100.0
-        else if (phi_m_zero(0, c, cg) /= 0.0)  then
-          ! total cross section moment
-          d_sig_t(c, cg) = d_sig_t(c, cg) + basis(g, 0) * sig_t(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
-          ! fission cross section moment
-          d_nu_sig_f(c, cg) = d_nu_sig_f(c, cg) + nu_sig_f(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
-        end if
-      end do
-    end do
-
-    ! Scattering cross section moment
-    do g = 1, number_fine_groups
-      cg = energyMesh(g)
-      do gp = 1, number_fine_groups
-        cgp = energyMesh(gp)
-        do c = 1, number_cells
-          do l = 0, number_legendre
-            ! Check if producing nan
-            if (phi_m_zero(l, c, cgp) /= phi_m_zero(l, c, cgp)) then
+    do o = 0, expansion_order
+      do g = 1, number_fine_groups
+        cg = energyMesh(g)
+        if (o == 0) then
+          do c = 1, number_cells
+            ! get the material for the current cell
+            mat = mMap(c)
+            ! Check if producing nan and not computing with a nan
+            if (phi_m_zero(0, c, cg) /= phi_m_zero(0, c, cg)) then
               ! Detected NaN
               print *, "NaN detected, limiting"
-              phi_m_zero(l, c, cgp) = 100.0
-            else if (phi_m_zero(l, c, cgp) /= 0.0) then
-              d_sig_s(l, c, cgp, cg) = d_sig_s(l, c, cgp, cg) &
-                                     + basis(g, order) * sig_s(l, gp, g, mat) * phi(l, c, gp) / phi_m_zero(l, c, cgp)
+              phi_m_zero(0, c, cg) = 100.0
+            else if (phi_m_zero(0, c, cg) /= 0.0)  then
+              ! total cross section moment
+              d_sig_t(c, cg) = d_sig_t(c, cg) + basis(g, 0) * sig_t(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
+              ! fission cross section moment
+              d_nu_sig_f(c, cg) = d_nu_sig_f(c, cg) + nu_sig_f(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
             end if
+          end do
+        end if
+
+        ! Scattering cross section moment
+        do gp = 1, number_fine_groups
+          cgp = energyMesh(gp)
+          do c = 1, number_cells
+            ! get the material for the current cell
+            mat = mMap(c)
+            do l = 0, number_legendre
+              ! Check if producing nan
+              if (phi_m_zero(l, c, cgp) /= phi_m_zero(l, c, cgp)) then
+                ! Detected NaN
+                print *, "NaN detected, limiting"
+                phi_m_zero(l, c, cgp) = 100.0
+              else if (phi_m_zero(l, c, cgp) /= 0.0) then
+                sig_s_m(l, c, cgp, cg, o) = sig_s_m(l, c, cgp, cg, o) &
+                                       + basis(g, o) * sig_s(l, gp, g, mat) * phi(l, c, gp) / phi_m_zero(l, c, cgp)
+              end if
+            end do
           end do
         end do
       end do
-    end do
-
-    ! angular total cross section moment (delta)
-    do g = 1, number_fine_groups
-      cg = energyMesh(g)
-      do a = 1, number_angles * 2
-        do c = 1, number_cells
-          ! Check if producing nan and not computing with a nan
-          if (psi_m_zero(c, a, cg) /= psi_m_zero(c, a, cg)) then
-            ! Detected NaN
-              print *, "NaN detected, limiting"
-              psi_m_zero(c, a, cg) = 100.0
-          else if (psi_m_zero(c, a, cg) /= 0.0) then
-            d_delta(c, a, cg) = d_delta(c, a, cg) + basis(g, order) * (sig_t(g, mat) &
-                                - d_sig_t(c, cg)) * psi(c, a, g) / psi_m_zero(c, a, cg)
-          end if
+      do g = 1, number_fine_groups
+        cg = energyMesh(g)
+        ! Add angular total cross section moment (delta) to the external source
+        do a = 1, number_angles * 2
+          do c = 1, number_cells
+            ! get the material for the current cell
+            mat = mMap(c)
+            ! Check if producing nan and not computing with a nan
+            if (psi_m_zero(c, a, cg) /= psi_m_zero(c, a, cg)) then
+              ! Detected NaN
+                print *, "NaN detected, limiting"
+                psi_m_zero(c, a, cg) = 100.0
+            else if (psi_m_zero(c, a, cg) /= 0.0) then
+              delta_m(c, a, cg, o) = delta_m(c, a, cg, o) + basis(g, o) * (sig_t(g, mat) &
+                                  - d_sig_t(c, cg)) * psi(c, a, g) / psi_m_zero(c, a, cg)
+            end if
+          end do
         end do
       end do
     end do

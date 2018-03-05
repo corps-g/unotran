@@ -20,7 +20,7 @@ class TestDGM(unittest.TestCase):
         pydgm.control.xs_name = 'test/7gXSaniso.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_type = [0.0, 0.0]
+        pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.allow_fission = True
         pydgm.control.outer_print = False
         pydgm.control.inner_print = False
@@ -54,7 +54,6 @@ class TestDGM(unittest.TestCase):
         assert(pydgm.state.d_source.shape == (1, 4, 2))
         assert(pydgm.state.d_nu_sig_f.shape == (1, 2))
         assert(pydgm.state.d_sig_t.shape == (1, 2))
-        assert(pydgm.state.d_delta.shape == (1, 4, 2))
         assert(pydgm.state.d_chi.shape == (1, 2))
         assert(pydgm.state.d_sig_s.shape == (8, 1, 2, 2))
         assert(pydgm.state.d_psi.shape == (1, 4, 2))
@@ -132,16 +131,26 @@ class TestDGM(unittest.TestCase):
         Check that the XS moments are properly computed
         '''
         sig_t_m_test = [0.3760865, 1.0070863333333333]
-        delta_m_test = np.array([0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02, 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0, 0.0, -1.2284241926631045e-01, 1.8900000000000167e-04, 1.0668056713853770e-02, 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0, 0.0, -1.2284241926631045e-01, 1.8900000000000167e-04, 1.0668056713853770e-02, 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0, 0.0, -1.2284241926631045e-01, 1.8900000000000167e-04, 1.0668056713853770e-02, 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0]).reshape((4, 2, -1))
+        delta_m_test = np.array([0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02, 
+                                 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0, 
+                                 0.0, -1.2284241926631045e-01, 1.8900000000000167e-04, 1.0668056713853770e-02,
+                                 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0, 
+                                 0.0, -1.2284241926631045e-01, 1.8900000000000167e-04, 1.0668056713853770e-02,
+                                 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0,
+                                 0.0, -1.2284241926631045e-01, 1.8900000000000167e-04, 1.0668056713853770e-02,
+                                 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0]).reshape((4, 2, -1))
         sig_s_m_test = np.reshape(np.array([[0.35342781806, 0.04743636186124999, 0.028933133948542498, 0.020134451190550004, 0.014509247257650001, 0.009301495623800001, 0.005620442104, 0.0030043367622, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0015106138853238885, -0.0004682252948100947, -2.10589954062589e-05, -6.492736789739235e-07, 9.154696808378383e-07, 3.0289238497360745e-06, -2.1934200679323454e-06, 1.224533940189083e-06, 0.42369015333333326, 0.005308310899999998, 0.0016464802333333328, 0.001228323293333333, 0.0007583007633333331, -0.0006374102666666665, -7.760245200000006e-05, 0.00044780386333333324], [-0.12616159348403644, 0.03383513776305, 0.02883351588732215, 0.022366592333776532, 0.016881896022033414, 0.011362358747254313, 0.006986249848033285, 0.003924474790883601, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0018501166087033542, -0.0005734565284744781, -2.5791896620474617e-05, -7.951946084528616e-07, 1.1212167965206372e-06, 3.7096589507999246e-06, -2.6863799790075303e-06, 1.4997416630915137e-06, 0.07992011421022244, -0.00496940668392808, -0.0036350055052213155, -0.0026867446329954044, -0.001559092362501901, -0.00042067344965861773, -0.00032993401682169713, -0.0005203939039775896], [-0.04163098694, 0.004344929711249999, 0.0073627300485425, 0.00983078873555, 0.008627426390350003, 0.006743598208799998, 0.004427864874, 0.0027046093172, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0010681653220670792, -0.0003310852810832883, -1.4890958456742022e-05, -4.591058212483988e-07, 6.473348192911198e-07, 2.1417725938460415e-06, -1.5509822040256192e-06, 8.658762529007827e-07, -0.17726364202447836, 0.01515281812461261, 0.004629729488908694, 0.002862815278436165, 0.0013721899683078955, 0.0017345523325466316, 0.0006840553221513953, 0.0002677613009861893], [-0.004584591418129613, -0.00662701769819133, -0.005421313113252008, -0.0001475188965045822, 0.0012658069904094703, 0.0018727119427210672, 0.0014459651667724411, 0.0010194647035502366, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]]), (4, 8, 2, 2), 'F')
         nu_sig_f_m_test = [0.039245915, 1.504587272273979]
 
         pydgm.dgmsolver.compute_flux_moments()
         pydgm.dgmsolver.compute_source_moments()
-
-        for i in range(pydgm.dgm.expansion_order):
-            pydgm.dgmsolver.compute_xs_moments(i)
-            np.testing.assert_array_almost_equal(pydgm.state.d_delta.flatten(), delta_m_test[:, :, i].flatten(), 12)
+        pydgm.dgmsolver.compute_xs_moments()
+        np.set_printoptions(precision=5, linewidth=132, suppress=True)
+        
+        for i in range(pydgm.dgm.expansion_order + 1):
+            pydgm.dgmsolver.slice_xs_moments(i)
+            S = pydgm.dgm.source_m[0,:,:,i].flatten()
+            np.testing.assert_array_almost_equal(S - pydgm.state.d_source.flatten(), delta_m_test[:, :, i].flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.state.d_sig_s.flatten(), sig_s_m_test[i].flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.state.d_sig_t.flatten(), sig_t_m_test)
             np.testing.assert_array_almost_equal(pydgm.state.d_nu_sig_f.flatten(), nu_sig_f_m_test)
@@ -237,11 +246,12 @@ class TestDGM2(unittest.TestCase):
 
         pydgm.dgmsolver.compute_flux_moments()
         pydgm.dgmsolver.compute_source_moments()
+        pydgm.dgmsolver.compute_xs_moments()
 
         for i in range(pydgm.dgm.expansion_order):
-            pydgm.dgmsolver.compute_xs_moments(i)
+            pydgm.dgmsolver.slice_xs_moments(i)
             for a in range(4):
-                np.testing.assert_array_almost_equal(pydgm.state.d_delta[0, a, :].flatten(), delta_m_test[:, i].flatten(), 12)
+                np.testing.assert_array_almost_equal(pydgm.dgm.delta_m[0, a, :, i].flatten(), delta_m_test[:, i].flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.state.d_sig_s.flatten('F'), sig_s_m_test[:, :, i].flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.state.d_sig_t.flatten(), sig_t_m_test)
             np.testing.assert_array_almost_equal(pydgm.state.d_nu_sig_f.flatten(), nu_sig_f_m_test)

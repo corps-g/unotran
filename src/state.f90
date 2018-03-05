@@ -12,7 +12,6 @@ module state
       source,     &  ! External source
       phi,        &  ! Scalar Flux
       d_source,   &  ! Extermal source moments
-      d_delta,    &  ! Angular total cross section moments
       d_phi,      &  ! Scalar flux moments
       d_psi          ! Angular flux moments
   double precision, allocatable, dimension(:,:) :: &
@@ -148,7 +147,6 @@ module state
     allocate(d_source(number_cells, 2 * number_angles, number_groups))
     allocate(d_nu_sig_f(number_cells, number_groups))
     allocate(d_sig_t(number_cells, number_groups))
-    allocate(d_delta(number_cells, 2 * number_angles, number_groups))
     allocate(d_phi(0:number_legendre, number_cells, number_groups))
     allocate(d_chi(number_cells, number_groups))
     allocate(d_sig_s(0:number_legendre, number_cells, number_groups, number_groups))
@@ -191,9 +189,6 @@ module state
     end if
     if (allocated(d_nu_sig_f)) then
       deallocate(d_nu_sig_f)
-    end if
-    if (allocated(d_delta)) then
-      deallocate(d_delta)
     end if
     if (allocated(d_phi)) then
       deallocate(d_phi)
