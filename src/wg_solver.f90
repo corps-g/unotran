@@ -58,7 +58,7 @@ module wg_solver
       ! Print output
       if (inner_print) then
         write(*, 1001) inner_count, inner_error
-        1001 format ( "    Inner: ", i3, " Error: ", es12.5E2)
+        1001 format ( "    Inner: ", i4, " Error: ", es12.5E2)
       end if
 
       ! Check if tolerance is reached
@@ -71,7 +71,7 @@ module wg_solver
       if (.not. ignore_warnings) then
         ! Warning if more iterations are required
         write(*, 1002) inner_count
-        1002 format ('inner iteration did not converge in ', i3, ' iterations')
+        1002 format ('inner iteration did not converge in ', i4, ' iterations')
       end if
     end if
 

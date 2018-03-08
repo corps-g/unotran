@@ -8,19 +8,20 @@ module state
   double precision, allocatable, dimension(:,:,:,:) :: &
       d_sig_s        ! Scattering cross section moments
   double precision, allocatable, dimension(:,:,:) :: &
-      psi,        &  ! Angular flux
-      source,     &  ! External source
-      phi,        &  ! Scalar Flux
-      d_source,   &  ! Extermal source moments
-      d_phi,      &  ! Scalar flux moments
+      psi,         & ! Angular flux
+      source,      & ! External source
+      phi,         & ! Scalar Flux
+      d_source,    & ! Extermal source moments
+      d_phi,       & ! Scalar flux moments
       d_psi          ! Angular flux moments
   double precision, allocatable, dimension(:,:) :: &
-      d_nu_sig_f, &  ! Fission cross section moments (times nu)
-      d_chi,      &  ! Chi spectrum moments
-      d_sig_t,    &  ! Scalar total cross section moments
+      d_nu_sig_f,  & ! Fission cross section moments (times nu)
+      d_chi,       & ! Chi spectrum moments
+      d_sig_t,     & ! Scalar total cross section moments
       d_incoming     ! Angular flux incident on the current cell
   double precision :: &
-      d_keff         ! k-eigenvalue
+      d_keff,      & ! k-eigenvalue
+      norm_frac      ! Fraction of normalization for eigenvalue problems
   
   contains
   
@@ -252,17 +253,15 @@ module state
     double precision, intent(inout), dimension(:,:,:) :: &
         phi, &   ! Scalar flux
         psi      ! Angular flux
-    double precision :: &
-        frac     ! Normalization fraction
 
     if (solver_type == 'eigen') then
-      frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
+      norm_frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
 
       ! normalize phi
-      phi = phi / frac
+      phi = phi / norm_frac
       if (store_psi) then
         ! normalize psi
-        psi = psi / frac
+        psi = psi / norm_frac
       end if
     end if
 

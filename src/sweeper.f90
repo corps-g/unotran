@@ -64,7 +64,7 @@ module sweeper
 
       do a = amin, amax, astep  ! Sweep over angle
         ! Get the correct angle index
-        an = merge(a, number_angles + a, octant)
+        an = merge(a, 2 * number_angles - a + 1, octant)
 
         ! legendre polynomial integration vector
         M = wt(a) * p_leg(:, an)

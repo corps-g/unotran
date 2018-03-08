@@ -14,7 +14,7 @@ module solver
 
     ! Use Statements
     use state, only : initialize_state, d_nu_sig_f, d_chi, d_sig_s, d_sig_t, &
-                      d_source, source, d_delta, d_phi, phi, d_psi, psi, &
+                      d_source, source, d_phi, phi, d_psi, psi, &
                       d_incoming
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
@@ -39,7 +39,6 @@ module solver
       d_sig_t(c, :) = sig_t(:, mMap(c))
     end do
     d_source(:, :, :) = source(:, :, :)
-    d_delta(:, :, :) = 0.0
     d_phi(:, :, :) = phi(:, :, :)
     if (store_psi) then
       d_psi(:, :, :) = psi(:, :, :)
@@ -54,27 +53,41 @@ module solver
 
   end subroutine initialize_solver
 
-  subroutine solve()
+  subroutine solve(bypass_arg)
     ! ##########################################################################
     ! Solve the neutron transport equation using discrete ordinates
     ! ##########################################################################
 
     ! Use Statements
     use mg_solver, only : mg_solve
-    use state, only : d_source, d_phi, d_psi, d_incoming, d_keff, normalize_flux
+    use state, only : d_source, d_phi, d_psi, d_incoming, d_keff, normalize_flux, &
+                      phi, psi
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
-                        eigen_tolerance, number_cells, number_groups, number_legendre
+                        eigen_tolerance, number_cells, number_groups, number_legendre, &
+                        use_DGM
 
     ! Variable definitions
+    logical, intent(in), optional :: &
+        bypass_arg  ! Allow the solver to skip eigen loops selectively for dgm
+    logical, parameter :: &
+        bypass_default = .false.  ! Default value of bypass_arg
+    logical :: &
+        bypass_flag ! Local variable to signal a eigen loop bypass
     double precision :: &
-        eigen_error    ! Error between successive iterations
+        eigen_error       ! Error between successive iterations
     integer :: &
-        eigen_count    ! Iteration counter
+        eigen_count       ! Iteration counter
     double precision, dimension(0:number_legendre, number_cells, number_groups) :: &
-        old_phi        ! Scalar flux from previous iteration
+        old_phi           ! Scalar flux from previous iteration
+
+    if (present(bypass_arg)) then
+      bypass_flag = bypass_arg
+    else
+      bypass_flag = bypass_default
+    end if
 
     ! Run eigen loop only if eigen problem
-    if (solver_type == 'fixed') then
+    if (solver_type == 'fixed' .or. bypass_flag) then
       call mg_solve(d_source, d_phi, d_psi, d_incoming)
     else if (solver_type == 'eigen') then
       do eigen_count = 1, max_eigen_iters
@@ -100,7 +113,7 @@ module solver
         ! Print output
         if (eigen_print) then
           write(*, 1001) eigen_count, eigen_error, d_keff
-          1001 format ( "eigen: ", i3, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+          1001 format ( "eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
         end if
 
         ! Check if tolerance is reached
@@ -114,9 +127,14 @@ module solver
         if (.not. ignore_warnings) then
           ! Warning if more iterations are required
           write(*, 1002) eigen_count
-          1002 format ('eigen iteration did not converge in ', i3, ' iterations')
+          1002 format ('eigen iteration did not converge in ', i4, ' iterations')
         end if
       end if
+    end if
+
+    if (.not. use_dgm) then
+      phi = d_phi
+      psi = d_psi
     end if
 
   end subroutine solve
@@ -128,7 +146,7 @@ module solver
 
     ! Use Statements
     use state, only : d_chi, d_nu_sig_f, d_keff
-    use control, only : source_value, number_cells, number_groups
+    use control, only : source_value, number_cells, number_groups, use_DGM
 
     ! Variable definitions
     double precision, intent(in), dimension(0:,:,:) :: &
@@ -140,8 +158,12 @@ module solver
       g       ! Energy index
 
 
-    ! Set the external source
-    source = 0.5 * source_value
+    if (use_DGM) then
+      continue
+    else
+      ! Set the external source
+      source = 0.5 * source_value
+    end if
 
     ! Add the isotropic fission source
     do g = 1, number_groups

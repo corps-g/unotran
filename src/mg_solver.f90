@@ -58,7 +58,7 @@ module mg_solver
       ! Print output
       if (outer_print) then
         write(*, 1001) outer_count, outer_error
-        1001 format ( "  outer: ", i3, " Error: ", es12.5E2)
+        1001 format ( "  outer: ", i4, " Error: ", es12.5E2)
       end if
 
       ! Check if tolerance is reached
@@ -71,7 +71,7 @@ module mg_solver
       if (.not. ignore_warnings) then
         ! Warning if more iterations are required
         write(*, 1002) outer_count
-        1002 format ('outer iteration did not converge in ', i3, ' iterations')
+        1002 format ('outer iteration did not converge in ', i4, ' iterations')
       end if
     end if
 

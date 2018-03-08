@@ -87,7 +87,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.sweeper.sweep(g, source, phi_g, psi_g, incident)
         
         np.testing.assert_array_almost_equal(phi_g, 2.4702649838962234, 12)
-        psi_test = np.array([0.74789724066688767, 1.0164427642376821, 1.1738899625537731, 1.7463807889213092])
+        psi_test = np.array([0.74789724066688767, 1.0164427642376821, 1.7463807889213092, 1.1738899625537731])
         np.testing.assert_array_almost_equal(psi_g.flatten(), psi_test, 12)
         np.testing.assert_array_almost_equal(incident, [1.3519854437737708, 1.9598760493672542])
         
@@ -106,7 +106,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.sweeper.sweep(g, source, phi_g, psi_g, incident)
         
         np.testing.assert_array_almost_equal(phi_g, 1.0863050345964158, 12)
-        psi_test = np.array([0.31829108536954637, 0.6630938187058939, 0.31829108536954637, 0.6630938187058939])
+        psi_test = np.array([0.31829108536954637, 0.6630938187058939, 0.6630938187058939, 0.31829108536954637])
         np.testing.assert_array_almost_equal(psi_g.flatten(), psi_test, 12)
         np.testing.assert_array_almost_equal(incident, [0.6365821707390927, 1.3261876374117878])
         

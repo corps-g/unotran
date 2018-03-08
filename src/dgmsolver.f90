@@ -29,10 +29,10 @@ module dgmsolver
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
                         ignore_warnings, lamb, number_cells, number_fine_groups, &
-                        number_legendre, number_angles
-    use state, only : d_keff, phi, psi, d_phi, d_psi, normalize_flux
+                        number_legendre, number_angles, solver_type
+    use state, only : d_keff, phi, psi, d_phi, d_psi, normalize_flux, norm_frac
     use dgm, only : expansion_order, phi_m_zero, psi_m_zero
-    use solver, only : solve, dgm_bypass
+    use solver, only : solve
 
     ! Variable definitions
     integer :: &
@@ -59,34 +59,38 @@ module dgmsolver
       ! Fill the initial moments
       d_phi = phi_m_zero
       d_psi = psi_m_zero
+      phi = 0.0
+      psi = 0.0
 
       ! Solve for order 0
       do i = 0, expansion_order
-        ! Turn the problem to fixed source type for higher moments
-        dgm_bypass = merge(.false., .true., i==0)
 
         ! Set Incoming to the proper order
-        call compute_incoming_flux(order=i)
+        call compute_incoming_flux(i, old_psi)
 
         ! Compute the cross section moments
         call slice_xs_moments(order=i)
 
-        ! Converge the ith order flux moments
-        call solve()
-
+        ! Converge the 0th order flux moments
         if (i == 0) then
+          call solve()
+
           ! Save the new flux moments as the zeroth moments
           phi_m_zero = d_phi
           psi_m_zero = d_psi
+        ! Converge the higher order moments
+        else if (solver_type == 'eigen') then
+          call solve(.true.)
+
+          d_phi = d_phi / norm_frac
+          d_psi = d_psi / norm_frac
+        else
+          call solve()
         end if
 
         ! Unfold ith order flux
         call unfold_flux_moments(i, d_psi, phi, psi)
-        print *, d_phi
       end do
-
-      print *, phi
-      print *, old_phi
 
       ! Update the error
       recon_error = maxval(abs(old_phi - phi))
@@ -102,7 +106,7 @@ module dgmsolver
       ! Print output
       if (recon_print) then
         write(*, 1001) recon_count, recon_error, d_keff
-        1001 format ( "recon: ", i3, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+        1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
       end if
 
       ! Check if tolerance is reached
@@ -116,7 +120,7 @@ module dgmsolver
       if (.not. ignore_warnings) then
         ! Warning if more iterations are required
         write(*, 1002) recon_count
-        1002 format ('recon iteration did not converge in ', i3, ' iterations')
+        1002 format ('recon iteration did not converge in ', i4, ' iterations')
       end if
     end if
 
@@ -128,7 +132,7 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_groups, number_angles, number_cells
+    use control, only : number_fine_groups, number_angles, number_cells
     use angle, only : p_leg, wt
     use control, only : store_psi, number_angles, number_legendre
     use dgm, only : energyMesh, basis
@@ -152,10 +156,10 @@ module dgmsolver
     double precision :: &
         val           ! Variable to hold a double value
 
-    allocate(M(0:number_legendre))
+    allocate(M(number_legendre))
 
     ! Recover the angular flux from moments
-    do g = 1, number_groups
+    do g = 1, number_fine_groups
       ! Get the coarse group index
       cg = energyMesh(g)
       do a = 1, number_angles * 2
@@ -243,17 +247,19 @@ module dgmsolver
 
   end subroutine compute_flux_moments
 
-  subroutine compute_incoming_flux(order)
+  subroutine compute_incoming_flux(order, psi)
     ! ##########################################################################
     ! Compute the incident angular flux at the boundary for the given order
     ! ##########################################################################
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups
-    use state, only : d_incoming, psi
+    use state, only : d_incoming
     use dgm, only : basis, energyMesh
 
     ! Variable definitions
+    double precision, intent(in), dimension(:,:,:) :: &
+      psi      ! Angular flux
     integer :: &
       order, & ! Expansion order
       a,     & ! Angle index
@@ -272,21 +278,56 @@ module dgmsolver
 
   subroutine slice_xs_moments(order)
     ! ##########################################################################
-    ! Fill the XS containers with precomputed values
+    ! Fill the XS containers with precomputed values for higher moments
     ! ##########################################################################
 
     ! Use Statements
-    use state, only : d_source, d_chi, d_sig_s
-    use dgm, only : source_m, delta_m, chi_m, sig_s_m
+    use state, only : d_source, d_chi, d_sig_s, d_nu_sig_f, d_keff
+    use angle, only : p_leg, wt
+    use dgm, only : source_m, delta_m, chi_m, sig_s_m, phi_m_zero, psi_m_zero
+    use control, only : number_legendre, number_angles, number_cells, number_groups, &
+                        allow_fission
 
     ! Variable definitions
     integer, intent(in) :: &
         order  ! Expansion order
+    integer :: &
+        a, & ! Angle index
+        c, & ! Cell index
+        cg, & ! Coarse group index
+        cgp, & ! Alternate coarse group index
+        l      ! Legendre index
 
-    ! Slice the precomputed moments
-    d_source(:, :, :) = source_m(:, :, :, order) - delta_m(:, :, :, order)
-    d_chi(:, :) = chi_m(:, :, order)
-    d_sig_s(:,:,:,:) = sig_s_m(:, :, :, :, order)
+    ! Get the external and delta sources
+    d_source(:, :, :) = source_m(:, :, :, order) - delta_m(:, :, :, order) * psi_m_zero(:, :, :)
+
+    if (order > 0) then
+      ! Get the combined fixed source
+      do cg = 1, number_groups
+        do cgp = 1, number_groups
+          do a = 1, number_angles * 2
+            do c = 1, number_cells
+              if (allow_fission) then
+                d_source(c, a, cg) = d_source(c, a, cg) + &
+                                     0.5 / d_keff * chi_m(c, cg, order) * d_nu_sig_f(c, cgp) * phi_m_zero(0, c, cgp)
+              end if
+              do l = 0, number_legendre
+                ! Get the scattering source
+                d_source(c, a, cg) = d_source(c, a, cg) + &
+                                     0.5 / (2 * l + 1) * p_leg(l, a) * sig_s_m(l, c, cgp, cg, order) * phi_m_zero(l, c, cgp)
+              end do
+            end do
+          end do
+        end do
+      end do
+
+      d_chi = 0.0
+      d_sig_s = 0.0
+    else
+      ! Compute the source as normal
+      d_chi(:, :) = chi_m(:, :, order)
+      d_sig_s(:,:,:,:) = sig_s_m(:, :, :, :, order)
+    end if
 
   end subroutine slice_xs_moments
 
@@ -315,6 +356,13 @@ module dgmsolver
         l,   & ! Legendre moment index
         mat    ! Material index
 
+    if (allocated(delta_m)) then
+      deallocate(delta_m)
+    end if
+    if (allocated(sig_s_m)) then
+      deallocate(sig_s_m)
+    end if
+
     allocate(delta_m(number_cells, 2 * number_angles, number_groups, 0:expansion_order))
     allocate(sig_s_m(0:number_legendre, number_cells, number_groups, number_groups, 0:expansion_order))
 
@@ -322,6 +370,7 @@ module dgmsolver
     sig_s_m = 0.0
     d_sig_t = 0.0
     delta_m = 0.0
+    d_nu_sig_f = 0.0
 
     do o = 0, expansion_order
       do g = 1, number_fine_groups
@@ -364,6 +413,7 @@ module dgmsolver
           end do
         end do
       end do
+
       do g = 1, number_fine_groups
         cg = energyMesh(g)
         ! Add angular total cross section moment (delta) to the external source

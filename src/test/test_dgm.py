@@ -117,24 +117,26 @@ class TestDGM(unittest.TestCase):
         '''
         phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
         for a in range(4):
-            pydgm.state.psi[0,a,:] = phi / 2
-            
-        test = np.array([[1.3327809583407633, -0.1240768172509027, -0.728133238841511, -0.5349740429521677],
-                         [0.4817630520259961,  0.2871143207371673, -0.1805137297622373, 0.0]])
+            pydgm.state.psi[0, a, :] = phi / 2
+        basis = np.loadtxt('test/7gbasis').T
+        test = basis.dot(phi) * 0.5
+        test.resize(2, 4)
+        psi = np.reshape(np.resize(phi, (1, 4, 7)), (1, 4, 7), order='F') * 0.5
+
         for i in range(4):
-            pydgm.dgmsolver.compute_incoming_flux(i)
+            pydgm.dgmsolver.compute_incoming_flux(i, psi)
             for a in range(2):
-                np.testing.assert_array_almost_equal(pydgm.state.d_incoming[a,:], test[:,i], 12)
+                np.testing.assert_array_almost_equal(pydgm.state.d_incoming[a, :], test[:, i], 12)
 
     def test_dgm_compute_xs_moments(self):
         '''
         Check that the XS moments are properly computed
         '''
         sig_t_m_test = [0.3760865, 1.0070863333333333]
-        delta_m_test = np.array([0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02, 
-                                 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0, 
+        delta_m_test = np.array([0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02,
+                                 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0,
                                  0.0, -1.2284241926631045e-01, 1.8900000000000167e-04, 1.0668056713853770e-02,
-                                 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0, 
+                                 0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0,
                                  0.0, -1.2284241926631045e-01, 1.8900000000000167e-04, 1.0668056713853770e-02,
                                  0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0,
                                  0.0, -1.2284241926631045e-01, 1.8900000000000167e-04, 1.0668056713853770e-02,
@@ -143,15 +145,15 @@ class TestDGM(unittest.TestCase):
         nu_sig_f_m_test = [0.039245915, 1.504587272273979]
 
         pydgm.dgmsolver.compute_flux_moments()
+
         pydgm.dgmsolver.compute_source_moments()
         pydgm.dgmsolver.compute_xs_moments()
         np.set_printoptions(precision=5, linewidth=132, suppress=True)
-        
+
         for i in range(pydgm.dgm.expansion_order + 1):
             pydgm.dgmsolver.slice_xs_moments(i)
-            S = pydgm.dgm.source_m[0,:,:,i].flatten()
-            np.testing.assert_array_almost_equal(S - pydgm.state.d_source.flatten(), delta_m_test[:, :, i].flatten(), 12)
-            np.testing.assert_array_almost_equal(pydgm.state.d_sig_s.flatten(), sig_s_m_test[i].flatten(), 12)
+            np.testing.assert_array_almost_equal(pydgm.dgm.delta_m[0].flatten(), delta_m_test.flatten(), 12)
+            np.testing.assert_array_almost_equal(pydgm.dgm.sig_s_m[:, :, :, :, i].flatten(), sig_s_m_test[i].flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.state.d_sig_t.flatten(), sig_t_m_test)
             np.testing.assert_array_almost_equal(pydgm.state.d_nu_sig_f.flatten(), nu_sig_f_m_test)
 
@@ -252,7 +254,7 @@ class TestDGM2(unittest.TestCase):
             pydgm.dgmsolver.slice_xs_moments(i)
             for a in range(4):
                 np.testing.assert_array_almost_equal(pydgm.dgm.delta_m[0, a, :, i].flatten(), delta_m_test[:, i].flatten(), 12)
-            np.testing.assert_array_almost_equal(pydgm.state.d_sig_s.flatten('F'), sig_s_m_test[:, :, i].flatten(), 12)
+            np.testing.assert_array_almost_equal(pydgm.dgm.sig_s_m[:, :, :, :, i].flatten('F'), sig_s_m_test[:, :, i].flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.state.d_sig_t.flatten(), sig_t_m_test)
             np.testing.assert_array_almost_equal(pydgm.state.d_nu_sig_f.flatten(), nu_sig_f_m_test)
 
