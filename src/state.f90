@@ -247,14 +247,18 @@ module state
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_groups, solver_type, store_psi
+    use control, only : number_cells, solver_type, store_psi
 
     ! Variable definitions
     double precision, intent(inout), dimension(:,:,:) :: &
-        phi, &   ! Scalar flux
-        psi      ! Angular flux
+        phi,         & ! Scalar flux
+        psi            ! Angular flux
+    integer :: &
+        number_groups  ! Number of energy groups
 
     if (solver_type == 'eigen') then
+      number_groups = size(phi(1,1,:))
+
       norm_frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
 
       ! normalize phi

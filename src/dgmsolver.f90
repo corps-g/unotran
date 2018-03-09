@@ -79,21 +79,13 @@ module dgmsolver
           phi_m_zero = d_phi
           psi_m_zero = d_psi
         ! Converge the higher order moments
-        else if (solver_type == 'eigen') then
-          call solve(.true.)
-
-          d_phi = d_phi / norm_frac
-          d_psi = d_psi / norm_frac
         else
-          call solve()
+          call solve(.true.)
         end if
 
         ! Unfold ith order flux
         call unfold_flux_moments(i, d_psi, phi, psi)
       end do
-
-      ! Update the error
-      recon_error = maxval(abs(old_phi - phi))
 
       ! Update flux using krasnoselskii iteration
       phi = (1.0 - lamb) * old_phi + lamb * phi
@@ -102,6 +94,9 @@ module dgmsolver
       end if
 
       call normalize_flux(phi, psi)
+
+      ! Update the error
+      recon_error = maxval(abs(old_phi - phi))
 
       ! Print output
       if (recon_print) then
