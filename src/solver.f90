@@ -1,23 +1,37 @@
 module solver
-  use control, only : lambda, outer_print, outer_tolerance, store_psi
+  ! ############################################################################
+  ! Solve the transport equation using discrete ordinates
+  ! ############################################################################
+
+  use control, only : lamb, outer_print, outer_tolerance, store_psi, solver_type, &
+                      max_outer_iters, ignore_warnings
   use material, only : create_material, number_legendre, number_groups, finalize_material, &
                        sig_t, sig_s, nu_sig_f, chi
   use angle, only : initialize_angle, p_leg, number_angles, initialize_polynomials, finalize_angle
   use mesh, only : create_mesh, number_cells, finalize_mesh, mMap
   use state, only : initialize_state, phi, psi, source, finalize_state, output_state, &
-                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi
+                    normalize_flux, update_density, &
+                    d_source, d_nu_sig_f, d_delta, d_phi, d_chi, d_sig_s, d_sig_t, d_psi, d_keff, d_incoming
   use sweeper, only : sweep
 
   implicit none
   
-  logical :: printOption, use_fission
-  double precision, allocatable :: incoming(:,:)
+  logical :: &
+      printOption,  & ! Boolian flag to print to standard output or not
+      use_fission     ! Flag to allow fission in the problem
 
   contains
   
   ! Initialize all of the variables and solvers
   subroutine initialize_solver()
-    integer :: c
+    ! ##########################################################################
+    ! Initialize the solver including mesh, quadrature, flux containers, etc.
+    ! ##########################################################################
+
+    integer :: &
+        c,  & ! Cell index
+        a,  & ! Angle index
+        l     ! Legendre moment index
 
     ! initialize the mesh
     call create_mesh()
@@ -34,7 +48,9 @@ module solver
     do c = 1, number_cells
       d_nu_sig_f(:, c) = nu_sig_f(:, mMap(c))
       d_chi(:, c) = chi(:, mMap(c))
-      d_sig_s(:, :, :, c) = sig_s(:, :, :, mMap(c))
+      do l = 0, number_legendre
+        d_sig_s(l, :, :, c) = sig_s(l, :, :, mMap(c))
+      end do
       d_sig_t(:, c) = sig_t(:, mMap(c))
     end do
     d_source(:, :, :) = source(:, :, :)
@@ -42,58 +58,97 @@ module solver
     d_phi(:, :, :) = phi(:, :, :)
     if (store_psi) then
       d_psi(:, :, :) = psi(:, :, :)
+      ! Default the incoming flux to be equal to the outgoing if present
+      d_incoming = psi(:,(number_angles+1):,1)
+    else
+      ! Assume isotropic scalar flux for incident flux
+      do a=1, number_angles
+        d_incoming(:,a) = phi(0,:,1) / 2
+      end do
     end if
-
-    ! todo: move to state
-    allocate(incoming(number_groups, number_angles * 2))
-    incoming = 0.0
 
   end subroutine initialize_solver
 
   ! Interate equations until convergance
   subroutine solve()
-    ! Inputs
-    !   eps : error tolerance for convergance
-    !   lambda_arg (optional) : value of lambda for Krasnoselskii iteration
+    ! ##########################################################################
+    ! Solve the neutron transport equation using discrete ordinates
+    ! ##########################################################################
 
-    double precision :: norm, error, hold
-    integer :: counter
+    double precision :: &
+        error                  ! inter-iteration error
+    integer :: &
+        counter                ! iteration counter
 
     ! Error of current iteration
     error = 1.0
+
     ! interation number
     counter = 1
-    do while (error > outer_tolerance)  ! Interate to convergance tolerance
+
+    ! Interate to convergance
+    do while (error > outer_tolerance)
       ! save phi from previous iteration
       d_phi = phi
+
       ! Sweep through the mesh
-      call sweep(number_groups, phi, psi, incoming)
-      ! error is the difference in the norm of phi for successive iterations
+      call sweep(number_groups, phi, psi)
+
+      ! Compute the eigenvalue
+      if (solver_type == 'eigen') then
+        ! Compute new eigenvalue if eigen problem
+        d_keff = d_keff * sum(abs(phi(0,:,:))) / sum(abs(d_phi(0,:,:)))
+      end if
+
+      ! error is the difference in phi between successive iterations
       error = sum(abs(phi - d_phi))
+
       ! output the current error and iteration number
       if (outer_print) then
-        print *, error, counter
+        if (solver_type == 'eigen') then
+          print *, 'Error = ', error, 'Iteration = ', counter, 'Eigenvalue = ', d_keff
+        else if (solver_type == 'fixed') then
+          print *, 'Error = ', error, 'Iteration = ', counter
+        end if
       end if
+
+      call normalize_flux(number_groups, phi, psi)
+
       ! increment the iteration
       counter = counter + 1
+
+      ! Break out of loop if exceeding maximum outer iterations
+      if (counter > max_outer_iters) then
+        if (.not. ignore_warnings) then
+          print *, 'warning: exceeded maximum outer iterations'
+        end if
+        exit
+      end if
+
     end do
 
   end subroutine solve
 
   subroutine output()
+    ! ##########################################################################
+    ! Output the fluxes to file
+    ! ##########################################################################
 
+    print *, phi
+    print *, psi
     call output_state()
 
   end subroutine output
 
   subroutine finalize_solver()
+    ! ##########################################################################
+    ! Deallocate all used variables
+    ! ##########################################################################
+
     call finalize_angle()
     call finalize_mesh()
     call finalize_material()
     call finalize_state()
-    if (allocated(incoming)) then
-      deallocate(incoming)
-    end if
   end subroutine
 
 end module solver

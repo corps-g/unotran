@@ -1,37 +1,65 @@
 module dgm
-  use control, only : energy_group_map, truncation_map, dgm_basis_name, dgm_expansion_order
+  ! ############################################################################
+  ! Compute the DGM Moments for fluxes and cross sections
+  ! ############################################################################
+
+  use control, only : energy_group_map, truncation_map, dgm_basis_name
   use material, only: number_groups, number_legendre, number_materials, sig_s, sig_t, nu_sig_f, chi
   use mesh, only: number_cells, mMap
   use angle, only: number_angles
   use state, only: phi, psi, source, reallocate_states, d_source, d_nu_sig_f, d_sig_s, &
-                   d_chi, d_phi, d_delta, d_sig_t, d_psi
+                   d_chi, d_phi, d_delta, d_sig_t, d_psi, d_incoming
 
   implicit none
 
-  double precision, allocatable :: basis(:,:), chi_m(:,:,:), source_m(:,:,:,:)
-  integer :: expansion_order, number_course_groups
-  integer, allocatable :: energyMesh(:), order(:), basismap(:)
+  double precision, allocatable, dimension(:,:) :: &
+      basis                ! Basis for expansion in energy
+  double precision, allocatable, dimension(:,:,:) :: &
+      chi_m                ! Chi spectrum moments
+  double precision, allocatable, dimension(:,:,:,:) :: &
+      source_m             ! Source moments
+  integer :: &
+      expansion_order,   & ! Maximum expansion order
+      number_coarse_groups ! Number of coarse groups in energy
+  integer, allocatable, dimension(:) :: &
+      energyMesh,        & ! Array of number of fine groups per coarse group
+      order,             & ! Expansion order for each coarse energy group
+      basismap,          & ! Starting index for fine group for each coarse group
+      cumsum               ! Temporary cumulative sum for energy groups
 
   contains
 
-  ! Initialize the container for the cross section and flux moments
   subroutine initialize_moments()
-    integer :: g, gp, cg
+    ! ##########################################################################
+    ! Initialize the container for the cross section and flux moments
+    ! ##########################################################################
 
-    ! Get the number of course groups
-    number_course_groups = size(energy_group_map) + 1
+    integer :: &
+        g,  & ! outer fine group index
+        gp, & ! inner coarse group index
+        cg    ! coarse group index
 
-    ! Create the map of course groups and default to full expansion order
+    ! Get the number of coarse groups
+    if (allocated(energy_group_map)) then
+      number_coarse_groups = size(energy_group_map) + 1
+    else
+      number_coarse_groups = 1
+    end if
+
+    ! Create the map of coarse groups and default to full expansion order
     allocate(energyMesh(number_groups))
-    allocate(order(number_course_groups))
-    allocate(basismap(number_course_groups))
+    allocate(order(number_coarse_groups))
+    allocate(basismap(number_coarse_groups))
     order = -1
     g = 1
+
     do gp = 1, number_groups
       energyMesh(gp) = g
       order(g) = order(g) + 1
-      if (gp == energy_group_map(g)) then
-        g = g + 1
+      if (g < number_coarse_groups) then
+        if (gp == energy_group_map(g)) then
+          g = g + 1
+        end if
       end if
     end do
     basismap(:) = order(:)
@@ -39,11 +67,11 @@ module dgm
     ! Check if the optional argument for the truncation is present
     if (allocated(truncation_map)) then
       ! Check if the truncation array has the right number of entries
-      if (size(truncation_map) /= number_course_groups) then
+      if (size(truncation_map) /= number_coarse_groups) then
         error stop "Incorrect number of entries in truncation array"
       end if
       ! Update the order array with the truncated value if sensible
-      do cg = 1, number_course_groups
+      do cg = 1, number_coarse_groups
         if ((truncation_map(cg) < order(cg)) .and. (truncation_map(cg) >= 0)) then
           order(cg) = truncation_map(cg)
         end if
@@ -52,27 +80,35 @@ module dgm
 
     expansion_order = MAXVAL(order)
 
-    ! reallocate container arrays to number_course_groups
-    call reallocate_states(number_course_groups)
+    ! reallocate container arrays to number_coarse_groups
+    call reallocate_states(number_coarse_groups)
 
   end subroutine initialize_moments
 
-  ! Load basis set from file
   subroutine initialize_basis()
-    double precision, allocatable, dimension(:) :: array1
-    integer, allocatable :: cumsum(:)
-    integer :: g, cg, i
+    ! ##########################################################################
+    ! Load basis set from file
+    ! ##########################################################################
+
+    double precision, allocatable, dimension(:) :: &
+        array1 ! Temporary array
+    integer :: &
+        g,   & ! Fine group index
+        cg,  & ! Coarse group index
+        i      ! Cell index
 
     ! allocate the basis array
     allocate(basis(number_groups, 0:expansion_order))
     allocate(array1(number_groups))
-    allocate(cumsum(number_course_groups))
+    allocate(cumsum(number_coarse_groups))
+
     ! initialize the basis to zero
     basis = 0.0
 
+    ! Compute the cumulative sum for the coarse group indexes
     cumsum = basismap + 1
 
-    do cg = 1, number_course_groups
+    do cg = 1, number_coarse_groups
       if (cg == 1) then
         cycle
       end if
@@ -90,15 +126,19 @@ module dgm
         basis(g, i) = array1(cumsum(cg) + i)
       end do
     end do
+
     ! clean up
     close(unit=5)
 
-    deallocate(array1, cumsum)
+    deallocate(array1)
 
   end subroutine initialize_basis
 
-  ! Deallocate the variable containers
   subroutine finalize_moments()
+    ! ##########################################################################
+    ! Deallocate the variable containers
+    ! ##########################################################################
+
     if (allocated(basis)) then
       deallocate(basis)
     end if
@@ -117,12 +157,22 @@ module dgm
     if (allocated(source_m)) then
       deallocate(source_m)
     end if
+    if (allocated(cumsum)) then
+      deallocate(cumsum)
+    end if
   end subroutine finalize_moments
 
-  ! Expand the flux moments using the basis functions
   subroutine compute_flux_moments()
-    integer :: a, c, cg, cgp, g, gp, l, mat
-    double precision :: num
+    ! ##########################################################################
+    ! Expand the flux moments using the basis functions
+    ! ##########################################################################
+
+    integer :: &
+        a,   & ! Angle index
+        c,   & ! Cell index
+        cg,  & ! Outer coarse group index
+        g,   & ! Outer fine group index
+        mat    ! Material index
 
     ! initialize all moments to zero
     d_phi = 0.0
@@ -145,13 +195,47 @@ module dgm
         end do
       end do
     end do
+
   end subroutine compute_flux_moments
 
-  ! Expand the cross section moments using the basis functions
+  subroutine compute_incoming_flux(order)
+    ! ##########################################################################
+    ! Compute the incident angular flux at the boundary for the given order
+    ! ##########################################################################
+
+    integer :: &
+      order, & ! Expansion order
+      a,     & ! Angle index
+      g,     & ! Fine group index
+      cg       ! Coarse group index
+
+    d_incoming = 0.0
+    do a = 1, number_angles
+      do g = 1, number_groups
+        cg = energyMesh(g)
+        d_incoming(cg, a) = d_incoming(cg, a) + basis(g, order) * psi(g, a + number_angles, 1)
+      end do
+    end do
+
+  end subroutine compute_incoming_flux
+
   subroutine compute_xs_moments(order)
-    integer :: a, c, cg, cgp, g, gp, l, i, mat
-    integer, intent(in) :: order
-    double precision :: num
+    ! ##########################################################################
+    ! Expand the cross section moments using the basis functions
+    ! ##########################################################################
+
+    integer :: &
+        a,   & ! Angle index
+        c,   & ! Cell index
+        cg,  & ! Outer coarse group index
+        cgp, & ! Inner coarse group index
+        g,   & ! Outer fine group index
+        gp,  & ! Inner fine group index
+        l,   & ! Legendre moment index
+        mat    ! Material index
+    integer, intent(in) :: &
+        order  ! Expansion order
+
     ! initialize all moments to zero
     d_sig_s = 0.0
     d_source(:, :, :) = source_m(:, :, :, order)
@@ -165,39 +249,69 @@ module dgm
       mat = mMap(c)
       do g = 1, number_groups
         cg = energyMesh(g)
-        ! total cross section moment
-        d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
-        ! fission cross section moment
-        d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+        ! Check if producing nan and not computing with a nan
+        if (d_phi(0, cg, c) /= d_phi(0, cg, c)) then
+          ! Detected NaN
+          print *, "NaN detected, limiting"
+          d_phi(0, cg, c) = 100.0
+        else if (d_phi(0, cg, c) /= 0.0)  then
+          ! total cross section moment
+          d_sig_t(cg, c) = d_sig_t(cg, c) + basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+          ! fission cross section moment
+          d_nu_sig_f(cg, c) = d_nu_sig_f(cg, c) + nu_sig_f(g, mat) * phi(0, g, c) / d_phi(0, cg, c)
+        end if
+
         ! Scattering cross section moment
         do gp = 1, number_groups
           cgp = energyMesh(gp)
-          d_sig_s(:, cgp, cg, c) = d_sig_s(:, cgp, cg, c) &
-                                   + basis(g, order) * sig_s(:, gp, g, mat) * phi(:, gp, c) / d_phi(:, cgp, c)
+          do l = 0, number_legendre
+            ! Check if producing nan
+            if (d_phi(l, cgp, c) /= d_phi(l, cgp, c)) then
+              ! Detected NaN
+              print *, "NaN detected, limiting"
+              d_phi(l, cgp, c) = 100.0
+            else if (d_phi(l, cgp, c) /= 0.0) then
+              d_sig_s(l, cgp, cg, c) = d_sig_s(l, cgp, cg, c) &
+                                     + basis(g, order) * sig_s(l, gp, g, mat) * phi(l, gp, c) / d_phi(l, cgp, c)
+            end if
+          end do
         end do
       end do
 
+      ! angular total cross section moment (delta)
       do a = 1, number_angles * 2
         do g = 1, number_groups
           cg = energyMesh(g)
-          if (d_psi(cg, a, c) == 0.0) then
-            num = 0.0
-          else
-            num = basis(g, order) * (sig_t(g, mat) - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
+          ! Check if producing nan and not computing with a nan
+          if (d_psi(cg, a, c) /= d_psi(cg, a, c)) then
+            ! Detected NaN
+              print *, "NaN detected, limiting"
+              d_psi(cg, a, c) = 100.0
+          else if (d_psi(cg, a, c) /= 0.0) then
+            d_delta(cg, a, c) = d_delta(cg, a, c) + basis(g, order) * (sig_t(g, mat) &
+                                - d_sig_t(cg, c)) * psi(g, a, c) / d_psi(cg, a, c)
           end if
-          ! angular total cross section moment (delta)
-          d_delta(cg, a, c) = d_delta(cg, a, c) + num
         end do
       end do
     end do
 
   end subroutine compute_xs_moments
 
-  ! Expand the source and chi using the basis functions
   subroutine compute_source_moments()
-    integer :: order, c, a, g, cg, mat
-    allocate(chi_m(number_course_groups, number_cells, 0:expansion_order))
-    allocate(source_m(number_course_groups, number_angles * 2, number_cells, 0:expansion_order))
+    ! ##########################################################################
+    ! Expand the source and chi using the basis functions
+    ! ##########################################################################
+
+    integer :: &
+        order, & ! Expansion order index
+        c,     & ! Cell index
+        a,     & ! Angle index
+        g,     & ! Fine group index
+        cg,    & ! Coarse group index
+        mat      ! Material index
+
+    allocate(chi_m(number_coarse_groups, number_cells, 0:expansion_order))
+    allocate(source_m(number_coarse_groups, number_angles * 2, number_cells, 0:expansion_order))
 
     chi_m = 0.0
     source_m = 0.0
@@ -219,7 +333,6 @@ module dgm
         end do
       end do
     end do
-
 
   end subroutine compute_source_moments
 

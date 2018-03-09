@@ -1,22 +1,53 @@
 module material
-  use control, only : xs_name, allow_fission
+  ! ############################################################################
+  ! Initialize the material properties
+  ! ############################################################################
+
+  use control, only : xs_name, allow_fission, legendre_order
 
   implicit none
 
-  integer :: number_materials, number_groups, debugFlag, number_legendre
-  double precision, allocatable, dimension(:) :: ebounds, velocity
-  double precision, allocatable, dimension(:,:) :: sig_t, sig_f, nu_sig_f, chi
-  double precision, allocatable, dimension(:,:,:,:) :: sig_s
+  integer :: &
+      number_materials, & ! Number of materials in the cross section library
+      number_groups,    & ! Number of groups in the cross section library
+      debugFlag,        & ! Unused flab in the cross section library
+      number_legendre     ! Number of anisotropic scattering moments
+  double precision, allocatable, dimension(:) :: &
+      ebounds,          & ! Bounds for the energy groups
+      velocity            ! Velocity within each energy group
+  double precision, allocatable, dimension(:,:) :: &
+      sig_t,            & ! Total cross section
+      sig_f,            & ! Fission cross section
+      nu_sig_f,         & ! Fission cross section times nu
+      chi                 ! Chi spectrum
+  double precision, allocatable, dimension(:,:,:,:) :: &
+      sig_s               ! Scattering cross section
 
   contains
 
-  ! Read the cross section data from the file
   subroutine create_material()
+    ! ##########################################################################
+    ! Read the cross section data from a file
+    ! ##########################################################################
+
     ! Read a file that is stored in the proteus format
-    character(256) :: materialName
-    integer :: mat, g, gp, L, dataPresent
-    double precision :: t, f, vf, c, energyFission, energyCapture, gramAtomWeight
-    double precision, allocatable, dimension(:) :: array1
+    character(256) :: &
+        materialName     ! Name of each material
+    integer :: &
+        mat,           & ! Material index
+        g,             & ! Outer group index
+        L,             & ! Legendre moment index
+        dataPresent      ! Flag deciding which cross sections are present
+    double precision :: &
+        t,             & ! Total cross section value
+        f,             & ! fission cross section value
+        vf,            & ! nu times fission cross section value
+        c,             & ! chi spectrum value
+        energyFission, & ! Energy per fission event (unused)
+        energyCapture, & ! Energy per capture event (unused)
+        gramAtomWeight   ! Atomic weight
+    double precision, allocatable, dimension(:) :: &
+        array1           ! Temp array for storing scattering XS values
     
     ! Read the file parameters
     open(unit=5, file=xs_name)
@@ -27,9 +58,10 @@ module material
     read(5,*) velocity
     read(5,'(a)') materialName
     read(5,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
+
     ! Count the highest order + zeroth order
     number_legendre = number_legendre - 1
-    
+
     ! Make space for cross sections
     allocate(sig_t(number_groups, number_materials))
     allocate(sig_f(number_groups, number_materials))
@@ -67,22 +99,33 @@ module material
       do l = 0, number_legendre
         do g = 1, number_groups
           read(5,*) array1
-          sig_s(l, :, g, mat) = array1(:)
+          sig_s(l, g, :, mat) = array1(:)
         end do
       end do
     end do
 
+    ! Close the file and clean up
     close(unit=5)
     deallocate(array1)
 
+    ! If fissioning is not allowed, set fission cross sections to zero
     if (.not. allow_fission) then
       sig_f = 0.0
       nu_sig_f = 0.0
     end if
-      
+
+    ! Adjust the legendre order if given in control
+    if (legendre_order /= -1) then
+      number_legendre = legendre_order
+    end if
+
   end subroutine create_material
 
   subroutine finalize_material()
+    ! ##########################################################################
+    ! Deallocate all used arrays
+    ! ##########################################################################
+
     if (allocated(ebounds)) then
       deallocate(ebounds)
     end if
