@@ -8,7 +8,6 @@ from test_wg_solver import TestWG_SOLVER
 from test_mg_solver import TestMG_SOLVER
 from test_solver import TestSOLVER
 from test_dgm import TestDGM, TestDGM2
-from test_dgmsweeper import TestDGMSWEEPER
 from test_dgmsolver import TestDGMSOLVER
 
 def AllSuite():
