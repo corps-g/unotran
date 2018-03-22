@@ -15,8 +15,10 @@ module control
       truncation_map                ! Expansion order within each coarse group (optional)
   double precision :: &
       boundary_type(2),           & ! Albedo value at [left, right] boundary
-      outer_tolerance,            & ! Convergance criteria for outer iteration
-      inner_tolerance,            & ! Convergance criteria for inner iteration
+      recon_tolerance=1e-8,       & ! Convergance criteria for recon iteration
+      eigen_tolerance=1e-8,       & ! Convergance criteria for eigen iteration
+      outer_tolerance=1e-8,       & ! Convergance criteria for outer iteration
+      inner_tolerance=1e-8,       & ! Convergance criteria for inner iteration
       lamb=1.0,                   & ! Parameter (0 < lamb <= 1.0) for krasnoselskii iteration
       source_value=0.0,           & ! Value of external source for the problem
       initial_keff=1.0              ! Initial value for the eigenvalue
@@ -33,10 +35,20 @@ module control
       angle_order,                & ! Number of angles per octant
       angle_option,               & ! Quadrature option [gl=0, dgl=1]
       legendre_order=-1,          & ! Anisotropic scattering order
+      max_recon_iters=1000,       & ! Maximum iterations for recon loop
+      max_eigen_iters=1000,       & ! Maximum iterations for eigen loop
       max_outer_iters=1000,       & ! Maximum iterations for outer loop
-      max_inner_iters=1000          ! Maximum iterations for inner loop
+      max_inner_iters=1000,       & ! Maximum iterations for inner loop
+      number_cells,               & ! Total number of cells in the mesh
+      number_angles,              & ! Number angles per *half space*
+      number_groups,              & ! Number of groups for the MG problem
+      number_fine_groups,         & ! Number of groups in the cross section library
+      number_coarse_groups,       & ! Number of groups in the expansion
+      number_legendre               ! Number of anisotropic scattering moments
   logical :: &
       allow_fission=.false.,      & ! Enable/Disable fission in the problem
+      recon_print=.true.,         & ! Enable/Disable recon iteration printing
+      eigen_print=.true.,         & ! Enable/Disable eigen iteration printing
       outer_print=.true.,         & ! Enable/Disable outer iteration printing
       inner_print=.false.,        & ! Enable/Disable inner iteration printing
       use_dgm=.false.,            & ! Enable/Disable DGM solver
@@ -130,10 +142,18 @@ module control
         case ('truncation_map')
           allocate(truncation_map(nitems(buffer)))
           read(buffer, *, iostat=ios) truncation_map
+        case ('recon_print')
+          read(buffer, *, iostat=ios) recon_print
+        case ('eigen_print')
+          read(buffer, *, iostat=ios) eigen_print
         case ('outer_print')
           read(buffer, *, iostat=ios) outer_print
         case ('inner_print')
           read(buffer, *, iostat=ios) inner_print
+        case ('recon_tolerance')
+          read(buffer, *, iostat=ios) recon_tolerance
+        case ('eigen_tolerance')
+          read(buffer, *, iostat=ios) eigen_tolerance
         case ('outer_tolerance')
           read(buffer, *, iostat=ios) outer_tolerance
         case ('inner_tolerance')
@@ -154,6 +174,10 @@ module control
           read(buffer, *, iostat=ios) source_value
         case ('legendre_order')
           read(buffer, *, iostat=ios) legendre_order
+        case ('max_recon_iters')
+          read(buffer, *, iostat=ios) max_recon_iters
+        case ('max_eigen_iters')
+          read(buffer, *, iostat=ios) max_eigen_iters
         case ('max_outer_iters')
           read(buffer, *, iostat=ios) max_outer_iters
         case ('max_inner_iters')
@@ -212,11 +236,16 @@ module control
     print *, '  equation_type      = "', trim(equation_type), '"'
     print *, '  store_psi          = ', store_psi
     print *, '  allow_fission      = ', allow_fission
+    if (solver_type == 'eigen') then
+      print *, '  eigen_print        = ', eigen_print
+      print *, '  eigen_tolerance    = ', eigen_tolerance
+      print *, '  max_eigen_iters    = ', max_eigen_iters
+    end if
     print *, '  outer_print        = ', outer_print
-    print *, '  inner_print        = ', inner_print
     print *, '  outer_tolerance    = ', outer_tolerance
-    print *, '  inner_tolerance    = ', inner_tolerance
     print *, '  max_outer_iters    = ', max_outer_iters
+    print *, '  inner_print        = ', inner_print
+    print *, '  inner_tolerance    = ', inner_tolerance
     print *, '  max_inner_iters    = ', max_inner_iters
     print *, '  lambda             = ', lamb
     print *, '  ignore_warnings    = ', ignore_warnings
@@ -229,6 +258,9 @@ module control
       print *, 'DGM OPTIONS'
       print *, '  dgm_basis_file     = "', trim(dgm_basis_name), '"'
       print *, '  use_DGM            = ', use_DGM
+      print *, '  recon_print        = ', recon_print
+      print *, '  recon_tolerance    = ', recon_tolerance
+      print *, '  max_recon_iters    = ', max_recon_iters
       if (allocated(truncation_map)) then
         print *, '  energy_group_map   = [', energy_group_map, ']'
       end if

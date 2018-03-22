@@ -3,12 +3,8 @@ module angle
   ! Setup the angular quadrature
   ! ############################################################################
 
-  use control, only : angle_order, angle_option
-
   implicit none
 
-  integer :: &
-      number_angles               ! number angles per *half space*
   double precision, allocatable, dimension(:) :: &
       mu                          ! cosine of angles
   double precision, allocatable, dimension(:) :: &
@@ -28,6 +24,10 @@ module angle
     ! Allocate quadrature arrays
     ! ##########################################################################
 
+    ! Use Statements
+    use control, only : number_angles, angle_order, angle_option
+
+    ! Variable definitions
     integer :: &
         a  ! Angle index
 
@@ -72,6 +72,7 @@ module angle
     ! Generate Gauss-Legendre parameters.
     ! ##########################################################################
 
+    ! Variable definitions
     integer, intent(in) :: &
         m    ! Number of angles
     double precision, intent(inout), dimension(:) :: &
@@ -102,13 +103,15 @@ module angle
 
   end subroutine generate_gl_parameters
 
-  subroutine initialize_polynomials(number_legendre)
+  subroutine initialize_polynomials()
     ! ##########################################################################
     ! Fill p_leg with the discrete column vectors of DLP
     ! ##########################################################################
 
-    integer, intent(in) :: &
-        number_legendre  ! Number of Legendre anisotropic scattering moments
+    ! Use Statements
+    use control, only : number_angles, number_legendre
+
+    ! Variable definitions
     integer :: &
         l,             & ! Legendre order index
         a                ! Angle index

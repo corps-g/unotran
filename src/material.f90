@@ -3,15 +3,11 @@ module material
   ! Initialize the material properties
   ! ############################################################################
 
-  use control, only : xs_name, allow_fission, legendre_order
-
   implicit none
 
   integer :: &
       number_materials, & ! Number of materials in the cross section library
-      number_groups,    & ! Number of groups in the cross section library
-      debugFlag,        & ! Unused flab in the cross section library
-      number_legendre     ! Number of anisotropic scattering moments
+      debugFlag           ! Unused flag in the cross section library
   double precision, allocatable, dimension(:) :: &
       ebounds,          & ! Bounds for the energy groups
       velocity            ! Velocity within each energy group
@@ -27,16 +23,21 @@ module material
 
   subroutine create_material()
     ! ##########################################################################
-    ! Read the cross section data from a file
+    ! Read the cross section data from a file in the proteus format
     ! ##########################################################################
 
-    ! Read a file that is stored in the proteus format
+    ! Use Statements
+    use control, only : allow_fission, legendre_order, number_fine_groups, &
+                        number_legendre, xs_name, number_coarse_groups
+
+    ! Variable definitions
     character(256) :: &
         materialName     ! Name of each material
     integer :: &
         mat,           & ! Material index
         g,             & ! Outer group index
         L,             & ! Legendre moment index
+        number_groups, & ! Number of groups in the cross section library
         dataPresent      ! Flag deciding which cross sections are present
     double precision :: &
         t,             & ! Total cross section value
@@ -52,6 +53,8 @@ module material
     ! Read the file parameters
     open(unit=5, file=xs_name)
     read(5,*) number_materials, number_groups, debugFlag
+    number_fine_groups = number_groups
+    number_coarse_groups = number_groups
     allocate(ebounds(number_groups + 1))
     read(5,*) ebounds
     allocate(velocity(number_groups))

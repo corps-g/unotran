@@ -30,21 +30,16 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 0.0
         pydgm.control.legendre_order = 0
+        pydgm.control.use_DGM = False
         
-        # Initialize the dependancies
-        pydgm.mesh.create_mesh()
-        pydgm.material.create_material()
-        pydgm.angle.initialize_angle()
-        pydgm.angle.initialize_polynomials(pydgm.material.number_legendre)
-    
     def test_state_initialize(self):
         ''' 
         Test initializing of state arrays, no psi
         '''
         pydgm.state.initialize_state()
         
-        phi_test = np.ones((7, 1))
-        source_test = np.zeros((7, 4, 1))
+        phi_test = np.ones((1, 7))
+        source_test = np.zeros((1, 4, 7))
         
         np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test, 12)
         np.testing.assert_array_almost_equal(pydgm.state.source, source_test, 12)
@@ -56,9 +51,9 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.store_psi = True
         pydgm.state.initialize_state()
         
-        phi_test = np.ones((7, 1))
-        psi_test = np.ones((7, 4, 1)) / 2
-        source_test = np.zeros((7, 4, 1))
+        phi_test = np.ones((1, 7))
+        psi_test = np.ones((1, 4, 7)) / 2
+        source_test = np.zeros((1, 4, 7))
         
         np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test, 12)
         np.testing.assert_array_almost_equal(pydgm.state.psi, psi_test, 12)
@@ -66,9 +61,6 @@ class TestSTATE(unittest.TestCase):
         
     def tearDown(self):
         # Finalize the dependancies
-        pydgm.mesh.finalize_mesh()
-        pydgm.material.finalize_material()
-        pydgm.angle.finalize_angle()
         pydgm.state.finalize_state()
         pydgm.control.finalize_control()
         
