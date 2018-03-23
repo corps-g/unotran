@@ -56,9 +56,12 @@ module mg_solver
       outer_error = maxval(abs(phi_old - phi))
 
       ! Print output
-      if (outer_print) then
+      if (outer_print > 0) then
         write(*, 1001) outer_count, outer_error
         1001 format ( "  outer: ", i4, " Error: ", es12.5E2)
+        if (outer_print > 1) then
+          print *, phi
+        end if
       end if
 
       ! Check if tolerance is reached

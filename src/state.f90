@@ -78,7 +78,7 @@ module state
         phi = 1.0  ! default value
       else if (solver_type == 'eigen') then
         phi = 0.0
-        do g = 1, number_groups
+        do g = 1, number_fine_groups
           do c = 1, number_cells
             phi(0, c, g) = nu_sig_f(g, mMap(c))
           end do

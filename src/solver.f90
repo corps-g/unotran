@@ -111,9 +111,12 @@ module solver
         call normalize_flux(d_phi, d_psi)
 
         ! Print output
-        if (eigen_print) then
+        if (eigen_print > 0) then
           write(*, 1001) eigen_count, eigen_error, d_keff
           1001 format ( "eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+          if (eigen_print > 1) then
+            print *, d_phi
+          end if
         end if
 
         ! Check if tolerance is reached

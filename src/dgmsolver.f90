@@ -83,6 +83,11 @@ module dgmsolver
           call solve(.true.)
         end if
 
+        ! Print the moments if verbose printing is on
+        if (recon_print > 1) then
+          print *, i, d_phi
+        end if
+
         ! Unfold ith order flux
         call unfold_flux_moments(i, d_psi, phi, psi)
       end do
@@ -99,9 +104,12 @@ module dgmsolver
       recon_error = maxval(abs(old_phi - phi))
 
       ! Print output
-      if (recon_print) then
+      if (recon_print > 0) then
         write(*, 1001) recon_count, recon_error, d_keff
         1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+        if (recon_print > 1) then
+          print *, phi
+        end if
       end if
 
       ! Check if tolerance is reached

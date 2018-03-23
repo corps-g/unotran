@@ -44,13 +44,13 @@ module control
       number_groups,              & ! Number of groups for the MG problem
       number_fine_groups,         & ! Number of groups in the cross section library
       number_coarse_groups,       & ! Number of groups in the expansion
-      number_legendre               ! Number of anisotropic scattering moments
+      number_legendre,            & ! Number of anisotropic scattering moments
+      recon_print=1,              & ! Enable/Disable recon iteration printing
+      eigen_print=1,              & ! Enable/Disable eigen iteration printing
+      outer_print=1,              & ! Enable/Disable outer iteration printing
+      inner_print=0                 ! Enable/Disable inner iteration printing
   logical :: &
       allow_fission=.false.,      & ! Enable/Disable fission in the problem
-      recon_print=.true.,         & ! Enable/Disable recon iteration printing
-      eigen_print=.true.,         & ! Enable/Disable eigen iteration printing
-      outer_print=.true.,         & ! Enable/Disable outer iteration printing
-      inner_print=.false.,        & ! Enable/Disable inner iteration printing
       use_dgm=.false.,            & ! Enable/Disable DGM solver
       store_psi=.false.,          & ! Enable/Disable storing the angular flux
       ignore_warnings=.true.        ! Enable/Disable warning messages
