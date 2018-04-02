@@ -397,7 +397,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setGroups(7)
         self.setSolver('fixed')
         self.setMesh('1')
-        pydgm.control.material_map = [0]
+        pydgm.control.material_map = [1]
         self.setBoundary('reflect')
 
         pydgm.state.initialize_state()

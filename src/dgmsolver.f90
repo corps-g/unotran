@@ -30,7 +30,8 @@ module dgmsolver
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
                         ignore_warnings, lamb, number_cells, number_fine_groups, &
                         number_legendre, number_angles, solver_type
-    use state, only : d_keff, phi, psi, d_phi, d_psi, normalize_flux, norm_frac
+    use state, only : d_keff, phi, psi, d_phi, d_psi, normalize_flux, norm_frac, &
+                      update_fission_density
     use dgm, only : expansion_order, phi_m_zero, psi_m_zero
     use solver, only : solve
 
@@ -126,6 +127,9 @@ module dgmsolver
         1002 format ('recon iteration did not converge in ', i4, ' iterations')
       end if
     end if
+
+    ! Compute the fission density
+    call update_fission_density()
 
   end subroutine dgmsolve
 
