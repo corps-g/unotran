@@ -31,7 +31,7 @@ module dgmsolver
                         ignore_warnings, lamb, number_cells, number_fine_groups, &
                         number_legendre, number_angles, solver_type
     use state, only : d_keff, phi, psi, d_phi, d_psi, normalize_flux, norm_frac, &
-                      update_fission_density
+                      update_fission_density, output_moments
     use dgm, only : expansion_order, phi_m_zero, psi_m_zero
     use solver, only : solve
 
@@ -109,7 +109,7 @@ module dgmsolver
         write(*, 1001) recon_count, recon_error, d_keff
         1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
         if (recon_print > 1) then
-          print *, phi
+          call output_moments()
         end if
       end if
 
@@ -344,7 +344,8 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_fine_groups, number_cells, number_legendre, number_groups
+    use control, only : number_angles, number_fine_groups, number_cells, number_legendre, number_groups, &
+                        ignore_warnings
     use state, only : d_sig_t, d_nu_sig_f, phi, psi
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap
@@ -389,8 +390,10 @@ module dgmsolver
             ! Check if producing nan and not computing with a nan
             if (phi_m_zero(0, c, cg) /= phi_m_zero(0, c, cg)) then
               ! Detected NaN
-              print *, "NaN detected, limiting"
-              phi_m_zero(0, c, cg) = 100.0
+              if (.not. ignore_warnings) then
+                print *, "NaN detected, limiting"
+              end if
+              phi_m_zero(0, c, cg) = 1.0
             else if (phi_m_zero(0, c, cg) /= 0.0)  then
               ! total cross section moment
               d_sig_t(c, cg) = d_sig_t(c, cg) + basis(g, 0) * sig_t(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
@@ -410,8 +413,10 @@ module dgmsolver
               ! Check if producing nan
               if (phi_m_zero(l, c, cgp) /= phi_m_zero(l, c, cgp)) then
                 ! Detected NaN
-                print *, "NaN detected, limiting"
-                phi_m_zero(l, c, cgp) = 100.0
+                if (.not. ignore_warnings) then
+                  print *, "NaN detected, limiting"
+                end if
+                phi_m_zero(l, c, cgp) = 1.0
               else if (phi_m_zero(l, c, cgp) /= 0.0) then
                 sig_s_m(l, c, cgp, cg, o) = sig_s_m(l, c, cgp, cg, o) &
                                        + basis(g, o) * sig_s(l, gp, g, mat) * phi(l, c, gp) / phi_m_zero(l, c, cgp)
@@ -431,8 +436,10 @@ module dgmsolver
             ! Check if producing nan and not computing with a nan
             if (psi_m_zero(c, a, cg) /= psi_m_zero(c, a, cg)) then
               ! Detected NaN
-                print *, "NaN detected, limiting"
-                psi_m_zero(c, a, cg) = 100.0
+                if (.not. ignore_warnings) then
+                  print *, "NaN detected, limiting"
+                end if
+                psi_m_zero(c, a, cg) = 1.0
             else if (psi_m_zero(c, a, cg) /= 0.0) then
               delta_m(c, a, cg, o) = delta_m(c, a, cg, o) + basis(g, o) * (sig_t(g, mat) &
                                   - d_sig_t(c, cg)) * psi(c, a, g) / psi_m_zero(c, a, cg)

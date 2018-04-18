@@ -317,4 +317,39 @@ module state
 
   end subroutine update_fission_density
 
+  subroutine output_moments()
+    ! ##########################################################################
+    ! Print the output of the cross sections to the standard output
+    ! ##########################################################################
+
+    use control, only : store_psi
+
+    ! Total XS
+    print *, 'Sig_t = ', d_sig_t
+
+    ! Fission XS
+    print *, 'vSig_f = ', d_nu_sig_f
+
+    ! Scatter XS
+    print *, 'Sig_s = ', d_sig_s
+
+    ! Chi
+    print *, 'chi = ', d_chi
+
+    ! Phi
+    print *, 'phi = ', phi
+
+    ! Psi
+    if (store_psi) then
+      print *, 'psi = ', psi
+    end if
+
+    ! incoming
+    print *, 'incident = ', d_incoming
+
+    ! k
+    print *, 'k = ', d_keff
+
+  end subroutine output_moments
+
 end module state
