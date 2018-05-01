@@ -30,7 +30,6 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.max_eigen_iters = 1000
         pydgm.control.max_outer_iters = 1000
         pydgm.control.max_inner_iters = 100
-        
 
     # Define methods to set various variables for the tests
 
@@ -123,7 +122,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.state.d_psi = pydgm.dgm.psi_m_zero
 
         phi_m = phi_m_test[:, order]
-        psi_m = psi_m_test[:,:,order]
+        psi_m = psi_m_test[:, :, order]
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.compute_xs_moments()
@@ -138,12 +137,12 @@ class TestDGMSOLVER(unittest.TestCase):
         ########################################################################
         pydgm.control.solver_type = 'fixed'.ljust(256)
         order = 1
-        
+
         pydgm.state.d_phi = pydgm.dgm.phi_m_zero
         pydgm.state.d_psi = pydgm.dgm.psi_m_zero
 
         phi_m = phi_m_test[:, order]
-        psi_m = psi_m_test[:,:,order]
+        psi_m = psi_m_test[:, :, order]
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
@@ -158,7 +157,7 @@ class TestDGMSOLVER(unittest.TestCase):
         order = 2
 
         phi_m = phi_m_test[:, order]
-        psi_m = psi_m_test[:,:,order]
+        psi_m = psi_m_test[:, :, order]
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
@@ -173,7 +172,7 @@ class TestDGMSOLVER(unittest.TestCase):
         order = 3
 
         phi_m = phi_m_test[:, order]
-        psi_m = psi_m_test[:,:,order]
+        psi_m = psi_m_test[:, :, order]
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
@@ -697,6 +696,7 @@ class TestDGMSOLVER(unittest.TestCase):
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     # Test the eigenvalue solver for infinite media
+
     def test_dgmsolver_eigenR2g(self):
         '''
         Test the 2g->1G, eigenvalue problem with infinite medium
@@ -707,10 +707,9 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('10')
         self.setBoundary('reflect')
         pydgm.control.material_map = [1]
-        
+
         pydgm.control.lamb = 0.8
         pydgm.control.max_eigen_iters = 1
-        
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -721,11 +720,11 @@ class TestDGMSOLVER(unittest.TestCase):
         X = np.outer(pydgm.material.chi[:, 0], pydgm.material.nu_sig_f[:, 0])
 
         keff, phi = np.linalg.eig(np.linalg.inv(T - S).dot(X))
-        
+
         i = np.argmax(keff)
         keff_test = keff[i]
         phi_test = phi[:, i]
-        
+
         phi_test = np.array([phi_test for i in range(10)]).flatten()
 
         # Solve the problem
@@ -817,6 +816,7 @@ class TestDGMSOLVER(unittest.TestCase):
         X = np.outer(pydgm.material.chi[:, 0], pydgm.material.nu_sig_f[:, 0])
 
         keff, phi = np.linalg.eig(np.linalg.inv(T - S).dot(X))
+        keff = np.real(keff)
         i = np.argmax(keff)
         keff_test = keff[i]
         phi_test = phi[:, i]

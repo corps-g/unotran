@@ -17,8 +17,9 @@ module mg_solver
     ! Variable definitions
     double precision, intent(in), dimension(:,:,:) :: &
         source               ! External source
+    double precision, intent(inout), dimension(0:,:,:) :: &
+        phi                  ! Scalar flux
     double precision, intent(inout), dimension(:,:,:) :: &
-        phi,               & ! Scalar flux
         psi                  ! Angular flux
     double precision, intent(inout), dimension(:,:) :: &
         incident             ! Angular flux incident on the cell
@@ -28,6 +29,7 @@ module mg_solver
         total_S              ! Sum of all sources
     integer :: &
         outer_count,       & ! Counter for the outer loop
+        l,                 & ! Legendre index
         g                    ! Group index
     double precision :: &
         outer_error          ! Residual error between iterations
@@ -50,6 +52,11 @@ module mg_solver
         ! Solve the within group problem
         call wg_solve(g, total_S(:,:,g), phi(:,:,g), psi(:,:,g), incident(:,g))
 
+      end do
+
+      ! Normalize the higher legendre moments
+      do l = 0, number_legendre
+        phi(l,:,:) = phi(l,:,:) / (2 * l + 1)
       end do
 
       ! Update the error

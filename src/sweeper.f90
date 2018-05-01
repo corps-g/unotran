@@ -30,6 +30,7 @@ module sweeper
         o,        & ! Octant index
         c,        & ! Cell index
         a,        & ! Angle index
+        l,        & ! Legendre index
         an,       & ! Global angle index
         cmin,     & ! Lower cell number
         cmax,     & ! Upper cell number
@@ -72,6 +73,9 @@ module sweeper
 
         ! legendre polynomial integration vector
         M = wt(a) * p_leg(:, an)
+        do l = 0, number_legendre
+          M(l) = M(l) * (2.0 * l + 1)
+        end do
 
         do c = cmin, cmax, cstep  ! Sweep over cells
           ! Use the specified equation.  Defaults to DD
