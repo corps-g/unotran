@@ -19,9 +19,12 @@ module state
       d_chi,       & ! Chi spectrum moments
       d_sig_t,     & ! Scalar total cross section moments
       d_incoming     ! Angular flux incident on the current cell
+  double precision, allocatable, dimension(:) :: &
+      d_density      ! Fission density
   double precision :: &
       d_keff,      & ! k-eigenvalue
-      norm_frac      ! Fraction of normalization for eigenvalue problems
+      norm_frac,   & ! Fraction of normalization for eigenvalue problems
+      sweep_count    ! Counter for the number of transport sweeps
   
   contains
   
@@ -65,6 +68,9 @@ module state
       number_groups = number_coarse_groups
     end if
 
+    ! Set the sweep counter to zero
+    sweep_count = 0
+
     ! Allocate the scalar flux and source containers
     allocate(phi(0:number_legendre, number_cells, number_fine_groups))
     ! Initialize phi
@@ -78,7 +84,7 @@ module state
         phi = 1.0  ! default value
       else if (solver_type == 'eigen') then
         phi = 0.0
-        do g = 1, number_groups
+        do g = 1, number_fine_groups
           do c = 1, number_cells
             phi(0, c, g) = nu_sig_f(g, mMap(c))
           end do
@@ -142,6 +148,11 @@ module state
       source = 0.0
     end if
 
+    ! Initialize the fission density
+    allocate(d_density(number_cells))
+    call update_fission_density()
+
+    ! Normalize the scalar and angular fluxes
     call normalize_flux(phi, psi)
 
     ! Allocate the moment containers
@@ -169,6 +180,7 @@ module state
     use material, only : finalize_material
     use dgm, only : finalize_moments
 
+    ! Deallocate the variables in the submodules
     call finalize_angle()
     call finalize_mesh()
     call finalize_material()
@@ -176,6 +188,7 @@ module state
       call finalize_moments()
     end if
 
+    ! Deallocate the state variables
     if (allocated(phi)) then
       deallocate(phi)
     end if
@@ -208,6 +221,9 @@ module state
     end if
     if (allocated(d_incoming)) then
       deallocate(d_incoming)
+    end if
+    if (allocated(d_density)) then
+      deallocate(d_density)
     end if
   end subroutine finalize_state
 
@@ -270,5 +286,70 @@ module state
     end if
 
   end subroutine normalize_flux
+
+  subroutine update_fission_density()
+    ! ##########################################################################
+    ! Compute the fission density for each cell
+    ! ##########################################################################
+
+    ! Use Statements
+    use control, only : number_cells, number_fine_groups
+    use mesh, only : mMap
+    use material, only : nu_sig_f, number_materials
+
+    ! Variable definitions
+    integer :: &
+      c, & ! Cell index
+      g    ! Group index
+    double precision, dimension(number_materials) :: &
+      f    ! Temporary array to hold the fission cross section
+
+    ! Reset the fission density
+    d_density = 0.0
+
+    ! Sum the fission reaction rate over groups for each cell
+    do g = 1, number_fine_groups
+      f = nu_sig_f(g, :)
+      do c = 1, number_cells
+        d_density(c) = d_density(c) + f(mMap(c)) * phi(0, c, g)
+      end do
+    end do
+
+  end subroutine update_fission_density
+
+  subroutine output_moments()
+    ! ##########################################################################
+    ! Print the output of the cross sections to the standard output
+    ! ##########################################################################
+
+    use control, only : store_psi
+
+    ! Total XS
+    print *, 'Sig_t = ', d_sig_t
+
+    ! Fission XS
+    print *, 'vSig_f = ', d_nu_sig_f
+
+    ! Scatter XS
+    print *, 'Sig_s = ', d_sig_s
+
+    ! Chi
+    print *, 'chi = ', d_chi
+
+    ! Phi
+    print *, 'phi = ', phi
+
+    ! Psi
+    if (store_psi) then
+      print *, 'psi = ', psi
+    end if
+
+    ! incoming
+    print *, 'incident = ', d_incoming
+
+    ! k
+    print *, 'k = ', d_keff
+
+  end subroutine output_moments
 
 end module state

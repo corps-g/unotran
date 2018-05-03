@@ -56,9 +56,12 @@ module wg_solver
       phi_g_old = phi_g
 
       ! Print output
-      if (inner_print) then
+      if (inner_print > 0) then
         write(*, 1001) inner_count, inner_error
         1001 format ( "    Inner: ", i4, " Error: ", es12.5E2)
+        if (inner_print > 1) then
+          print *, phi_g
+        end if
       end if
 
       ! Check if tolerance is reached

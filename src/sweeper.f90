@@ -14,7 +14,7 @@ module sweeper
     use mesh, only : dx
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
                         number_legendre
-    use state, only : d_sig_t
+    use state, only : d_sig_t, sweep_count
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -30,6 +30,7 @@ module sweeper
         o,        & ! Octant index
         c,        & ! Cell index
         a,        & ! Angle index
+        l,        & ! Legendre index
         an,       & ! Global angle index
         cmin,     & ! Lower cell number
         cmax,     & ! Upper cell number
@@ -47,7 +48,11 @@ module sweeper
     ! Allocations
     allocate(M(0:number_legendre))
 
-    phi_g = 0.0  ! Reset phi
+    ! Increment the sweep counter
+    sweep_count = sweep_count + 1
+
+    ! Reset phi
+    phi_g = 0.0
 
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction within the octant
@@ -68,6 +73,9 @@ module sweeper
 
         ! legendre polynomial integration vector
         M = wt(a) * p_leg(:, an)
+        do l = 0, number_legendre
+          M(l) = M(l) * (2.0 * l + 1)
+        end do
 
         do c = cmin, cmax, cstep  ! Sweep over cells
           ! Use the specified equation.  Defaults to DD

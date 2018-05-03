@@ -31,8 +31,12 @@
 # misc
 .settings/
 *.h5
+*.png
+*.pdf
+*.bin
 
 .pydevproject
 
 # Python
 *.pyc
+/Release/

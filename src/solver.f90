@@ -61,7 +61,7 @@ module solver
     ! Use Statements
     use mg_solver, only : mg_solve
     use state, only : d_source, d_phi, d_psi, d_incoming, d_keff, normalize_flux, &
-                      phi, psi
+                      phi, psi, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
                         use_DGM
@@ -72,13 +72,13 @@ module solver
     logical, parameter :: &
         bypass_default = .false.  ! Default value of bypass_arg
     logical :: &
-        bypass_flag ! Local variable to signal a eigen loop bypass
+        bypass_flag ! Local variable to signal an eigen loop bypass
     double precision :: &
-        eigen_error       ! Error between successive iterations
+        eigen_error ! Error between successive iterations
     integer :: &
-        eigen_count       ! Iteration counter
+        eigen_count ! Iteration counter
     double precision, dimension(0:number_legendre, number_cells, number_groups) :: &
-        old_phi           ! Scalar flux from previous iteration
+        old_phi     ! Scalar flux from previous iteration
 
     if (present(bypass_arg)) then
       bypass_flag = bypass_arg
@@ -111,9 +111,12 @@ module solver
         call normalize_flux(d_phi, d_psi)
 
         ! Print output
-        if (eigen_print) then
+        if (eigen_print > 0) then
           write(*, 1001) eigen_count, eigen_error, d_keff
           1001 format ( "eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+          if (eigen_print > 1) then
+            print *, d_phi
+          end if
         end if
 
         ! Check if tolerance is reached
@@ -135,6 +138,9 @@ module solver
     if (.not. use_dgm) then
       phi = d_phi
       psi = d_psi
+
+      ! Compute the fission density
+      call update_fission_density()
     end if
 
   end subroutine solve
