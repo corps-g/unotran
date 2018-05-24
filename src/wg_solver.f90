@@ -110,7 +110,7 @@ module wg_solver
       do c = 1, number_cells
         do l = 0, number_legendre
           source(c, a) = source(c, a) &
-                         + 0.5 / (2 * l + 1) * p_leg(l, a) * d_sig_s(l, c, g, g) * phi_g(l, c)
+                         + 0.5 * p_leg(l, a) * d_sig_s(l, c, g, g) * phi_g(l, c)
         end do
       end do
     end do

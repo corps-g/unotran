@@ -54,11 +54,6 @@ module mg_solver
 
       end do
 
-      ! Normalize the higher legendre moments
-      do l = 0, number_legendre
-        phi(l,:,:) = phi(l,:,:) / (2 * l + 1)
-      end do
-
       ! Update the error
       outer_error = maxval(abs(phi_old - phi))
 
@@ -131,7 +126,7 @@ module mg_solver
       do a = 1, 2 * number_angles
         do c = 1, number_cells
           do l = 0, number_legendre
-            source(c,a) = source(c,a) + 0.5 / (2 * l + 1) * p_leg(l, a) * d_sig_s(l, c, gp, g) * phi(l,c,gp)
+            source(c,a) = source(c,a) + 0.5 * p_leg(l, a) * d_sig_s(l, c, gp, g) * phi(l,c,gp)
           end do
         end do
       end do

@@ -706,8 +706,8 @@ class TestSOLVER(unittest.TestCase):
                      1.438811 , 1.404522 , 1.361736 , 1.309296 , 1.245595 , 1.168399 ,
                      1.074606 , 1.008485 , 0.9766022, 0.9394254],
                     [-0.4314588 , -0.4014588 , -0.3714588 , -0.3385075 , -0.3031805 ,
-                      - 0.2689027 , -0.2354895 , -0.202789  , -0.1706729 , -0.1390297 ,
-                      - 0.1077603 , -0.07677391, -0.04598599, -0.01531567, 0.01531567,
+                      -0.2689027 , -0.2354895 , -0.202789  , -0.1706729 , -0.1390297 ,
+                      -0.1077603 , -0.07677391, -0.04598599, -0.01531567, 0.01531567,
                       0.04598599, 0.07677391, 0.1077603 , 0.1390297 , 0.1706729 ,
                       0.202789  , 0.2354895 , 0.2689027 , 0.3031805 , 0.3385075 ,
                       0.3714588 , 0.4014588 , 0.4314588 ]]
@@ -722,6 +722,27 @@ class TestSOLVER(unittest.TestCase):
         # Test the L1 scalar flux
         phi = pydgm.state.d_phi[1, :, :].flatten()
         np.testing.assert_array_almost_equal(phi, phi_test[1], 6)
+
+    def test_solver_anisotropic_symmetric(self):
+        # Set the variables for the test
+        pydgm.control.fine_mesh = [12]
+        pydgm.control.coarse_mesh = [0.0, 5.0]
+        pydgm.control.material_map = [1]
+        pydgm.control.xs_name = 'test/2g_symmetric.anlxs'.ljust(256)
+        pydgm.control.angle_order = 4
+        pydgm.control.legendre_order = 1
+        pydgm.control.boundary_type = [0.0, 0.0]
+
+        # Initialize the dependancies
+        pydgm.solver.initialize_solver()
+
+        # Solve the problem
+        pydgm.solver.solve()
+
+        # Test that the scalar flux is symmetric
+        phi0 = pydgm.state.d_phi[0, :, 0].flatten()
+        phi1 = pydgm.state.d_phi[0, :, 1].flatten()
+        np.testing.assert_array_almost_equal(phi0, phi1, 12)
 
     def test_solver_anisotropic_fixed_reflect(self):
         # Set the variables for the test
@@ -741,12 +762,12 @@ class TestSOLVER(unittest.TestCase):
                      4.604712, 4.602373, 4.602373, 4.604712, 4.609501, 4.616972,
                      4.627509, 4.641684, 4.660331, 4.684631, 4.716254, 4.757549,
                      4.811817, 4.849012, 4.859141, 4.864197],
-                    [ 0.015     , 0.045     , 0.075     , 0.08501839, 0.07538819,
+                    [0.015     , 0.045     , 0.075     , 0.08501839, 0.07538819,
                      0.06634441, 0.05774807, 0.04949489, 0.04150525, 0.03371702,
                      0.02608044, 0.01855435, 0.0111035 , 0.00369638, -0.00369638,
-                     - 0.0111035 , -0.01855435, -0.02608044, -0.03371702, -0.04150525,
-                     - 0.04949489, -0.05774807, -0.06634441, -0.07538819, -0.08501839,
-                     - 0.075     , -0.045     , -0.015     ]]
+                     -0.0111035 , -0.01855435, -0.02608044, -0.03371702, -0.04150525,
+                     -0.04949489, -0.05774807, -0.06634441, -0.07538819, -0.08501839,
+                     -0.075     , -0.045     , -0.015     ]]
 
         # Solve the problem
         pydgm.solver.solve()

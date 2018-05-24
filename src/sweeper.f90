@@ -73,9 +73,6 @@ module sweeper
 
         ! legendre polynomial integration vector
         M = wt(a) * p_leg(:, an)
-        do l = 0, number_legendre
-          M(l) = M(l) * (2.0 * l + 1)
-        end do
 
         do c = cmin, cmax, cstep  ! Sweep over cells
           ! Use the specified equation.  Defaults to DD
