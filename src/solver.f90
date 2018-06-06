@@ -88,7 +88,7 @@ module solver
 
     ! Run eigen loop only if eigen problem
     if (solver_type == 'fixed' .or. bypass_flag) then
-      call mg_solve(d_source, d_phi, d_psi, d_incoming)
+      call mg_solve(d_source, d_phi, d_psi, d_incoming, bypass_flag)
     else if (solver_type == 'eigen') then
       do eigen_count = 1, max_eigen_iters
 
@@ -99,7 +99,7 @@ module solver
         call compute_source(d_phi, d_source)
 
         ! Solve the multigroup problem
-        call mg_solve(d_source, d_phi, d_psi, d_incoming)
+        call mg_solve(d_source, d_phi, d_psi, d_incoming, bypass_flag)
 
         ! Compute new eigenvalue if eigen problem
         d_keff = d_keff * sum(abs(d_phi(0,:,:))) / sum(abs(old_phi(0,:,:)))

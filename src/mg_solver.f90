@@ -4,7 +4,7 @@ module mg_solver
   
   contains
   
-  subroutine mg_solve(source, phi, psi, incident)
+  subroutine mg_solve(source, phi, psi, incident, bypass_flag)
     ! ##########################################################################
     ! Solve the within group equation
     ! ##########################################################################
@@ -17,6 +17,8 @@ module mg_solver
     ! Variable definitions
     double precision, intent(in), dimension(:,:,:) :: &
         source               ! External source
+    logical, intent(in) :: &
+        bypass_flag          ! Flag to limit iterations to 1
     double precision, intent(inout), dimension(0:,:,:) :: &
         phi                  ! Scalar flux
     double precision, intent(inout), dimension(:,:,:) :: &
@@ -73,7 +75,7 @@ module mg_solver
       end if
 
       ! Check if tolerance is reached
-      if (outer_error < outer_tolerance) then
+      if (outer_error < outer_tolerance .or. bypass_flag) then
         exit
       end if
     end do
