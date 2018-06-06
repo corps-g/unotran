@@ -57,6 +57,12 @@ module mg_solver
       ! Update the error
       outer_error = maxval(abs(phi_old - phi))
 
+      ! Check for NaN during convergence
+      if (outer_error /= outer_error) then
+        print *, "NaN detected...exiting"
+        stop
+      end if
+
       ! Print output
       if (outer_print > 0) then
         write(*, 1001) outer_count, outer_error
