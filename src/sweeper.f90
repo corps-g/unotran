@@ -94,7 +94,7 @@ module sweeper
   
   subroutine computeEQ(S, incident, sig, dx, mua, cellPsi)
     ! ##########################################################################
-    ! Compute the value for the closure reslationship
+    ! Compute the value for the closure relationship
     ! ##########################################################################
 
     ! Use statements
