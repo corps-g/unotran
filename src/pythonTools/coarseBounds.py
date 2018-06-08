@@ -75,7 +75,6 @@ def computeBounds(fname):
         bounds = [nGroup]
         # Initialize the cutoff bounds
         minXS, maxXS = reset(sig_t[m,-1])
-
         for i, xs in enumerate(sig_t[m,1:][::-1]):
             group = nGroup - i
             # Check if the xs in below the min or above the max
@@ -83,16 +82,16 @@ def computeBounds(fname):
             maxXS = max(xs, maxXS)
             ratio = maxXS / minXS
             # Check for a ratio that is too large
-            if (ratio > ratioCutoff and maxXS > minCutoff) or bounds[-1] - group >= groupCutoff:
-                bounds.append(group)
+            if (ratio > ratioCutoff and maxXS > minCutoff) or bounds[-1] - group > groupCutoff:
+                bounds.append(group+1)
                 # Reset the cutoff bounds
                 minXS, maxXS = reset(xs)
-        bounds.append(0)
+        bounds.append(1)
         bounds = bounds[::-1]
-        print bounds
+        print nGroup, bounds[:-1]
         break
     B = [1] + bounds[1:-1] + [nGroup + 1]
-    print ['{}-{} ({})'.format(b, B[i+1] - 1, B[i+1] - b) for i, b in enumerate(B[:-1])]
+    #print ['{}-{} ({})'.format(b, B[i+1] - 1, B[i+1] - b) for i, b in enumerate(B[:-1])]
 
     plt.semilogy(range(1, nGroup+1), sig_t[0], 'bo')
     for b in bounds[1:-1]:
@@ -105,6 +104,6 @@ def computeBounds(fname):
     plt.show()
 
 if __name__ == '__main__':
-    for G in [44, 238, 1968]:
+    for G in [2, 3, 4, 7, 8, 9, 12, 14, 16, 18, 23, 25, 30, 33, 40, 43, 44, 50, 69, 70, 100, 172, 174, 175, 238, 240, 315, 1968]:
         fname = 'makeXS/{0}g/{0}gXS.anlxs'.format(G)
         computeBounds(fname)
