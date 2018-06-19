@@ -101,6 +101,9 @@ module dgmsolver
 
       call normalize_flux(phi, psi)
 
+      ! Compute the fission density
+      call update_fission_density()
+
       ! Update the error
       recon_error = maxval(abs(old_phi - phi))
 
@@ -127,9 +130,6 @@ module dgmsolver
         1002 format ('recon iteration did not converge in ', i4, ' iterations')
       end if
     end if
-
-    ! Compute the fission density
-    call update_fission_density()
 
   end subroutine dgmsolve
 
