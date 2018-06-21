@@ -21,7 +21,7 @@ module dgmsolver
 
   end subroutine initialize_dgmsolver
 
-  subroutine dgmsolve()
+  subroutine dgmsolve(bypass_arg)
     ! ##########################################################################
     ! Interate DGM equations to convergance
     ! ##########################################################################
@@ -36,6 +36,12 @@ module dgmsolver
     use solver, only : solve
 
     ! Variable definitions
+    logical, intent(in), optional :: &
+        bypass_arg        ! Allow the dgmsolver to do one recon loop selectively
+    logical, parameter :: &
+        bypass_default = .false.  ! Default value of bypass_arg
+    logical :: &
+        bypass_flag       ! Local variable to signal an eigen loop bypass
     integer :: &
         recon_count,    & ! Iteration counter
         i                 ! Expansion index
@@ -45,6 +51,12 @@ module dgmsolver
         old_phi        ! Scalar flux from previous iteration
     double precision, dimension(number_cells, 2 * number_angles, number_fine_groups) :: &
         old_psi        ! Angular flux from previous iteration
+
+    if (present(bypass_arg)) then
+      bypass_flag = bypass_arg
+    else
+      bypass_flag = bypass_default
+    end if
 
     do recon_count = 1, max_recon_iters
       ! Save the old value of the scalar flux
@@ -117,7 +129,7 @@ module dgmsolver
       end if
 
       ! Check if tolerance is reached
-      if (recon_error < recon_tolerance) then
+      if (recon_error < recon_tolerance .or. bypass_flag) then
         exit
       end if
 
