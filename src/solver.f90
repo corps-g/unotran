@@ -64,7 +64,7 @@ module solver
                       phi, psi, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
-                        use_DGM
+                        use_DGM, number_angles
 
     ! Variable definitions
     logical, intent(in), optional :: &
@@ -79,6 +79,8 @@ module solver
         eigen_count ! Iteration counter
     double precision, dimension(0:number_legendre, number_cells, number_groups) :: &
         old_phi     ! Scalar flux from previous iteration
+    double precision, dimension(number_cells, 2 * number_angles, number_groups) :: &
+        f_source    ! Source containing fission term
 
     if (present(bypass_arg)) then
       bypass_flag = bypass_arg
@@ -96,19 +98,19 @@ module solver
         old_phi = d_phi
 
         ! Update the fission source
-        call compute_source(d_phi, d_source)
+        call compute_source(d_phi, f_source)
 
         ! Solve the multigroup problem
-        call mg_solve(d_source, d_phi, d_psi, d_incoming, bypass_flag)
+        call mg_solve(f_source, d_phi, d_psi, d_incoming, bypass_flag)
 
         ! Compute new eigenvalue if eigen problem
-        d_keff = d_keff * sum(abs(d_phi(0,:,:))) / sum(abs(old_phi(0,:,:)))
-
-        ! Update the error
-        eigen_error = maxval(abs(d_phi - old_phi))
+        d_keff = norm2(d_phi(0,:,:)) / norm2(old_phi(0,:,:))
 
         ! Normalize the fluxes
         call normalize_flux(d_phi, d_psi)
+
+        ! Update the error
+        eigen_error = sum(abs(d_phi - old_phi))
 
         ! Print output
         if (eigen_print > 0) then
@@ -151,7 +153,7 @@ module solver
     ! ##########################################################################
 
     ! Use Statements
-    use state, only : d_chi, d_nu_sig_f, d_keff
+    use state, only : d_chi, d_nu_sig_f, d_keff, d_source
     use control, only : source_value, number_cells, number_groups, use_DGM
 
     ! Variable definitions
@@ -164,17 +166,9 @@ module solver
       g       ! Energy index
 
 
-    if (use_DGM) then
-      continue
-    else
-      ! Set the external source
-      source = 0.5 * source_value
-    end if
-
-    ! Add the isotropic fission source
     do g = 1, number_groups
       do c = 1, number_cells
-        source(c,:,g) = source(c,:,g) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:)) / d_keff
+        source(c,:,g) = d_source(c,:,g) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:))
       end do
     end do
 

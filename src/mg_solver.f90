@@ -57,7 +57,7 @@ module mg_solver
       end do
 
       ! Update the error
-      outer_error = maxval(abs(phi_old - phi))
+      outer_error = sum(abs(phi_old - phi))
 
       ! Check for NaN during convergence
       if (outer_error /= outer_error) then
@@ -100,7 +100,7 @@ module mg_solver
 
     ! Use Statements
     use angle, only : p_leg
-    use state, only : d_nu_sig_f, d_sig_s, d_keff, d_chi
+    use state, only : d_nu_sig_f, d_sig_s, d_chi
     use control, only : solver_type, number_groups, number_cells, number_angles, &
                         number_legendre
 
@@ -120,7 +120,7 @@ module mg_solver
     ! Add the fission source if fixed source problem
     if (solver_type == 'fixed') then
       do c = 1, number_cells
-        source(c,:) = source(c,:) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:)) / d_keff
+        source(c,:) = source(c,:) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:))
       end do
     end if
 

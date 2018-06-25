@@ -50,7 +50,7 @@ module wg_solver
       call sweep(g, total_S, phi_g, psi_g, incident)
 
       ! Update the error
-      inner_error = maxval(abs(phi_g_old - phi_g))
+      inner_error = sum(abs(phi_g_old - phi_g))
 
       ! save old value of scalar flux
       phi_g_old = phi_g

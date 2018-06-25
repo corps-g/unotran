@@ -117,14 +117,14 @@ module dgmsolver
       call update_fission_density()
 
       ! Update the error
-      recon_error = maxval(abs(old_phi - phi))
+      recon_error = sum(abs(old_phi - phi))
 
       ! Print output
       if (recon_print > 0) then
         write(*, 1001) recon_count, recon_error, d_keff
         1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
         if (recon_print > 1) then
-          call output_moments()
+          !call output_moments()
         end if
       end if
 
@@ -328,7 +328,7 @@ module dgmsolver
             do c = 1, number_cells
               if (allow_fission) then
                 d_source(c, a, cg) = d_source(c, a, cg) + &
-                                     0.5 / d_keff * chi_m(c, cg, order) * d_nu_sig_f(c, cgp) * phi_m_zero(0, c, cgp)
+                                     0.5 * chi_m(c, cg, order) * d_nu_sig_f(c, cgp) * phi_m_zero(0, c, cgp)
               end if
               do l = 0, number_legendre
                 ! Get the scattering source
