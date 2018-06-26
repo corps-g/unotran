@@ -273,7 +273,9 @@ module state
         number_groups  ! Number of energy groups
 
     if (solver_type == 'eigen') then
-      norm_frac = norm2(phi(1,:,:))
+      number_groups = size(phi(1,1,:))
+
+      norm_frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
 
       ! normalize phi
       phi = phi / norm_frac
