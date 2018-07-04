@@ -4,7 +4,7 @@ module wg_solver
   
   contains
   
-  subroutine wg_solve(g, source, phi_g, psi_g, incident)
+  subroutine wg_solve(g, source, phi_g, psi_g, incident, bypass_flag)
     ! ##########################################################################
     ! Solve the within group equation
     ! ##########################################################################
@@ -19,6 +19,8 @@ module wg_solver
         g           ! Group index
     double precision, intent(in), dimension(:,:) :: &
         source      ! Fission, In-Scattering, External source in group g
+    logical, intent(in) :: &
+        bypass_flag ! Flag to turn off computing the source
     double precision, intent(inout), dimension(0:,:) :: &
         phi_g       ! Scalar flux
     double precision, intent(inout), dimension(:,:) :: &
@@ -43,8 +45,10 @@ module wg_solver
       ! Reset the source to only be in-scattering, fission, and external
       total_S = source
 
-      ! Add the within-group scattering to the source
-      call compute_within_scattering(g, phi_g, total_S)
+      if (.not. bypass_flag) then
+        ! Add the within-group scattering to the source
+        call compute_within_scattering(g, phi_g, total_S)
+      end if
 
       ! Sweep through the mesh
       call sweep(g, total_S, phi_g, psi_g, incident)

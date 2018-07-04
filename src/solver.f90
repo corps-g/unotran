@@ -97,8 +97,10 @@ module solver
         ! Save the old value of the scalar flux
         old_phi = d_phi
 
-        ! Update the fission source
-        call compute_source(d_phi, f_source)
+        ! Update the fission source if not higher moment DGM sweep
+        if (.not. bypass_flag) then
+            call compute_source(d_phi, f_source)
+        end if
 
         ! Solve the multigroup problem
         call mg_solve(f_source, d_phi, d_psi, d_incoming, bypass_flag)

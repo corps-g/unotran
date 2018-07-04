@@ -49,10 +49,13 @@ module mg_solver
       do g = 1, number_groups
         total_S = source(:,:,g)
 
-        call compute_source(g, phi, total_S)
+        ! compute fixed source if not a higher moment DGM sweep
+        if (.not. bypass_flag) then
+            call compute_source(g, phi, total_S)
+        end if
 
         ! Solve the within group problem
-        call wg_solve(g, total_S, phi(:,:,g), psi(:,:,g), incident(:,g))
+        call wg_solve(g, total_S, phi(:,:,g), psi(:,:,g), incident(:,g), bypass_flag)
 
       end do
 
@@ -100,7 +103,7 @@ module mg_solver
 
     ! Use Statements
     use angle, only : p_leg
-    use state, only : d_nu_sig_f, d_sig_s, d_chi
+    use state, only : d_nu_sig_f, d_sig_s, d_chi, d_keff
     use control, only : solver_type, number_groups, number_cells, number_angles, &
                         number_legendre, allow_fission
 
@@ -120,7 +123,7 @@ module mg_solver
     ! Add the fission source if fixed source problem
     if (solver_type == 'fixed' .and. allow_fission) then
       do c = 1, number_cells
-        source(c,:) = source(c,:) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:))
+        source(c,:) = source(c,:) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:)) / d_keff
       end do
     end if
 
