@@ -4,7 +4,7 @@ module mg_solver
   
   contains
   
-  subroutine mg_solve(source, phi, psi, incident, bypass_flag)
+  subroutine mg_solve(source, phi, psi, incident, higher_dgm_flag)
     ! ##########################################################################
     ! Solve the within group equation
     ! ##########################################################################
@@ -18,7 +18,7 @@ module mg_solver
     double precision, intent(in), dimension(:,:,:) :: &
         source               ! External source
     logical, intent(in) :: &
-        bypass_flag          ! Flag to limit iterations to 1
+        higher_dgm_flag      ! Flag to limit iterations to 1
     double precision, intent(inout), dimension(0:,:,:) :: &
         phi                  ! Scalar flux
     double precision, intent(inout), dimension(:,:,:) :: &
@@ -50,12 +50,12 @@ module mg_solver
         total_S = source(:,:,g)
 
         ! compute fixed source if not a higher moment DGM sweep
-        if (.not. bypass_flag) then
+        if (.not. higher_dgm_flag) then
             call compute_source(g, phi, total_S)
         end if
 
         ! Solve the within group problem
-        call wg_solve(g, total_S, phi(:,:,g), psi(:,:,g), incident(:,g), bypass_flag)
+        call wg_solve(g, total_S, phi(:,:,g), psi(:,:,g), incident(:,g), higher_dgm_flag)
 
       end do
 
@@ -78,7 +78,7 @@ module mg_solver
       end if
 
       ! Check if tolerance is reached
-      if (outer_error < outer_tolerance .or. bypass_flag) then
+      if (outer_error < outer_tolerance .or. higher_dgm_flag) then
         exit
       end if
     end do

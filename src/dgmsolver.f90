@@ -328,7 +328,7 @@ module dgmsolver
             do c = 1, number_cells
               if (allow_fission) then
                 d_source(c, a, cg) = d_source(c, a, cg) + &
-                                     0.5 * chi_m(c, cg, order) * d_nu_sig_f(c, cgp) * phi_m_zero(0, c, cgp) / d_keff
+                                     0.5 / d_keff * chi_m(c, cg, order) * d_nu_sig_f(c, cgp) * phi_m_zero(0, c, cgp)
               end if
               do l = 0, number_legendre
                 ! Get the scattering source

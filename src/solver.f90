@@ -53,7 +53,7 @@ module solver
 
   end subroutine initialize_solver
 
-  subroutine solve(bypass_arg)
+  subroutine solve(higher_dgm_arg)
     ! ##########################################################################
     ! Solve the neutron transport equation using discrete ordinates
     ! ##########################################################################
@@ -68,29 +68,29 @@ module solver
 
     ! Variable definitions
     logical, intent(in), optional :: &
-        bypass_arg  ! Allow the solver to skip eigen loops selectively for dgm
+        higher_dgm_arg  ! Set the solver to fixed source if on Higher DGM moments
     logical, parameter :: &
-        bypass_default = .false.  ! Default value of bypass_arg
+        higher_dgm_default = .false.  ! Default value of higher_dgm_arg
     logical :: &
-        bypass_flag ! Local variable to signal an eigen loop bypass
+        higher_dgm_flag ! Local variable to signal an eigen loop bypass
     double precision :: &
-        eigen_error ! Error between successive iterations
+        eigen_error     ! Error between successive iterations
     integer :: &
-        eigen_count ! Iteration counter
+        eigen_count     ! Iteration counter
     double precision, dimension(0:number_legendre, number_cells, number_groups) :: &
-        old_phi     ! Scalar flux from previous iteration
+        old_phi         ! Scalar flux from previous iteration
     double precision, dimension(number_cells, 2 * number_angles, number_groups) :: &
-        f_source    ! Source containing fission term
+        f_source        ! Source containing fission term
 
-    if (present(bypass_arg)) then
-      bypass_flag = bypass_arg
+    if (present(higher_dgm_arg)) then
+      higher_dgm_flag = higher_dgm_arg
     else
-      bypass_flag = bypass_default
+      higher_dgm_flag = higher_dgm_default
     end if
 
     ! Run eigen loop only if eigen problem
-    if (solver_type == 'fixed' .or. bypass_flag) then
-      call mg_solve(d_source, d_phi, d_psi, d_incoming, bypass_flag)
+    if (solver_type == 'fixed' .or. higher_dgm_flag) then
+      call mg_solve(d_source, d_phi, d_psi, d_incoming, higher_dgm_flag)
     else if (solver_type == 'eigen') then
       do eigen_count = 1, max_eigen_iters
 
@@ -101,7 +101,7 @@ module solver
         call compute_source(d_phi, f_source)
 
         ! Solve the multigroup problem
-        call mg_solve(f_source, d_phi, d_psi, d_incoming, bypass_flag)
+        call mg_solve(f_source, d_phi, d_psi, d_incoming, higher_dgm_flag)
 
         ! Compute new eigenvalue if eigen problem
         d_keff = norm2(d_phi(0,:,:)) / norm2(old_phi(0,:,:))
