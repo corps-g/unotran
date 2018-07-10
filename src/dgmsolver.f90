@@ -342,6 +342,7 @@ module dgmsolver
         end do
       end do
 
+      ! Since fission and scattering sources are already computed, turn them off in further calculations
       mg_chi = 0.0
       mg_sig_s = 0.0
     else
