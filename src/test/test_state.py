@@ -71,7 +71,7 @@ class TestSTATE(unittest.TestCase):
                         1.08926612, 1.08926612, 1.08926612, 1.08926612, 1.08926612,
                         1.08926612, 1.08926612, 1.08926612, 0.0, 0.0, 0.0]
 
-        np.testing.assert_array_almost_equal(pydgm.state.d_density, density_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.density, density_test, 12)
 
     def tearDown(self):
         # Finalize the dependancies
@@ -82,4 +82,3 @@ class TestSTATE(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
-

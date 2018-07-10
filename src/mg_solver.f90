@@ -51,7 +51,7 @@ module mg_solver
 
         ! compute fixed source if not a higher moment DGM sweep
         if (.not. higher_dgm_flag) then
-            call compute_source(g, phi, total_S)
+            call compute_mg_source(g, phi, total_S)
         end if
 
         ! Solve the within group problem
@@ -96,14 +96,14 @@ module mg_solver
 
   end subroutine mg_solve
 
-  subroutine compute_source(g, phi, source)
+  subroutine compute_mg_source(g, phi, source)
     ! ##########################################################################
     ! Get the source including external, fission, and in-scatter
     ! ##########################################################################
 
     ! Use Statements
     use angle, only : p_leg
-    use state, only : d_nu_sig_f, d_sig_s, d_chi, d_keff
+    use state, only : mg_nu_sig_f, mg_sig_s, mg_chi, keff
     use control, only : solver_type, number_groups, number_cells, number_angles, &
                         number_legendre, allow_fission
 
@@ -123,7 +123,7 @@ module mg_solver
     ! Add the fission source if fixed source problem
     if (solver_type == 'fixed' .and. allow_fission) then
       do c = 1, number_cells
-        source(c,:) = source(c,:) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:)) / d_keff
+        source(c,:) = source(c,:) + 0.5 * mg_chi(c, g) * dot_product(mg_nu_sig_f(c,:), phi(0,c,:)) / keff
       end do
     end if
 
@@ -137,12 +137,12 @@ module mg_solver
       do a = 1, 2 * number_angles
         do c = 1, number_cells
           do l = 0, number_legendre
-            source(c,a) = source(c,a) + 0.5 * p_leg(l, a) * d_sig_s(l, c, gp, g) * phi(l,c,gp)
+            source(c,a) = source(c,a) + 0.5 * p_leg(l, a) * mg_sig_s(l, c, gp, g) * phi(l,c,gp)
           end do
         end do
       end do
     end do
 
-  end subroutine compute_source
+  end subroutine compute_mg_source
 
 end module mg_solver

@@ -95,7 +95,7 @@ module wg_solver
 
     ! Use Statements
     use angle, only : p_leg
-    use state, only : d_sig_s
+    use state, only : mg_sig_s
     use control, only : number_cells, number_angles, number_legendre
 
     ! Variable definitions
@@ -115,7 +115,7 @@ module wg_solver
       do c = 1, number_cells
         do l = 0, number_legendre
           source(c, a) = source(c, a) &
-                         + 0.5 * p_leg(l, a) * d_sig_s(l, c, g, g) * phi_g(l, c)
+                         + 0.5 * p_leg(l, a) * mg_sig_s(l, c, g, g) * phi_g(l, c)
         end do
       end do
     end do

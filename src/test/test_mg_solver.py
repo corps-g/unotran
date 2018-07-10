@@ -41,10 +41,10 @@ class TestMG_SOLVER(unittest.TestCase):
         pydgm.control.max_outer_iters = 2
         pydgm.control.max_inner_iters = 10
 
-        source = pydgm.state.d_source
-        phi = pydgm.state.d_phi
-        psi = pydgm.state.d_psi
-        incident = pydgm.state.d_incoming
+        source = pydgm.state.mg_source
+        phi = pydgm.state.mg_phi
+        psi = pydgm.state.mg_psi
+        incident = pydgm.state.mg_incoming
 
         pydgm.mg_solver.mg_solve(source, phi, psi, incident, False)
 
@@ -63,10 +63,10 @@ class TestMG_SOLVER(unittest.TestCase):
 
         pydgm.control.max_inner_iters = 10
 
-        source = pydgm.state.d_source
-        phi = pydgm.state.d_phi
-        psi = pydgm.state.d_psi
-        incident = pydgm.state.d_incoming
+        source = pydgm.state.mg_source
+        phi = pydgm.state.mg_phi
+        psi = pydgm.state.mg_psi
+        incident = pydgm.state.mg_incoming
 
         pydgm.mg_solver.mg_solve(source, phi, psi, incident, False)
 
@@ -86,10 +86,10 @@ class TestMG_SOLVER(unittest.TestCase):
         pydgm.control.max_inner_iters = 10
         pydgm.control.boundary_type = [0.0, 0.0]
 
-        source = pydgm.state.d_source
-        phi = pydgm.state.d_phi
-        psi = pydgm.state.d_psi
-        incident = pydgm.state.d_incoming
+        source = pydgm.state.mg_source
+        phi = pydgm.state.mg_phi
+        psi = pydgm.state.mg_psi
+        incident = pydgm.state.mg_incoming
 
         pydgm.mg_solver.mg_solve(source, phi, psi, incident, False)
 
@@ -112,7 +112,7 @@ class TestMG_SOLVER(unittest.TestCase):
         source_test = np.array([0.5, 0.50058041595, 0.5007291251])
 
         for g in range(3):
-            pydgm.mg_solver.compute_source(g + 1, phi, source[:, :, g])
+            pydgm.mg_solver.compute_mg_source(g + 1, phi, source[:, :, g])
             np.testing.assert_array_almost_equal(source[:, :, g].flatten(), np.ones(4) * source_test[g], 12)
 
     def tearDown(self):

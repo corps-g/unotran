@@ -116,14 +116,14 @@ class TestDGMSOLVER(unittest.TestCase):
         # Set the converged fluxes
         pydgm.state.phi[0, 0, :] = phi
         pydgm.state.psi = psi
-        pydgm.state.d_keff = 1.0
+        pydgm.state.keff = 1.0
         old_psi = pydgm.state.psi
 
         # Get the moments from the fluxes
         pydgm.dgmsolver.compute_flux_moments()
 
-        pydgm.state.d_phi = pydgm.dgm.phi_m_zero
-        pydgm.state.d_psi = pydgm.dgm.psi_m_zero
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
@@ -134,16 +134,16 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten(), phi_m, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi.flatten(), phi_m, 12)
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.state.d_psi[0, a, :].flatten(), psi_m[a], 12)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_psi[0, a, :].flatten(), psi_m[a], 12)
 
         ########################################################################
         pydgm.control.solver_type = 'fixed'.ljust(256)
         order = 1
 
-        pydgm.state.d_phi = pydgm.dgm.phi_m_zero
-        pydgm.state.d_psi = pydgm.dgm.psi_m_zero
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
@@ -153,9 +153,9 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten(), phi_m, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi.flatten(), phi_m, 12)
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.state.d_psi[0, a, :].flatten(), psi_m[a], 12)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_psi[0, a, :].flatten(), psi_m[a], 12)
 
         ########################################################################
         order = 2
@@ -168,9 +168,9 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten(), phi_m, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi.flatten(), phi_m, 12)
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.state.d_psi[0, a, :].flatten(), psi_m[a], 12)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_psi[0, a, :].flatten(), psi_m[a], 12)
 
         ########################################################################
         order = 3
@@ -183,9 +183,9 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten(), phi_m, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi.flatten(), phi_m, 12)
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.state.d_psi[0, a, :].flatten(), psi_m[a], 12)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_psi[0, a, :].flatten(), psi_m[a], 12)
 
     def test_dgmsolver_solve_orders_fixed(self):
         '''
@@ -212,14 +212,14 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.state.phi[0, 0, :] = phi
         for a in range(4):
             pydgm.state.psi[0, a, :] = phi / 2.0
-        pydgm.state.d_keff = 1.0
+        pydgm.state.keff = 1.0
         old_psi = pydgm.state.psi
 
         # Get the moments from the fluxes
         pydgm.dgmsolver.compute_flux_moments()
 
-        pydgm.state.d_phi = pydgm.dgm.phi_m_zero
-        pydgm.state.d_psi = pydgm.dgm.psi_m_zero
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
         phi_m_test = np.array([46.0567816728045685, 39.9620014433207302])
 
@@ -229,8 +229,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -240,8 +240,8 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         order = 1
 
-        pydgm.dgm.phi_m_zero = pydgm.state.d_phi
-        pydgm.dgm.psi_m_zero = pydgm.state.d_psi
+        pydgm.dgm.phi_m_zero = pydgm.state.mg_phi
+        pydgm.dgm.psi_m_zero = pydgm.state.mg_psi
 
         phi_m_test = np.array([-7.7591835637013871, 18.2829496616545661])
 
@@ -250,8 +250,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -266,8 +266,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -282,8 +282,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -311,14 +311,14 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.state.phi[0, 0, :] = phi
         for a in range(4):
             pydgm.state.psi[0, a, :] = phi / 2.0
-        pydgm.state.d_keff = 1.0674868709852505
+        pydgm.state.keff = 1.0674868709852505
         old_psi = pydgm.state.psi
 
         # Get the moments from the fluxes
         pydgm.dgmsolver.compute_flux_moments()
 
-        pydgm.state.d_phi = pydgm.dgm.phi_m_zero
-        pydgm.state.d_psi = pydgm.dgm.psi_m_zero
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
         phi_m_test = np.array([2.6655619166815265, 0.9635261040519922])
         norm_frac = 2 / sum(phi_m_test)
@@ -330,10 +330,10 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        assert_almost_equal(pydgm.state.d_keff, 1.0674868709852505, 12)
+        assert_almost_equal(pydgm.state.keff, 1.0674868709852505, 12)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -342,8 +342,8 @@ class TestDGMSOLVER(unittest.TestCase):
         ########################################################################
         order = 1
 
-        pydgm.dgm.phi_m_zero = pydgm.state.d_phi
-        pydgm.dgm.psi_m_zero = pydgm.state.d_psi
+        pydgm.dgm.phi_m_zero = pydgm.state.mg_phi
+        pydgm.dgm.psi_m_zero = pydgm.state.mg_psi
 
         phi_m_test = np.array([-0.2481536345018054, 0.5742286414743346])
         phi_m_test *= norm_frac
@@ -353,8 +353,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve(True)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -370,8 +370,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve(True)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -387,8 +387,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve(True)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -478,14 +478,14 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.state.phi = phi
         pydgm.state.psi = psi
-        pydgm.state.d_keff = 0.33973731848126831
+        pydgm.state.keff = 0.33973731848126831
         old_psi = pydgm.state.psi
 
         # Get the moments from the fluxes
         pydgm.dgmsolver.compute_flux_moments()
 
-        pydgm.state.d_phi = pydgm.dgm.phi_m_zero
-        pydgm.state.d_psi = pydgm.dgm.psi_m_zero
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
         phi_m_test = pydgm.dgm.phi_m_zero.flatten('F')
         phi_m_test /= np.linalg.norm(phi_m_test, 1) / 10
@@ -496,16 +496,16 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten('F'), phi_m_test, 12)
 
         ########################################################################
         order = 1
 
-        pydgm.dgm.phi_m_zero = pydgm.state.d_phi
-        pydgm.dgm.psi_m_zero = pydgm.state.d_psi
+        pydgm.dgm.phi_m_zero = pydgm.state.mg_phi
+        pydgm.dgm.psi_m_zero = pydgm.state.mg_psi
 
         phi_m_test = np.array([0.66268605409797898, 1.1239769588944581, 1.4011457517310117, 1.3088156391543195, 0.84988298005049157, 3.7839914869954847E-002, 5.7447025802385317E-002, 5.1596378790218486E-002, 3.8939158159247110E-002, 1.8576596655769165E-002])
 
@@ -514,8 +514,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve(True)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.T.flatten(), phi_m_test, 12)
 
@@ -528,8 +528,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve(True)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.T.flatten(), phi_m_test, 12)
 
@@ -542,8 +542,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve(True)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.T.flatten(), phi_m_test, 12)
 
@@ -759,7 +759,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, 0.8099523232983424, 12)
+        assert_almost_equal(pydgm.state.keff, 0.8099523232983424, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -795,7 +795,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, 0.185134666261, 12)
+        assert_almost_equal(pydgm.state.keff, 0.185134666261, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -832,7 +832,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, 0.30413628310914226, 12)
+        assert_almost_equal(pydgm.state.keff, 0.30413628310914226, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -880,7 +880,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, keff_test, 12)
+        assert_almost_equal(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -925,7 +925,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, keff_test, 12)
+        assert_almost_equal(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -972,7 +972,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, keff_test, 12)
+        assert_almost_equal(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -1013,7 +1013,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        self.assertAlmostEqual(pydgm.state.d_keff, keff_test, 12)
+        self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -1052,7 +1052,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        self.assertAlmostEqual(pydgm.state.d_keff, keff_test, 11)
+        self.assertAlmostEqual(pydgm.state.keff, keff_test, 11)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -1092,7 +1092,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        self.assertAlmostEqual(pydgm.state.d_keff, keff_test, 12)
+        self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()

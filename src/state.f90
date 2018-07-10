@@ -6,23 +6,23 @@ module state
   implicit none
 
   double precision, allocatable, dimension(:,:,:,:) :: &
-      d_sig_s        ! Scattering cross section moments
+      mg_sig_s        ! Scattering cross section moments
   double precision, allocatable, dimension(:,:,:) :: &
       psi,         & ! Angular flux
       source,      & ! External source
       phi,         & ! Scalar Flux
-      d_source,    & ! Extermal source moments
-      d_phi,       & ! Scalar flux moments
-      d_psi          ! Angular flux moments
+      mg_source,    & ! Extermal source mg container
+      mg_phi,       & ! Scalar flux mg container
+      mg_psi          ! Angular flux mg container
   double precision, allocatable, dimension(:,:) :: &
-      d_nu_sig_f,  & ! Fission cross section moments (times nu)
-      d_chi,       & ! Chi spectrum moments
-      d_sig_t,     & ! Scalar total cross section moments
-      d_incoming     ! Angular flux incident on the current cell
+      mg_nu_sig_f,  & ! Fission cross section mg container (times nu)
+      mg_chi,       & ! Chi spectrum mg container
+      mg_sig_t,     & ! Scalar total cross section mg container
+      mg_incoming     ! Angular flux incident on the current cell
   double precision, allocatable, dimension(:) :: &
-      d_density      ! Fission density
+      density      ! Fission density
   double precision :: &
-      d_keff,      & ! k-eigenvalue
+      keff,      & ! k-eigenvalue
       norm_frac,   & ! Fraction of normalization for eigenvalue problems
       sweep_count    ! Counter for the number of transport sweeps
   
@@ -60,6 +60,7 @@ module state
     ! get the basis vectors
     call initialize_polynomials()
 
+    ! Determine the correct size for the multigroup containers
     number_groups = number_fine_groups
     if (use_DGM) then
       ! Initialize DGM moments
@@ -131,13 +132,13 @@ module state
     end if
 
     ! Initialize the angular flux incident on the boundary
-    allocate(d_incoming(number_angles, number_groups))
+    allocate(mg_incoming(number_angles, number_groups))
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen
     if (solver_type == 'fixed') then
-      d_keff = 1.0
+      keff = 1.0
     else
-      d_keff = initial_keff
+      keff = initial_keff
     end if
 
     ! Set external source to zero if eigen problem
@@ -149,21 +150,21 @@ module state
     end if
 
     ! Initialize the fission density
-    allocate(d_density(number_cells))
+    allocate(density(number_cells))
     call update_fission_density()
 
     ! Normalize the scalar and angular fluxes
     call normalize_flux(phi, psi)
 
-    ! Allocate the moment containers
-    allocate(d_source(number_cells, 2 * number_angles, number_groups))
-    allocate(d_nu_sig_f(number_cells, number_groups))
-    allocate(d_sig_t(number_cells, number_groups))
-    allocate(d_phi(0:number_legendre, number_cells, number_groups))
-    allocate(d_chi(number_cells, number_groups))
-    allocate(d_sig_s(0:number_legendre, number_cells, number_groups, number_groups))
+    ! Size the mg containers to be fine/coarse group for non/DGM problems
+    allocate(mg_source(number_cells, 2 * number_angles, number_groups))
+    allocate(mg_nu_sig_f(number_cells, number_groups))
+    allocate(mg_sig_t(number_cells, number_groups))
+    allocate(mg_phi(0:number_legendre, number_cells, number_groups))
+    allocate(mg_chi(number_cells, number_groups))
+    allocate(mg_sig_s(0:number_legendre, number_cells, number_groups, number_groups))
     if (store_psi) then
-      allocate(d_psi(number_cells, 2 * number_angles, number_groups))
+      allocate(mg_psi(number_cells, 2 * number_angles, number_groups))
     end if
 
   end subroutine initialize_state
@@ -198,32 +199,32 @@ module state
     if (allocated(psi)) then
       deallocate(psi)
     end if
-    if (allocated(d_source)) then
-      deallocate(d_source)
+    if (allocated(mg_source)) then
+      deallocate(mg_source)
     end if
-    if (allocated(d_nu_sig_f)) then
-      deallocate(d_nu_sig_f)
+    if (allocated(mg_nu_sig_f)) then
+      deallocate(mg_nu_sig_f)
     end if
-    if (allocated(d_phi)) then
-      deallocate(d_phi)
+    if (allocated(mg_phi)) then
+      deallocate(mg_phi)
     end if
-    if (allocated(d_chi)) then
-      deallocate(d_chi)
+    if (allocated(mg_chi)) then
+      deallocate(mg_chi)
     end if
-    if (allocated(d_sig_s)) then
-      deallocate(d_sig_s)
+    if (allocated(mg_sig_s)) then
+      deallocate(mg_sig_s)
     end if
-    if (allocated(d_psi)) then
-      deallocate(d_psi)
+    if (allocated(mg_psi)) then
+      deallocate(mg_psi)
     end if
-    if (allocated(d_sig_t)) then
-      deallocate(d_sig_t)
+    if (allocated(mg_sig_t)) then
+      deallocate(mg_sig_t)
     end if
-    if (allocated(d_incoming)) then
-      deallocate(d_incoming)
+    if (allocated(mg_incoming)) then
+      deallocate(mg_incoming)
     end if
-    if (allocated(d_density)) then
-      deallocate(d_density)
+    if (allocated(density)) then
+      deallocate(density)
     end if
   end subroutine finalize_state
 
@@ -305,13 +306,13 @@ module state
       f    ! Temporary array to hold the fission cross section
 
     ! Reset the fission density
-    d_density = 0.0
+    density = 0.0
 
     ! Sum the fission reaction rate over groups for each cell
     do g = 1, number_fine_groups
       f = nu_sig_f(g, :)
       do c = 1, number_cells
-        d_density(c) = d_density(c) + f(mMap(c)) * phi(0, c, g)
+        density(c) = density(c) + f(mMap(c)) * phi(0, c, g)
       end do
     end do
 
@@ -325,16 +326,16 @@ module state
     use control, only : store_psi
 
     ! Total XS
-    print *, 'Sig_t = ', d_sig_t
+    print *, 'Sig_t = ', mg_sig_t
 
     ! Fission XS
-    print *, 'vSig_f = ', d_nu_sig_f
+    print *, 'vSig_f = ', mg_nu_sig_f
 
     ! Scatter XS
-    print *, 'Sig_s = ', d_sig_s
+    print *, 'Sig_s = ', mg_sig_s
 
     ! Chi
-    print *, 'chi = ', d_chi
+    print *, 'chi = ', mg_chi
 
     ! Phi
     print *, 'phi = ', phi
@@ -345,10 +346,10 @@ module state
     end if
 
     ! incoming
-    print *, 'incident = ', d_incoming
+    print *, 'incident = ', mg_incoming
 
     ! k
-    print *, 'k = ', d_keff
+    print *, 'k = ', keff
 
   end subroutine output_moments
 
