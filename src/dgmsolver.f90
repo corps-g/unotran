@@ -111,8 +111,6 @@ module dgmsolver
         psi = (1.0 - lamb) * old_psi + lamb * psi
       end if
 
-      call normalize_flux(phi, psi)
-
       ! Compute the fission density
       call update_fission_density()
 
@@ -134,6 +132,9 @@ module dgmsolver
       end if
 
     end do
+
+    ! Do final normalization
+    call normalize_flux(phi, psi)
 
     if (recon_count == max_recon_iters) then
       if (.not. ignore_warnings) then
