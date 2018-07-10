@@ -104,7 +104,7 @@ module solver
         call mg_solve(f_source, d_phi, d_psi, d_incoming, higher_dgm_flag)
 
         ! Compute new eigenvalue if eigen problem
-        d_keff = sum(abs(d_phi(0,:,:))) / sum(abs(old_phi(0,:,:)))
+        d_keff = d_keff * sum(abs(d_phi(0,:,:))) / sum(abs(old_phi(0,:,:)))
 
         ! Normalize the fluxes
         call normalize_flux(d_phi, d_psi)
@@ -168,7 +168,7 @@ module solver
 
     do g = 1, number_groups
       do c = 1, number_cells
-        source(c,:,g) = d_source(c,:,g) + 0.5 * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:))
+        source(c,:,g) = d_source(c,:,g) + 0.5 / d_keff * d_chi(c, g) * dot_product(d_nu_sig_f(c,:), phi(0,c,:))
       end do
     end do
 
