@@ -31,8 +31,9 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.equation_type = 'DD'
         pydgm.control.legendre_order = 0
         pydgm.control.use_DGM = False
-        pydgm.control.max_inner_iters = 100
-        pydgm.control.max_outer_iters = 2000
+        pydgm.control.max_eigen_iters = 1000
+        pydgm.control.max_outer_iters = 1000
+        pydgm.control.max_inner_iters = 1
 
     def test_solver_vacuum1(self):
         ''' 
@@ -757,17 +758,8 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.initialize_solver()
 
         # set the test flux
-        phi_test = [[4.864197, 4.859141, 4.849012, 4.811817, 4.757549, 4.716254,
-                     4.684631, 4.660331, 4.641684, 4.627509, 4.616972, 4.609501,
-                     4.604712, 4.602373, 4.602373, 4.604712, 4.609501, 4.616972,
-                     4.627509, 4.641684, 4.660331, 4.684631, 4.716254, 4.757549,
-                     4.811817, 4.849012, 4.859141, 4.864197],
-                    [0.015, 0.045, 0.075, 0.08501839, 0.07538819,
-                     0.06634441, 0.05774807, 0.04949489, 0.04150525, 0.03371702,
-                     0.02608044, 0.01855435, 0.0111035, 0.00369638, -0.00369638,
-                     -0.0111035, -0.01855435, -0.02608044, -0.03371702, -0.04150525,
-                     -0.04949489, -0.05774807, -0.06634441, -0.07538819, -0.08501839,
-                     -0.075, -0.045, -0.015]]
+        phi_test = [[4.864197, 4.859141, 4.849012, 4.811817, 4.757549, 4.716254, 4.684631, 4.660331, 4.641684, 4.627509, 4.616972, 4.609501, 4.604712, 4.602373, 4.602373, 4.604712, 4.609501, 4.616972, 4.627509, 4.641684, 4.660331, 4.684631, 4.716254, 4.757549, 4.811817, 4.849012, 4.859141, 4.864197],
+                    [0.015, 0.045, 0.075, 0.08501839, 0.07538819, 0.06634441, 0.05774807, 0.04949489, 0.04150525, 0.03371702, 0.02608044, 0.01855435, 0.0111035, 0.00369638, -0.00369638, -0.0111035, -0.01855435, -0.02608044, -0.03371702, -0.04150525, -0.04949489, -0.05774807, -0.06634441, -0.07538819, -0.08501839, -0.075, -0.045, -0.015]]
 
         # Solve the problem
         pydgm.solver.solve()
@@ -779,6 +771,64 @@ class TestSOLVER(unittest.TestCase):
         # Test the L1 scalar flux
         phi = pydgm.state.mg_phi[1, :, :].flatten()
         np.testing.assert_array_almost_equal(phi, phi_test[1], 6)
+
+    def test_solver_1loop(self):
+        def set():
+            self.setUp()
+            # define the nonstandard test variables
+            pydgm.control.solver_type = 'eigen'.ljust(256)
+            pydgm.control.source_value = 0.0
+            pydgm.control.allow_fission = True
+            pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
+            pydgm.control.fine_mesh = [2, 1, 2]
+            pydgm.control.coarse_mesh = [0.0, 5.0, 6.0, 11.0]
+            pydgm.control.material_map = [1, 5, 3]  # UO2 | water | MOX
+            pydgm.control.boundary_type = [0.0, 0.0]  # Vacuum | Vacuum
+
+        #-----------------------------------------------------------------------
+        # Solve reference problem
+        #-----------------------------------------------------------------------
+
+        # Get reference solution
+        set()
+
+        # Initialize the dependancies
+        pydgm.solver.initialize_solver()
+        pydgm.solver.solve()
+
+        # Save reference values
+        ref_keff = pydgm.state.keff * 1
+        ref_phi = pydgm.state.mg_phi * 1
+        ref_psi = pydgm.state.mg_psi * 1
+
+        # Clean up the problem
+        pydgm.solver.finalize_solver()
+        pydgm.control.finalize_control()
+
+        #-----------------------------------------------------------------------
+        # Solve test problem
+        #-----------------------------------------------------------------------
+        set()
+        # limit to a single iteration
+        pydgm.control.max_recon_iters = 1
+        pydgm.control.max_eigen_iters = 1
+        pydgm.control.max_outer_iters = 1
+        pydgm.control.max_inner_iters = 1
+
+        # Initialize the dependancies
+        pydgm.solver.initialize_solver()
+
+        # Set the initial values
+        pydgm.state.keff = ref_keff
+        pydgm.state.mg_phi = ref_phi
+        pydgm.state.mg_psi = ref_psi
+
+        # Solve the problem
+        pydgm.solver.solve()
+
+        np.testing.assert_array_almost_equal(pydgm.state.keff, ref_keff, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi, ref_phi, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_psi, ref_psi, 12)
 
     def tearDown(self):
         pydgm.solver.finalize_solver()
