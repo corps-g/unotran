@@ -1,3 +1,4 @@
+from collections import OrderedDict
 import sys
 sys.path.append('~/workspace/unotran/src')
 import pydgm
@@ -16,11 +17,6 @@ rcParams['lines.linewidth'] = 1.85
 rcParams['axes.labelsize'] = 20
 rcParams.update({'figure.autolayout': True})
 np.set_printoptions(linewidth=132)
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
-
 
 def getEnergy(G):
     with open('../makeXS/{0}g/{0}gXS.anlxs'.format(G), 'r') as f:
@@ -30,34 +26,34 @@ def getEnergy(G):
 
 def makePlot(G):
     E = getEnergy(G)
+    meanE = 0.5 * (E[1:] + E[:-1])
     diffE = E[:-1] - E[1:]
     snapshots = getSnapshots(G, 'full')
-    snapMean = np.mean(snapshots, axis=1)
-    norm = sum(snapMean) / 100
-    print norm
+    snapMean = np.mean(snapshots, axis=1) * meanE / diffE
+    norm = np.linalg.norm(snapMean)
     snapMean /= norm
 
-    EE, minsnap = barchart(E, np.min(snapshots, axis=1) / norm / diffE)
-    EE, maxsnap = barchart(E, np.max(snapshots, axis=1) / norm / diffE)
+    EE, minsnap = barchart(E, np.min(snapshots, axis=1) / norm / diffE * meanE)
+    EE, maxsnap = barchart(E, np.max(snapshots, axis=1) / norm / diffE * meanE)
 
-    full = KLT(snapshots)[:, 0]
-    uo2 = KLT(getSnapshots(G, 'uo2'))[:, 0]
-    mox = KLT(getSnapshots(G, 'mox'))[:, 0]
-    com = KLT(np.concatenate((getSnapshots(G, 'uo2'), getSnapshots(G, 'mox'), getSnapshots(G, 'junction')), axis=1))[:, 0]
+    full = KLT(snapshots)[:, 0] * meanE / diffE
+    uo2 = KLT(getSnapshots(G, 'uo2'))[:, 0] * meanE / diffE
+    mox = KLT(getSnapshots(G, 'mox'))[:, 0] * meanE / diffE
+    com = KLT(np.concatenate((getSnapshots(G, 'uo2'), getSnapshots(G, 'mox'), getSnapshots(G, 'junction')), axis=1))[:, 0] * meanE / diffE
 
     norm = np.mean(snapMean / full)
 
-    plt.plot(*barchart(E, full * norm / diffE), label='full', c='b', ls='-')
-    plt.plot(*barchart(E, uo2 * norm / diffE), label='UO$_2$', c='g', ls='-')
-    plt.plot(*barchart(E, mox * norm / diffE), label='MOX', c='r', ls='-')
-    plt.plot(*barchart(E, com * norm / diffE), label='combine', c='k', ls='-')
+    plt.plot(*barchart(E, full * norm), label='full', c='b', ls='-')
+    plt.plot(*barchart(E, uo2 * norm), label='UO$_2$', c='g', ls='-')
+    plt.plot(*barchart(E, mox * norm), label='MOX', c='r', ls='-')
+    plt.plot(*barchart(E, com * norm), label='combine', c='k', ls='-')
     plt.fill_between(EE, minsnap, maxsnap, alpha=0.5)
     plt.xlim([min(E), max(E)])
-    plt.ylim([1e-11, 1e2])
+    plt.ylim([1e-5, 1e0])
     plt.xscale('log')
     plt.yscale('log')
     plt.xlabel('energy [eV]')
-    plt.ylabel('normalized scalar flux')
+    plt.ylabel('flux per unit lethargy')
     plt.legend(loc=0)
     plt.savefig('plots/{}_snapshots.png'.format(G))
     plt.clf()
@@ -155,11 +151,45 @@ def modGramSchmidt(A):
 
     return Q, R
 
+def plotBasis(G, basisType):
+    basis = np.loadtxt('klt_{0}/klt_{0}_{1}g'.format(basisType, G))
+    vectors = np.zeros((3, G))
+    for g in range(G):
+        b = np.trim_zeros(basis[g], trim='f')
+        if len(b) >= 3:
+            b = b[:3]
+        else:
+            bb = np.zeros(3)
+            bb[:b.shape[0]] = b
+            b = bb
+        vectors[:, g] = b
+    plot(vectors, basisType)
 
-def plot(A):
+def plot(A, basisType):
+    colors = ['b', 'g', 'm']
     plt.clf()
-    plt.plot(A.T)
-    plt.show()
+    G = A.shape[1]
+
+
+    bounds, diffs = getGroupBounds(G)
+    bounds -= 1
+    print bounds
+
+    for i, a in enumerate(A):
+        for CG in range(len(diffs)):
+            if i < diffs[CG]:
+                ming = bounds[CG]
+                maxg = bounds[CG + 1]
+                plt.plot(range(ming, maxg), a[ming:maxg], c=colors[i], label='order {}'.format(i))
+    plt.vlines(bounds[1:-1] - 0.5, -1, 1)
+    plt.xlim([0, G - 1])
+    plt.ylim([-1, 1])
+    plt.xlabel('Energy group')
+    plt.ylabel('Normalized basis')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    by_label = OrderedDict(zip(labels, handles))
+    plt.legend(by_label.values(), by_label.keys(), loc='lower center', ncol=3)
+    plt.savefig('plots/{}_{}.png'.format(G, basisType))
     return
 
 
@@ -290,25 +320,21 @@ def makeBasis(G, basisType, flat=False):
         P.append(A)
         basis = A if i == 0 else sp.linalg.block_diag(basis, A)
 
+    plt.plot(basis[:,:2])
+
     # Save the basis to file
     np.savetxt('{0}/{1}_{2}g'.format(name, name, G), basis)
     #np.savetxt('{0}/{1}_{2}g'.format(name, name if flat else 'f_' + name, G), basis)
 
 
-def plotBasis(G, basisType):
-    basis = np.loadtxt('klt_{0}/klt_{0}_{1}g'.format(basisType, G))
-    plot(basis[:3])
-
-
 if __name__ == '__main__':
     task = -1
     Gs = [2, 3, 4, 7, 8, 9, 12, 14, 16, 18, 23, 25, 30, 33, 40, 43, 44, 50, 69, 70, 100, 172, 174, 175, 238, 240, 315, 1968]
+    Gs = [44, 238, 1968]
     for G in Gs:
         makePlot(G)
         for basisType in ['full', 'mox', 'uo2', 'combine']:
             task += 1
-            if (task % size) != rank: continue
-
             print G, basisType
             makeBasis(G, basisType, flat=True)
-            # plotBasis(G, basisType)
+            plotBasis(G, basisType)

@@ -18,6 +18,53 @@ rcParams['axes.labelsize'] = 20
 rcParams.update({'figure.autolayout': True})
 np.set_printoptions(linewidth=132)
 
+def getSpectrum(G, geoOption):
+    try:
+        phi = np.load('inf_phi_g{}_{}.npy'.format(G, geoOption))
+    except IOError:
+        setVariables(G, geoOption)
+        pydgm.solver.initialize_solver()
+        pydgm.solver.solve()
+        phi = np.copy(pydgm.state.phi)
+        pydgm.solver.finalize_solver()
+        np.save('inf_phi_g{}_{}'.format(G, geoOption), phi)
+        # plot(phi[0])
+    return phi[0,0]
+
+def setVariables(G, geoOption):
+    # Set the variables for the discrete ordinance problem
+
+    setGeometry(geoOption)
+    pydgm.control.boundary_type = [1.0, 1.0]  # reflective boundarys
+    pydgm.control.solver_type = 'eigen'.ljust(256)
+    pydgm.control.allow_fission = True
+    pydgm.control.source_value = 0.0
+    pydgm.control.xs_name = '../makeXS/{0}g/{0}gXS.anlxs'.format(G).ljust(256)
+    pydgm.control.angle_order = 8
+    pydgm.control.angle_option = pydgm.angle.gl
+    pydgm.control.eigen_print = 1
+    pydgm.control.outer_print = 0
+    pydgm.control.inner_print = 0
+    pydgm.control.eigen_tolerance = 1e-14
+    pydgm.control.outer_tolerance = 1e-14
+    pydgm.control.inner_tolerance = 1e-14
+    pydgm.control.max_eigen_iters = 10000
+    pydgm.control.max_outer_iters = 10
+    pydgm.control.max_inner_iters = 1
+    pydgm.control.store_psi = True
+    pydgm.control.equation_type = 'DD'
+    pydgm.control.legendre_order = 0
+    pydgm.control.ignore_warnings = True
+
+def setGeometry(geoOption):
+    '''Construct the geometry for the snapshot problems'''
+    pydgm.control.fine_mesh = [1]
+    pydgm.control.coarse_mesh = [0.0, 1.0]
+    if geoOption == 'uo2':
+        pydgm.control.material_map = [1]
+    elif geoOption == 'mox':
+        pydgm.control.material_map = [3]
+
 def barchart(x, y) :
     X = np.zeros(2*len(y))
     Y = np.zeros(2*len(y))
@@ -43,7 +90,7 @@ def modGramSchmidt(A):
     return Q, R
 
 def plotBasis(G):
-    basis = np.loadtxt('dlp/dlp_{}g'.format(G))
+    basis = np.loadtxt('dlp/mdlp_{}g'.format(G))
     vectors = np.zeros((3, G))
     for g in range(G):
         b = np.trim_zeros(basis[g], trim='f')
@@ -62,8 +109,7 @@ def plot(A):
     G = A.shape[1]
 
     bounds, diffs = getGroupBounds(G)
-    bounds -= 1
-    bounds = np.concatenate(([0], bounds))
+    print bounds, diffs
 
     for i, a in enumerate(A):
         for CG in range(len(diffs)):
@@ -79,7 +125,7 @@ def plot(A):
     handles, labels = plt.gca().get_legend_handles_labels()
     by_label = OrderedDict(zip(labels, handles))
     plt.legend(by_label.values(), by_label.keys(), loc='lower center', ncol=3)
-    plt.savefig('plots/{}_dlp.png'.format(G))
+    plt.savefig('plots/{}_mdlp.png'.format(G))
     return
 
 def DLP(size):
@@ -162,27 +208,35 @@ def getGroupBounds(G):
     groupBounds[-1] += 1
 
     diffs = groupBounds[1:] - groupBounds[:-1]
-    groupBounds = groupBounds[1:]
+    groupBounds -= 1
 
     return groupBounds, diffs
 
-def makeBasis(G):
+def makeBasis(G, option='uo2'):
     # Get the coarse group bounds
     groupBounds, diffs = getGroupBounds(G)
 
     # Initialize the basis lists
     P = []
     basis = np.array([])
+    spectrum = getSpectrum(G, option)
 
     # Compute the basis for each coarse group
     for i, order in enumerate(diffs):
         A = DLP(order)
+        for j in range(A.shape[1] - 1):
+            A[:, j + 1] = A[:, j] * spectrum[groupBounds[i]: groupBounds[i + 1]]
+
+        A, r = np.linalg.qr(A, mode='complete')
+
+        if np.sum(A[:, 0]) < 0:
+            A *= -1
 
         P.append(A)
         basis = A if i == 0 else sp.linalg.block_diag(basis, A)
 
     # Save the basis to file
-    np.savetxt('{0}/{0}_{1}g'.format('dlp', G), basis)
+    np.savetxt('{0}/m{0}_{1}g'.format('dlp', G), basis)
 
 
 if __name__ == '__main__':

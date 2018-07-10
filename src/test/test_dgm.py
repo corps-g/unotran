@@ -50,14 +50,14 @@ class TestDGM(unittest.TestCase):
         self.assertEqual(pydgm.control.number_coarse_groups, 2)
 
         # Check that arrays were properly resized
-        assert(pydgm.state.d_phi.shape == (8, 1, 2))
-        assert(pydgm.state.d_source.shape == (1, 4, 2))
-        assert(pydgm.state.d_nu_sig_f.shape == (1, 2))
-        assert(pydgm.state.d_sig_t.shape == (1, 2))
-        assert(pydgm.state.d_chi.shape == (1, 2))
-        assert(pydgm.state.d_sig_s.shape == (8, 1, 2, 2))
-        assert(pydgm.state.d_psi.shape == (1, 4, 2))
-        assert(pydgm.state.d_incoming.shape == (2, 2))
+        assert(pydgm.state.mg_phi.shape == (8, 1, 2))
+        assert(pydgm.state.mg_source.shape == (1, 4, 2))
+        assert(pydgm.state.mg_nu_sig_f.shape == (1, 2))
+        assert(pydgm.state.mg_sig_t.shape == (1, 2))
+        assert(pydgm.state.mg_chi.shape == (1, 2))
+        assert(pydgm.state.mg_sig_s.shape == (8, 1, 2, 2))
+        assert(pydgm.state.mg_psi.shape == (1, 4, 2))
+        assert(pydgm.state.mg_incoming.shape == (2, 2))
 
     def test_dgm_test3(self):
         '''
@@ -130,7 +130,7 @@ class TestDGM(unittest.TestCase):
         for i in range(4):
             pydgm.dgmsolver.compute_incoming_flux(i, psi)
             for a in range(2):
-                np.testing.assert_array_almost_equal(pydgm.state.d_incoming[a, :], test[:, i], 12)
+                np.testing.assert_array_almost_equal(pydgm.state.mg_incoming[a, :], test[:, i], 12)
 
     def test_dgm_compute_xs_moments(self):
         '''
@@ -159,8 +159,8 @@ class TestDGM(unittest.TestCase):
             pydgm.dgmsolver.slice_xs_moments(i)
             np.testing.assert_array_almost_equal(pydgm.dgm.delta_m[0].flatten(), delta_m_test.flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.dgm.sig_s_m[:, :, :, :, i].flatten(), sig_s_m_test[i].flatten(), 12)
-            np.testing.assert_array_almost_equal(pydgm.state.d_sig_t.flatten(), sig_t_m_test)
-            np.testing.assert_array_almost_equal(pydgm.state.d_nu_sig_f.flatten(), nu_sig_f_m_test)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_sig_t.flatten(), sig_t_m_test)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_nu_sig_f.flatten(), nu_sig_f_m_test)
 
     def test_dgm_compute_source_moments(self):
         '''
@@ -263,8 +263,8 @@ class TestDGM2(unittest.TestCase):
             for a in range(4):
                 np.testing.assert_array_almost_equal(pydgm.dgm.delta_m[0, a, :, i].flatten(), delta_m_test[:, i].flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.dgm.sig_s_m[:, :, :, :, i].flatten('F'), sig_s_m_test[:, :, i].flatten(), 12)
-            np.testing.assert_array_almost_equal(pydgm.state.d_sig_t.flatten(), sig_t_m_test)
-            np.testing.assert_array_almost_equal(pydgm.state.d_nu_sig_f.flatten(), nu_sig_f_m_test)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_sig_t.flatten(), sig_t_m_test)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_nu_sig_f.flatten(), nu_sig_f_m_test)
 
     def test_dgm_compute_source_moments(self):
         '''

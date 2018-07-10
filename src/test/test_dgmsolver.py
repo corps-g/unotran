@@ -18,6 +18,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.outer_print = False
         pydgm.control.inner_print = False
         pydgm.control.recon_tolerance = 1e-14
+        pydgm.control.eigen_tolerance = 1e-14
         pydgm.control.outer_tolerance = 1e-15
         pydgm.control.inner_tolerance = 1e-15
         pydgm.control.lamb = 1.0
@@ -28,7 +29,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.ignore_warnings = True
         pydgm.control.max_recon_iters = 1000
         pydgm.control.max_eigen_iters = 1000
-        pydgm.control.max_outer_iters = 1000
+        pydgm.control.max_outer_iters = 100
         pydgm.control.max_inner_iters = 100
 
     # Define methods to set various variables for the tests
@@ -93,33 +94,33 @@ class TestDGMSOLVER(unittest.TestCase):
         ########################################################################
         order = 0
 
-        phi = np.array([[[ 1.0270690018072897, 1.1299037448361107, 1.031220528952085 , 1.0309270835964415, 1.0404782471236467, 1.6703756546880606, 0.220435842109856 ]]])
-        psi = np.array([[[ 0.28670426208182  , 0.3356992956691126, 0.3449054812807308, 0.3534008341488156, 0.3580544322663831, 0.6250475242024148, 0.0981878157679874],
-                         [ 0.6345259657784981, 0.6872354146444389, 0.6066643580008859, 0.6019079440169605, 0.6067485919732419, 0.9472768646717264, 0.1166347906435061],
-                         [ 0.6345259657784981, 0.6872354146444389, 0.6066643580008859, 0.6019079440169605, 0.6067485919732419, 0.9472768646717264, 0.1166347906435061],
-                         [ 0.28670426208182  , 0.3356992956691126, 0.3449054812807308, 0.3534008341488156, 0.3580544322663831, 0.6250475242024148, 0.0981878157679874]]])
-        phi_m_test = np.array([[ 2.1095601795959631, 0.0194781579525075, -0.0515640941922323, -0.0670614070008202],
-                               [ 1.6923809227259041, 0.5798575454457766, -0.8490899895663372, 0.                ]])
-        psi_m_test = np.array([[[ 0.6603549365902395, -0.0467999863865106, -0.0202498403596039, -0.0087381098484839],
-                                [ 0.6242829410728972, 0.1837534467300195, -0.3240890486311904, 0.                ]],
-                               [[ 1.2651668412203918, 0.0398970701525067, -0.0287329314249332, -0.0467550965071546],
-                                [ 0.9645561434964076, 0.3465627924733725, -0.4781282918931471, 0.                ]],
-                               [[ 1.2651668412203918, 0.0398970701525067, -0.0287329314249332, -0.0467550965071546],
-                                [ 0.9645561434964076, 0.3465627924733725, -0.4781282918931471, 0.                ]],
-                               [[ 0.6603549365902395, -0.0467999863865106, -0.0202498403596039, -0.0087381098484839],
-                                [ 0.6242829410728972, 0.1837534467300195, -0.3240890486311904, 0.                ]]])
+        phi = np.array([[[1.0270690018072897, 1.1299037448361107, 1.031220528952085, 1.0309270835964415, 1.0404782471236467, 1.6703756546880606, 0.220435842109856]]])
+        psi = np.array([[[0.28670426208182, 0.3356992956691126, 0.3449054812807308, 0.3534008341488156, 0.3580544322663831, 0.6250475242024148, 0.0981878157679874],
+                         [0.6345259657784981, 0.6872354146444389, 0.6066643580008859, 0.6019079440169605, 0.6067485919732419, 0.9472768646717264, 0.1166347906435061],
+                         [0.6345259657784981, 0.6872354146444389, 0.6066643580008859, 0.6019079440169605, 0.6067485919732419, 0.9472768646717264, 0.1166347906435061],
+                         [0.28670426208182, 0.3356992956691126, 0.3449054812807308, 0.3534008341488156, 0.3580544322663831, 0.6250475242024148, 0.0981878157679874]]])
+        phi_m_test = np.array([[2.1095601795959631, 0.0194781579525075, -0.0515640941922323, -0.0670614070008202],
+                               [1.6923809227259041, 0.5798575454457766, -0.8490899895663372, 0.]])
+        psi_m_test = np.array([[[0.6603549365902395, -0.0467999863865106, -0.0202498403596039, -0.0087381098484839],
+                                [0.6242829410728972, 0.1837534467300195, -0.3240890486311904, 0.]],
+                               [[1.2651668412203918, 0.0398970701525067, -0.0287329314249332, -0.0467550965071546],
+                                [0.9645561434964076, 0.3465627924733725, -0.4781282918931471, 0.]],
+                               [[1.2651668412203918, 0.0398970701525067, -0.0287329314249332, -0.0467550965071546],
+                                [0.9645561434964076, 0.3465627924733725, -0.4781282918931471, 0.]],
+                               [[0.6603549365902395, -0.0467999863865106, -0.0202498403596039, -0.0087381098484839],
+                                [0.6242829410728972, 0.1837534467300195, -0.3240890486311904, 0.]]])
 
         # Set the converged fluxes
         pydgm.state.phi[0, 0, :] = phi
         pydgm.state.psi = psi
-        pydgm.state.d_keff = 1.0
+        pydgm.state.keff = 1.0
         old_psi = pydgm.state.psi
 
         # Get the moments from the fluxes
         pydgm.dgmsolver.compute_flux_moments()
 
-        pydgm.state.d_phi = pydgm.dgm.phi_m_zero
-        pydgm.state.d_psi = pydgm.dgm.psi_m_zero
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
@@ -130,16 +131,16 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten(), phi_m, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi.flatten(), phi_m, 12)
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.state.d_psi[0, a, :].flatten(), psi_m[a], 12)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_psi[0, a, :].flatten(), psi_m[a], 12)
 
         ########################################################################
         pydgm.control.solver_type = 'fixed'.ljust(256)
         order = 1
 
-        pydgm.state.d_phi = pydgm.dgm.phi_m_zero
-        pydgm.state.d_psi = pydgm.dgm.psi_m_zero
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
@@ -149,9 +150,9 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten(), phi_m, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi.flatten(), phi_m, 12)
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.state.d_psi[0, a, :].flatten(), psi_m[a], 12)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_psi[0, a, :].flatten(), psi_m[a], 12)
 
         ########################################################################
         order = 2
@@ -164,9 +165,9 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten(), phi_m, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi.flatten(), phi_m, 12)
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.state.d_psi[0, a, :].flatten(), psi_m[a], 12)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_psi[0, a, :].flatten(), psi_m[a], 12)
 
         ########################################################################
         order = 3
@@ -179,9 +180,9 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        np.testing.assert_array_almost_equal(pydgm.state.d_phi.flatten(), phi_m, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi.flatten(), phi_m, 12)
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.state.d_psi[0, a, :].flatten(), psi_m[a], 12)
+            np.testing.assert_array_almost_equal(pydgm.state.mg_psi[0, a, :].flatten(), psi_m[a], 12)
 
     def test_dgmsolver_solve_orders_fixed(self):
         '''
@@ -208,14 +209,14 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.state.phi[0, 0, :] = phi
         for a in range(4):
             pydgm.state.psi[0, a, :] = phi / 2.0
-        pydgm.state.d_keff = 1.0
+        pydgm.state.keff = 1.0
         old_psi = pydgm.state.psi
 
         # Get the moments from the fluxes
         pydgm.dgmsolver.compute_flux_moments()
 
-        pydgm.state.d_phi = pydgm.dgm.phi_m_zero
-        pydgm.state.d_psi = pydgm.dgm.psi_m_zero
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
         phi_m_test = np.array([46.0567816728045685, 39.9620014433207302])
 
@@ -225,8 +226,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -236,8 +237,8 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         order = 1
 
-        pydgm.dgm.phi_m_zero = pydgm.state.d_phi
-        pydgm.dgm.psi_m_zero = pydgm.state.d_psi
+        pydgm.dgm.phi_m_zero = pydgm.state.mg_phi
+        pydgm.dgm.psi_m_zero = pydgm.state.mg_psi
 
         phi_m_test = np.array([-7.7591835637013871, 18.2829496616545661])
 
@@ -246,8 +247,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -262,8 +263,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -278,8 +279,8 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -295,7 +296,6 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setGroups(7)
         self.setMesh('1')
         self.setBoundary('reflect')
-
         pydgm.control.material_map = [1]
 
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -307,14 +307,14 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.state.phi[0, 0, :] = phi
         for a in range(4):
             pydgm.state.psi[0, a, :] = phi / 2.0
-        pydgm.state.d_keff = 1.0674868709852505
+        pydgm.state.keff = 1.0674868709852505
         old_psi = pydgm.state.psi
 
         # Get the moments from the fluxes
         pydgm.dgmsolver.compute_flux_moments()
 
-        pydgm.state.d_phi = pydgm.dgm.phi_m_zero
-        pydgm.state.d_psi = pydgm.dgm.psi_m_zero
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
         phi_m_test = np.array([2.6655619166815265, 0.9635261040519922])
         norm_frac = 2 / sum(phi_m_test)
@@ -326,19 +326,20 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.solver.solve()
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        assert_almost_equal(pydgm.state.keff, 1.0674868709852505, 12)
+
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
             np.testing.assert_array_almost_equal(psi_m[0, a, :].flatten(), 0.5 * phi_m_test, 12)
 
         ########################################################################
-        pydgm.control.solver_type = 'fixed'.ljust(256)
         order = 1
 
-        pydgm.dgm.phi_m_zero = pydgm.state.d_phi
-        pydgm.dgm.psi_m_zero = pydgm.state.d_psi
+        pydgm.dgm.phi_m_zero = pydgm.state.mg_phi
+        pydgm.dgm.psi_m_zero = pydgm.state.mg_psi
 
         phi_m_test = np.array([-0.2481536345018054, 0.5742286414743346])
         phi_m_test *= norm_frac
@@ -346,10 +347,10 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
 
-        pydgm.solver.solve()
+        pydgm.solver.solve(True)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -363,10 +364,10 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
 
-        pydgm.solver.solve()
+        pydgm.solver.solve(True)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
@@ -380,14 +381,167 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
 
-        pydgm.solver.solve()
+        pydgm.solver.solve(True)
 
-        phi_m = pydgm.state.d_phi
-        psi_m = pydgm.state.d_psi
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
 
         np.testing.assert_array_almost_equal(phi_m.flatten(), phi_m_test, 12)
         for a in range(4):
             np.testing.assert_array_almost_equal(psi_m[0, a, :].flatten(), 0.5 * phi_m_test, 12)
+
+    def test_dgmsolver_solve_orders_eigen(self):
+        '''
+        Test order 0 returns the same value when given the converged input for eigen problem
+        '''
+        # Set the variables for the test
+        self.setSolver('eigen')
+        self.setGroups(7)
+        pydgm.control.fine_mesh = [2, 1, 2]
+        pydgm.control.coarse_mesh = [0.0, 5.0, 6.0, 11.0]
+        pydgm.control.material_map = [1, 5, 3]
+        self.setBoundary('vacuum')
+        pydgm.control.angle_order = 4
+        pydgm.control.xs_name = 'pythonTools/makeXS/7g/7gXS.anlxs'.ljust(256)
+        pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
+        pydgm.control.energy_group_map = [4]
+
+        pydgm.control.recon_print = 0
+        pydgm.control.eigen_print = 0
+        pydgm.control.outer_print = 0
+        pydgm.control.inner_print = 0
+
+        pydgm.control.max_recon_iters = 1
+        pydgm.control.max_eigen_iters = 1
+        pydgm.control.max_outer_iters = 1
+        pydgm.control.max_inner_iters = 1
+
+        pydgm.dgmsolver.initialize_dgmsolver()
+
+        ########################################################################
+        order = 0
+        # Set the converged fluxes
+        phi = np.array([[[1.6242342173603628, 1.6758532156636183, 0.8405795956015387, 0.1625775747329378, 0.1563516098298166, 0.1085336308306435, 0.0620903836758187],
+                         [2.6801570555785044, 3.0677447677828793, 1.449823985768667, 0.2681250437495656, 0.223283519933589, 0.1450135178081014, 0.0801799450539108],
+                         [3.2427808456629887, 3.6253236761323215, 1.5191384960457082, 0.2657137576543584, 0.1710313947880435, 0.0951334377954927, 0.0425020905708747],
+                         [3.078740985037656, 3.2970204075028375, 1.4972548403087522, 0.2419744554249777, 0.1399415224162651, 0.0804404829573202, 0.0429420231808826],
+                         [2.025799210421367, 1.9237182726014126, 0.8984917270995029, 0.1359184813858208, 0.0691590845219909, 0.0395429438436025, 0.0228838012778573]]])
+        psi = np.array([[[0.222079350493803, 0.367893748426737, 0.2235158737950531, 0.0432849735160482, 0.0463727895022187, 0.0355187175888715, 0.0228020647902731],
+                         [0.2550513848467887, 0.4086506508949974, 0.2437587461588053, 0.0472221628586482, 0.0500292057938681, 0.0378826318416084, 0.0239178952309458],
+                         [0.3382749040753765, 0.5005376956437221, 0.286799618688869, 0.0556029704482913, 0.0575482625391845, 0.0425783497502043, 0.0260285263773904],
+                         [0.5750074909228001, 0.6987878823386922, 0.3690096305377114, 0.0716465574529971, 0.0710147551998868, 0.050472013809047, 0.029289670734657],
+                         [1.0537788563447283, 0.9734181137831549, 0.4957923512162933, 0.0961929513181893, 0.0917160223956373, 0.0619693328895713, 0.0340926844459002],
+                         [1.3255267239562842, 1.1718393856235512, 0.5467264435687115, 0.106076277173514, 0.0986556746148473, 0.0659669292501365, 0.0361998578074773],
+                         [1.344743505152009, 1.275694892110874, 0.5780321815222638, 0.1109128207385084, 0.1003555995219249, 0.0669432975064532, 0.0368743872958025],
+                         [1.3169150639303029, 1.3131431962945315, 0.5934134444747582, 0.112983521080786, 0.1006890422223745, 0.0671233256092146, 0.0370834493694713]],
+                        [[0.6885553482025526, 1.089335039975068, 0.6069001661447114, 0.1149124812343551, 0.1081129453446089, 0.0743840699002204, 0.0426285473144128],
+                         [0.7725107502337766, 1.172471051868116, 0.6392311814456784, 0.1209778691436543, 0.112132068182718, 0.0761388322283501, 0.0430146562230251],
+                         [0.9634060077282145, 1.3324269934504407, 0.6954805007449582, 0.1314528956036147, 0.118327409011439, 0.0784415022220629, 0.0433112324654103],
+                         [1.3418218650264861, 1.5478745404418306, 0.7556888528998005, 0.1422593096610216, 0.1224628337686979, 0.0787659469902519, 0.0426536374845071],
+                         [1.729477941003646, 1.6974160643540823, 0.7442585512313288, 0.1383544390474219, 0.1120623770468576, 0.0714367487802417, 0.0391794498708677],
+                         [1.7051696722305358, 1.751812196905169, 0.7582694132424415, 0.1369370337610382, 0.1046797020301904, 0.0665917118269666, 0.0368374928147647],
+                         [1.5387508951279656, 1.7186389175341759, 0.7620051265765969, 0.135317553737312, 0.1007482443032926, 0.0640130246749766, 0.03564770613761],
+                         [1.4364950427473613, 1.6792136928011256, 0.7579125860583991, 0.1336344485909219, 0.098604182325654, 0.0626567122928802, 0.0350590921713212]],
+                        [[1.0637855120993567, 1.536007235058809, 0.7512967906309741, 0.1404630994676566, 0.1148056366649365, 0.0698763787160453, 0.0333956120236536],
+                         [1.1772365412120178, 1.623439996483817, 0.7691016739211279, 0.1437011859524629, 0.1139120708369216, 0.0675556535748025, 0.0312946245257323],
+                         [1.4167593249106138, 1.7678192897287501, 0.7810108616578451, 0.1455407088176891, 0.107675105342892, 0.0605018605823794, 0.026386507283148],
+                         [1.7904939585505957, 1.89352053932841, 0.7181697463659802, 0.1317868631490471, 0.082793577541892, 0.0420585740741061, 0.0164782671802563],
+                         [2.1207386621923865, 1.9637650446071278, 0.7212071824348782, 0.12113922754426, 0.0658334448866402, 0.034958078599678, 0.0145491386909295],
+                         [1.7517468797848386, 1.8958105952103985, 0.798043960365745, 0.1300892526694405, 0.0723937875679986, 0.0403303303934091, 0.0189198483739351],
+                         [1.467070365430227, 1.7596888439540126, 0.7918720366437686, 0.1285518126305569, 0.0733074589055889, 0.041586719950917, 0.0205120079897094],
+                         [1.3289690484789758, 1.6715864407056662, 0.7760283202736972, 0.1259707834617701, 0.07292702807355, 0.041730732082634, 0.0210874065276817]],
+                        [[1.3742390593834137, 1.6804507107489854, 0.7616179736173394, 0.1299769203242264, 0.0826519306543626, 0.0473735675866383, 0.0231585138707784],
+                         [1.49144934721379, 1.7347522148427128, 0.7689492552815056, 0.1302419543122088, 0.0802672835477712, 0.0454900456157048, 0.0223847678848062],
+                         [1.7148976537965404, 1.8047767702734685, 0.7718681965783076, 0.1284953242691218, 0.0749924134827408, 0.042038811478865, 0.0212660172635992],
+                         [1.9823521863053744, 1.824301962488276, 0.7671582509538742, 0.1232633853173764, 0.0683865153826584, 0.0389703997168544, 0.0208888756568808],
+                         [1.766407427859224, 1.725997639499484, 0.7874221794566647, 0.1232544708010276, 0.0685805464349633, 0.0397831546607478, 0.0217985791844457],
+                         [1.2599720527733733, 1.49648379942603, 0.7295310940574015, 0.1149891560923702, 0.0655143483522853, 0.0382708203491909, 0.0214214755581922],
+                         [1.0082273816890912, 1.3201786458724547, 0.6726845915892845, 0.1067770556462346, 0.0623342020910217, 0.0366918535944347, 0.0209491303191844],
+                         [0.8979420792671616, 1.2278028414312567, 0.6395952779081429, 0.1019260121956693, 0.0603514150340045, 0.0356908055351527, 0.0206234908394634]],
+                        [[1.4648855138220889, 1.4418670068930663, 0.623563195498159, 0.0946670238578062, 0.0444506293512766, 0.0243640916897312, 0.0133250773869966],
+                         [1.5309495376107136, 1.4197218176391437, 0.6102323454639805, 0.0916160580458327, 0.0427338663841867, 0.0237604956146663, 0.0133235079710548],
+                         [1.6038006670473024, 1.339896091825747, 0.5814786019156777, 0.0859079287167494, 0.0407949773027919, 0.0233252278905371, 0.0133720031593783],
+                         [1.4598645444698681, 1.1444682238971755, 0.5306971842723684, 0.0785437229491508, 0.039713913866885, 0.0228212778870397, 0.0128190133645811],
+                         [0.7372082396801695, 0.8130863049868733, 0.3980411128911099, 0.0611423034295212, 0.0323171553205731, 0.0184328283005457, 0.0106824936928838],
+                         [0.4329105987588648, 0.5823444079707099, 0.3100178712779538, 0.0484740605658099, 0.0272440970357683, 0.0158582531655901, 0.0096058269236477],
+                         [0.3261965462563942, 0.4754151246434862, 0.2637847730312079, 0.0416367506767501, 0.0242295879053059, 0.0142777111873078, 0.0088952657992601],
+                         [0.2839554762443687, 0.4279896897990576, 0.2420050678428891, 0.0383706034304901, 0.0227129595199266, 0.0134676747135594, 0.0085151463676417]]])
+        #psi /= (np.linalg.norm(psi) * 10)
+        phi_new = phi * 0
+        for a in range(pydgm.control.number_angles):
+            phi_new[0] += psi[:, a, :] * pydgm.angle.wt[a]
+            phi_new[0] += psi[:, 2 * pydgm.control.number_angles - a - 1, :] * pydgm.angle.wt[a]
+
+        pydgm.state.phi = phi
+        pydgm.state.psi = psi
+        pydgm.state.keff = 0.33973731848126831
+        old_psi = pydgm.state.psi
+
+        # Get the moments from the fluxes
+        pydgm.dgmsolver.compute_flux_moments()
+
+        pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
+        pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
+
+        phi_m_test = pydgm.dgm.phi_m_zero.flatten('F')
+        phi_m_test /= np.linalg.norm(phi_m_test, 1) / 10
+
+        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.dgmsolver.compute_xs_moments()
+        pydgm.dgmsolver.slice_xs_moments(order)
+
+        pydgm.solver.solve()
+
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
+
+        np.testing.assert_array_almost_equal(phi_m.flatten('F'), phi_m_test, 12)
+
+        ########################################################################
+        order = 1
+
+        pydgm.dgm.phi_m_zero = pydgm.state.mg_phi
+        pydgm.dgm.psi_m_zero = pydgm.state.mg_psi
+
+        phi_m_test = np.array([0.66268605409797898, 1.1239769588944581, 1.4011457517310117, 1.3088156391543195, 0.84988298005049157, 3.7839914869954847E-002, 5.7447025802385317E-002, 5.1596378790218486E-002, 3.8939158159247110E-002, 1.8576596655769165E-002])
+
+        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.dgmsolver.slice_xs_moments(order)
+
+        pydgm.solver.solve(True)
+
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
+
+        np.testing.assert_array_almost_equal(phi_m.T.flatten(), phi_m_test, 12)
+
+        ########################################################################
+        order = 2
+        phi_m_test = np.array([-0.20710920655711104, -0.44545552454860282, -0.46438347612912256, -0.41828263508757896, -0.18748642683048020, 3.1862102568187112E-004, 3.1141556263365915E-003, 5.3924924332473369E-003, 5.0995287080187754E-003, 3.0030380436572414E-003])
+
+        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.dgmsolver.slice_xs_moments(order)
+
+        pydgm.solver.solve(True)
+
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
+
+        np.testing.assert_array_almost_equal(phi_m.T.flatten(), phi_m_test, 12)
+
+        ########################################################################
+        order = 3
+        phi_m_test = np.array([-0.13255187402833862, -0.30996650357216082, -0.42418668341792881, -0.32530149073950271, -0.15053175043041164, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000])
+
+        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.dgmsolver.slice_xs_moments(order)
+
+        pydgm.solver.solve(True)
+
+        phi_m = pydgm.state.mg_phi
+        psi_m = pydgm.state.mg_psi
+
+        np.testing.assert_array_almost_equal(phi_m.T.flatten(), phi_m_test, 12)
 
     def test_dgmsolver_unfold_flux_moments(self):
         '''
@@ -429,9 +583,9 @@ class TestDGMSOLVER(unittest.TestCase):
     def test_dgmsolver_vacuum1(self):
         '''
         Test the 7g->2G dgm fixed source problem with vacuum boundary conditions
-        
+
         Using pin cell geometry with 3 material regions
-        
+
         with fission
         '''
         # Set the variables for the test
@@ -467,9 +621,9 @@ class TestDGMSOLVER(unittest.TestCase):
     def test_dgmsolver_reflect1(self):
         '''
         Test the 7g->2G, fixed source, infinite medium problem
-        
+
         Uses 3 spatial regions with the same material in each
-        
+
         no fission
         '''
         # Set the variables for the test
@@ -505,7 +659,7 @@ class TestDGMSOLVER(unittest.TestCase):
     def test_dgmsolver_vacuum2(self):
         '''
         Test the 7g->2G, fixed source problem with vacuum conditions
-        
+
         Uses one spatial cell, no fission
         '''
         # Set the variables for the test
@@ -516,7 +670,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.lamb = 0.8
         pydgm.control.allow_fission = True
-        phi_test = np.array([ 1.0781901438738859, 1.5439788126739036, 1.0686290157458673, 1.0348940034466163, 1.0409956199943164, 1.670442207080332 , 0.2204360523334687])
+        phi_test = np.array([1.0781901438738859, 1.5439788126739036, 1.0686290157458673, 1.0348940034466163, 1.0409956199943164, 1.670442207080332, 0.2204360523334687])
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -591,9 +745,6 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setBoundary('vacuum')
         pydgm.control.material_map = [1]
 
-        pydgm.control.lamb = 0.8
-        pydgm.control.max_eigen_iters = 1
-
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
 
@@ -604,7 +755,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, 0.8099523232983424, 12)
+        assert_almost_equal(pydgm.state.keff, 0.8099523232983424, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -629,8 +780,6 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('10')
         self.setBoundary('vacuum')
         pydgm.control.material_map = [1]
-        pydgm.control.lamb = 0.8
-        pydgm.control.max_eigen_iters = 1
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -642,7 +791,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, 0.185134666261, 12)
+        assert_almost_equal(pydgm.state.keff, 0.185134666261, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -667,8 +816,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('10')
         self.setBoundary('vacuum')
         pydgm.control.material_map = [1]
-        pydgm.control.lamb = 0.55
-        pydgm.control.max_eigen_iters = 1
+        pydgm.control.lamb = 0.4
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -680,7 +828,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, 0.30413628310914226, 12)
+        assert_almost_equal(pydgm.state.keff, 0.30413628310914226, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -708,9 +856,6 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setBoundary('reflect')
         pydgm.control.material_map = [1]
 
-        pydgm.control.lamb = 0.8
-        pydgm.control.max_eigen_iters = 1
-
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
 
@@ -731,7 +876,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, keff_test, 12)
+        assert_almost_equal(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -756,9 +901,6 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('10')
         self.setBoundary('reflect')
         pydgm.control.material_map = [1]
-        # pydgm.control.max_inner_iters = 10
-        pydgm.control.lamb = 0.8
-        pydgm.control.max_eigen_iters = 1
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -779,7 +921,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, keff_test, 12)
+        assert_almost_equal(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -804,8 +946,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('10')
         self.setBoundary('reflect')
         pydgm.control.material_map = [1]
-        pydgm.control.lamb = 0.55
-        pydgm.control.max_eigen_iters = 1
+        pydgm.control.lamb = 0.4
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -827,7 +968,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        assert_almost_equal(pydgm.state.d_keff, keff_test, 12)
+        assert_almost_equal(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -843,6 +984,7 @@ class TestDGMSOLVER(unittest.TestCase):
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     # Test the eigenvalue solver for pin cell like problems
+
     def test_dgmsolver_eigenR2gPin(self):
         '''
         Test the 2g->1G, eigenvalue problem on a pin cell of
@@ -855,8 +997,6 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('coarse_pin')
         self.setBoundary('reflect')
         pydgm.control.material_map = [2, 1, 2]
-        pydgm.control.lamb = 0.8
-        pydgm.control.max_eigen_iters = 1
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -869,7 +1009,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        self.assertAlmostEqual(pydgm.state.d_keff, keff_test, 12)
+        self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -896,8 +1036,6 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('coarse_pin')
         self.setBoundary('reflect')
         pydgm.control.material_map = [2, 1, 2]
-        pydgm.control.lamb = 0.8
-        pydgm.control.max_eigen_iters = 1
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -910,7 +1048,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        self.assertAlmostEqual(pydgm.state.d_keff, keff_test, 12)
+        self.assertAlmostEqual(pydgm.state.keff, keff_test, 11)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -937,8 +1075,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('coarse_pin')
         self.setBoundary('reflect')
         pydgm.control.material_map = [5, 1, 5]
-        pydgm.control.lamb = 0.55
-        pydgm.control.max_eigen_iters = 1
+        pydgm.control.lamb = 0.4
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -951,7 +1088,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        self.assertAlmostEqual(pydgm.state.d_keff, keff_test, 12)
+        self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
@@ -974,4 +1111,3 @@ class TestDGMSOLVER(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
-

@@ -14,7 +14,7 @@ module sweeper
     use mesh, only : dx
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
                         number_legendre
-    use state, only : d_sig_t, sweep_count
+    use state, only : mg_sig_t, sweep_count
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -76,7 +76,7 @@ module sweeper
 
         do c = cmin, cmax, cstep  ! Sweep over cells
           ! Use the specified equation.  Defaults to DD
-          call computeEQ(source(c, an), incident(a), d_sig_t(c, g), dx(c), mu(a), psi_center)
+          call computeEQ(source(c, an), incident(a), mg_sig_t(c, g), dx(c), mu(a), psi_center)
 
           if (store_psi) then
             psi_g(c, an) = psi_center
