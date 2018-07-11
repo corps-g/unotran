@@ -37,7 +37,7 @@ module state
     use control, only : number_fine_groups, number_coarse_groups, number_groups, &
                         use_DGM, ignore_warnings, initial_keff, initial_phi, &
                         initial_psi, number_angles, number_cells, number_legendre, &
-                        solver_type, source_value, store_psi
+                        solver_type, source_value, store_psi, check_inputs, verify_control
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material
     use angle, only : initialize_angle, initialize_polynomials
@@ -51,6 +51,10 @@ module state
         g          ! Group index
 
     ! Initialize the sub-modules
+    ! Verify the inputs
+    if (verify_control) then
+      call check_inputs()
+    end if
     ! initialize the mesh
     call create_mesh()
     ! read the material cross sections

@@ -36,13 +36,14 @@ class TestDGM(unittest.TestCase):
         pydgm.control.equation_type = 'DD'
         pydgm.control.legendre_order = 7
 
-        # Initialize the dependancies
-        pydgm.state.initialize_state()
-
     def test_dgm_initialize_moments(self):
         '''
         Test if the variables are being initialized properly
         '''
+
+        # Initialize the dependancies
+        pydgm.state.initialize_state()
+
         # Test the basic definitions
         np.testing.assert_array_equal(pydgm.dgm.order, [3, 2])
         np.testing.assert_array_equal(pydgm.dgm.energymesh, [1, 1, 1, 1, 2, 2, 2])
@@ -63,12 +64,11 @@ class TestDGM(unittest.TestCase):
         '''
         Test the truncation for moments
         '''
+
         # Set the variables for the test
         pydgm.control.Lambda = 0.1
         pydgm.control.truncation_map = [2, 1]
 
-        # Reset the initialization
-        pydgm.dgmsolver.finalize_dgmsolver()
         # Initialize the dependancies
         pydgm.state.initialize_state()
 
@@ -82,6 +82,10 @@ class TestDGM(unittest.TestCase):
         '''
         Test that the energy basis is properly initialized
         '''
+
+        # Initialize the dependancies
+        pydgm.state.initialize_state()
+
         np.set_printoptions(linewidth=132)
 
         assert(pydgm.dgm.basis.shape == (7, 4))
@@ -103,6 +107,10 @@ class TestDGM(unittest.TestCase):
         ''' 
         Check that the flux moments are properly computed
         '''
+
+        # Initialize the dependancies
+        pydgm.state.initialize_state()
+
         # Compute the flux moments using phi/psi = 1.0
         pydgm.dgmsolver.compute_flux_moments()
 
@@ -118,6 +126,10 @@ class TestDGM(unittest.TestCase):
         '''
         Check that the higher order angular flux moments are computed correctly
         '''
+
+        # Initialize the dependancies
+        pydgm.state.initialize_state()
+
         phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782,
                         1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
         for a in range(4):
@@ -136,6 +148,10 @@ class TestDGM(unittest.TestCase):
         '''
         Check that the XS moments are properly computed
         '''
+
+        # Initialize the dependancies
+        pydgm.state.initialize_state()
+
         sig_t_m_test = [0.3760865, 1.0070863333333333]
         delta_m_test = np.array([0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02,
                                  0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0,
@@ -166,6 +182,10 @@ class TestDGM(unittest.TestCase):
         '''
         Check that the source moments are properly computed
         '''
+
+        # Initialize the dependancies
+        pydgm.state.initialize_state()
+
         source_m_test = np.array([2.0, 0.0, 0.0, 0.0, 1.7320508075688776, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.7320508075688776, 0.0, 0.0, 0.0,
                                   2.0, 0.0, 0.0, 0.0, 1.7320508075688776, 0.0, 0.0, 0.0, 2.0, 0.0, 0.0, 0.0, 1.7320508075688776, 0.0, 0.0, 0.0]).reshape((4, 2, -1))
         chi_m_test = np.array([0.50000031545, 0.2595979010884317, -0.3848771845500001, -
