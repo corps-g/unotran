@@ -336,6 +336,9 @@ module control
     if (allocated(truncation_map)) then
       deallocate(truncation_map)
     end if
+    if (allocated(homogenization_map)) then
+      deallocate(homogenization_map)
+    end if
   end subroutine finalize_control
 
   ! Copied from http://www.tek-tips.com/viewthread.cfm?qid=1688013
