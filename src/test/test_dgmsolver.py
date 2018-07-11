@@ -402,8 +402,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1, 5, 3]
         self.setBoundary('vacuum')
         pydgm.control.angle_order = 4
-        pydgm.control.xs_name = 'pythonTools/makeXS/7g/7gXS.anlxs'.ljust(256)
-        pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
+        pydgm.control.xs_name = 'test/alt_7gXS.anlxs'.ljust(256)
         pydgm.control.energy_group_map = [4]
 
         pydgm.control.recon_print = 0
