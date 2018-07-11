@@ -360,12 +360,11 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, number_legendre, number_groups, &
-                        ignore_warnings, delta_legendre_order, truncate_delta
+                        ignore_warnings, delta_legendre_order, truncate_delta, homogenization_map
     use state, only : mg_sig_t, mg_nu_sig_f, phi, psi
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap
-    use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis, &
-                    sig_s_m, delta_m, expansion_order
+    use dgm, only : phi_m_zero, psi_m_zero, energyMesh, basis, sig_s_m, delta_m, expansion_order
     use angle, only : mu, wt, legendre_p
 
     ! Variable definitions
@@ -537,7 +536,78 @@ module dgmsolver
     !print *, "delta = "
     !print *, delta_m
 
+    ! Spatially homogenize the XS
+    if (allocated(homogenization_map)) then
+      call homogenize_xs_moments()
+    end if
+
   end subroutine compute_xs_moments
+
+  subroutine homogenize_xs_moments()
+    ! ##########################################################################
+    ! Spatially homogenize the XS moments based on homogenization_map
+    ! ##########################################################################
+
+    ! Use Statements
+    use control, only : number_cells, homogenization_map
+    use state, only : mg_sig_t, mg_nu_sig_f
+    use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis, &
+                    sig_s_m, delta_m, expansion_order
+
+    ! Variable definitions
+    integer :: &
+      i,        & ! homogenization cell index
+      nC,   & ! number of homogenization cells
+      min_index, & !
+      max_index    !
+
+    ! Initialize the homogenization sweep
+    min_index = 1
+
+    do
+      ! Determine the indicies over which to homogenize
+      do i = min_index, size(homogenization_map)
+        if (homogenization_map(i) == homogenization_map(min_index)) then
+          max_index = i
+          cycle
+        end if
+        exit
+      end do
+
+      ! Homogenize sig_t moments
+      mg_sig_t(min_index, :) = sum(mg_sig_t(min_index:max_index, :), 1) / (max_index - min_index + 1)
+      do i = min_index, max_index
+        mg_sig_t(i, :) = mg_sig_t(min_index, :)
+      end do
+
+      ! Homogenize nu_sig_f moments
+      mg_nu_sig_f(min_index, :) = sum(mg_nu_sig_f(min_index:max_index, :), 1) / (max_index - min_index + 1)
+      do i = min_index, max_index
+        mg_nu_sig_f(i, :) = mg_nu_sig_f(min_index, :)
+      end do
+
+      ! Homogenize sig_s moments
+      sig_s_m(:, min_index, :, :, :) = sum(sig_s_m(:, min_index:max_index, :, :, :), 2) / (max_index - min_index + 1)
+      do i = min_index, max_index
+        sig_s_m(:, i, :, :, :) = sig_s_m(:, min_index, :, :, :)
+      end do
+
+      ! Homogenize delta moments
+      delta_m(min_index, :, :, :) = sum(delta_m(min_index:max_index, :, :, :), 1) / (max_index - min_index + 1)
+      do i = min_index, max_index
+        delta_m(i, :, :, :) = delta_m(min_index, :, :, :)
+      end do
+
+      ! Determine if it is time to stop
+      if (max_index == size(homogenization_map)) then
+        exit
+      end if
+
+      ! Prepare for the next cycle
+      min_index = max_index + 1
+    end do
+
+  end subroutine homogenize_xs_moments
 
   subroutine compute_source_moments()
     ! ##########################################################################
