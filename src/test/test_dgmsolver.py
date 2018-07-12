@@ -1240,6 +1240,79 @@ class TestDGMSOLVER(unittest.TestCase):
                                 [0.0, 0.5172413793103450]]])
         np.testing.assert_array_almost_equal(pydgm.dgm.sig_s_m[0, :, :, :, 0], sig_s_test, 12)
 
+    def test_dgmsolver_homogenize_xs_moments_3(self):
+        '''
+        Make sure that the cross sections are being properly homogenized
+        '''
+        self.setGroups(2)
+        pydgm.control.dgm_basis_name = 'test/2gdelta'.ljust(256)
+        pydgm.control.energy_group_map = [1]
+        self.setSolver('fixed')
+        pydgm.control.allow_fission = True
+        self.setBoundary('reflect')
+        pydgm.control.fine_mesh = [2, 3, 3, 2]
+        pydgm.control.coarse_mesh = [0.0, 1.0, 2.0, 4.0, 4.5]
+        pydgm.control.material_map = [1, 2, 1, 2]
+        pydgm.control.homogenization_map = [1, 2, 1, 2, 1, 2, 1, 2, 1, 2]
+
+        # Initialize the dependancies
+        pydgm.dgmsolver.initialize_dgmsolver()
+
+        pydgm.state.phi[0, :, 0] = range(1, 11)
+        pydgm.state.phi[0, :, 1] = range(10, 0, -1)
+
+        pydgm.dgmsolver.compute_flux_moments()
+        pydgm.dgmsolver.compute_xs_moments()
+
+        # Check sig_t
+        sig_t_test = np.array([[1.0, 2.4025974025974000],
+                               [1.0, 2.2080536912751700],
+                               [1.0, 2.4025974025974000],
+                               [1.0, 2.2080536912751700],
+                               [1.0, 2.4025974025974000],
+                               [1.0, 2.2080536912751700],
+                               [1.0, 2.4025974025974000],
+                               [1.0, 2.2080536912751700],
+                               [1.0, 2.4025974025974000],
+                               [1.0, 2.2080536912751700]])
+        np.testing.assert_array_almost_equal(pydgm.state.mg_sig_t, sig_t_test, 12)
+
+        # Check nu_sig_f
+        nu_sig_f_test = np.array([[0.2561983471074380, 0.2987012987012990],
+                                  [0.3647058823529410, 0.3959731543624160],
+                                  [0.2561983471074380, 0.2987012987012990],
+                                  [0.3647058823529410, 0.3959731543624160],
+                                  [0.2561983471074380, 0.2987012987012990],
+                                  [0.3647058823529410, 0.3959731543624160],
+                                  [0.2561983471074380, 0.2987012987012990],
+                                  [0.3647058823529410, 0.3959731543624160],
+                                  [0.2561983471074380, 0.2987012987012990],
+                                  [0.3647058823529410, 0.3959731543624160]])
+        np.testing.assert_array_almost_equal(pydgm.state.mg_nu_sig_f, nu_sig_f_test, 12)
+
+        # Check sig_s
+        sig_s_test = np.array([[[0.5438016528925620, 0.7388429752066120],
+                                [0.0000000000000000, 0.6623376623376620]],
+                               [[0.4352941176470590, 0.5435294117647060],
+                                [0.0000000000000000, 0.4872483221476510]],
+                               [[0.5438016528925620, 0.7388429752066120],
+                                [0.0000000000000000, 0.6623376623376620]],
+                               [[0.4352941176470590, 0.5435294117647060],
+                                [0.0000000000000000, 0.4872483221476510]],
+                               [[0.5438016528925620, 0.7388429752066120],
+                                [0.0000000000000000, 0.6623376623376620]],
+                               [[0.4352941176470590, 0.5435294117647060],
+                                [0.0000000000000000, 0.4872483221476510]],
+                               [[0.5438016528925620, 0.7388429752066120],
+                                [0.0000000000000000, 0.6623376623376620]],
+                               [[0.4352941176470590, 0.5435294117647060],
+                                [0.0000000000000000, 0.4872483221476510]],
+                               [[0.5438016528925620, 0.7388429752066120],
+                                [0.0000000000000000, 0.6623376623376620]],
+                               [[0.4352941176470590, 0.5435294117647060],
+                                [0.0000000000000000, 0.4872483221476510]]])
+        np.testing.assert_array_almost_equal(pydgm.dgm.sig_s_m[0, :, :, :, 0], sig_s_test, 12)
+
     def tearDown(self):
         pydgm.dgmsolver.finalize_dgmsolver()
         pydgm.control.finalize_control()
