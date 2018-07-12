@@ -549,11 +549,10 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, homogenization_map, number_fine_groups, &
+    use control, only : number_cells, homogenization_map, number_groups, &
                         number_angles, number_legendre
-    use state, only : mg_sig_t, mg_nu_sig_f, phi
-    use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis, &
-                    sig_s_m, delta_m, expansion_order
+    use state, only : mg_sig_t, mg_nu_sig_f
+    use dgm, only : phi_m_zero, sig_s_m, delta_m, expansion_order
     use mesh, only : dx
 
     ! Variable definitions
@@ -565,13 +564,13 @@ module dgmsolver
       g,           & ! Outer fine group index
       o,           & ! Order index
       nC             ! Number of homogenization cells
-    double precision, dimension(number_fine_groups) :: &
+    double precision, dimension(number_groups) :: &
       total_V_phi, & ! Sum of the volume times the scalar flux over the cell range
       R_sig_t,     & ! Total reaction rate
       R_sig_f        ! Fission reaction rate
-    double precision, dimension(2 * number_angles, number_fine_groups, 0:expansion_order) :: &
+    double precision, dimension(2 * number_angles, number_groups, 0:expansion_order) :: &
       R_delta        ! Delta (angular total) reaction rate
-    double precision, dimension(0:number_legendre, number_fine_groups, number_fine_groups, 0:expansion_order) :: &
+    double precision, dimension(0:number_legendre, number_groups, number_groups, 0:expansion_order) :: &
       R_sig_s        ! Scattering reaction rate
     logical, dimension(number_cells) :: &
       mask           ! Array containing which cells to homogenize together
@@ -592,7 +591,7 @@ module dgmsolver
           mask(i) = .true.
 
           ! Add to the total tracker
-          total_V_phi(:) = total_V_phi(:) + dx(i) * phi(0,i,:)
+          total_V_phi(:) = total_V_phi(:) + dx(i) * phi_m_zero(0,i,:)
         end if
       end do
 
@@ -606,18 +605,18 @@ module dgmsolver
       do i = 1, size(homogenization_map)
         if (mask(i)) then
           ! Compute the total reaction rate over the region
-          R_sig_t(:) = R_sig_t(:) + mg_sig_t(i, :) * dx(i) * phi(0, i, :) / total_V_phi(:)
+          R_sig_t(:) = R_sig_t(:) + mg_sig_t(i, :) * dx(i) * phi_m_zero(0, i, :) / total_V_phi(:)
           ! Compute the fission reaction rate over the region
-          R_sig_f(:) = R_sig_f(:) + mg_nu_sig_f(i, :) * dx(i) * phi(0, i, :) / total_V_phi(:)
+          R_sig_f(:) = R_sig_f(:) + mg_nu_sig_f(i, :) * dx(i) * phi_m_zero(0, i, :) / total_V_phi(:)
         end if
       end do
       do o = 0, expansion_order
         ! Compute the scattering reaction rate over the region
-        do g = 1, number_fine_groups
+        do g = 1, number_groups
           do i = 1, size(homogenization_map)
             if (mask(i)) then
               do l = 0, number_legendre
-                R_sig_s(l, :, g, o) = R_sig_s(l, :, g, o) + sig_s_m(l, i, :, g, o) * dx(i) * phi(0, i, :) / total_V_phi(:)
+                R_sig_s(l, :, g, o) = R_sig_s(l, :, g, o) + sig_s_m(l, i, :, g, o) * dx(i) * phi_m_zero(0, i, :) / total_V_phi(:)
               end do
             end if
           end do
@@ -626,7 +625,7 @@ module dgmsolver
         do a = 1, number_angles * 2
           do i = 1, size(homogenization_map)
             if (mask(i)) then
-              R_delta(a, :, o) = R_delta(a, :, o) + delta_m(i, a, :, o) * dx(i) * phi(0, i, :) / total_V_phi(:)
+              R_delta(a, :, o) = R_delta(a, :, o) + delta_m(i, a, :, o) * dx(i) * phi_m_zero(0, i, :) / total_V_phi(:)
             end if
           end do
         end do
