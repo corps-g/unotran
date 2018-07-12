@@ -549,62 +549,98 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, homogenization_map
-    use state, only : mg_sig_t, mg_nu_sig_f
+    use control, only : number_cells, homogenization_map, number_fine_groups, &
+                        number_angles, number_legendre
+    use state, only : mg_sig_t, mg_nu_sig_f, phi
     use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis, &
                     sig_s_m, delta_m, expansion_order
+    use mesh, only : dx
 
     ! Variable definitions
     integer :: &
-      i,        & ! homogenization cell index
-      nC,   & ! number of homogenization cells
-      min_index, & !
-      max_index    !
+      i,           & ! Spatial looping index
+      ind,         & ! Homogenization cell index
+      a,           & ! Angle index
+      l,           & ! Legendre index
+      g,           & ! Outer fine group index
+      o,           & ! Order index
+      nC             ! Number of homogenization cells
+    double precision, dimension(number_fine_groups) :: &
+      total_V_phi, & ! Sum of the volume times the scalar flux over the cell range
+      R_sig_t,     & ! Total reaction rate
+      R_sig_f        ! Fission reaction rate
+    double precision, dimension(2 * number_angles, number_fine_groups, 0:expansion_order) :: &
+      R_delta        ! Delta (angular total) reaction rate
+    double precision, dimension(0:number_legendre, number_fine_groups, number_fine_groups, 0:expansion_order) :: &
+      R_sig_s        ! Scattering reaction rate
+    logical, dimension(number_cells) :: &
+      mask           ! Array containing which cells to homogenize together
 
     ! Initialize the homogenization sweep
-    min_index = 1
+    do ind = 1, maxval(homogenization_map)
+      ! Reset the total tracker
+      total_V_phi = 0.0
 
-    do
+      ! Reset the mask
+      mask = .false.
+
       ! Determine the indicies over which to homogenize
-      do i = min_index, size(homogenization_map)
-        if (homogenization_map(i) == homogenization_map(min_index)) then
-          max_index = i
-          cycle
+      do i = 1, size(homogenization_map)
+        ! Check if still in the homogenization region
+        if (homogenization_map(i) == ind) then
+          ! Set the mask at index i to true
+          mask(i) = .true.
+
+          ! Add to the total tracker
+          total_V_phi(:) = total_V_phi(:) + dx(i) * phi(0,i,:)
         end if
-        exit
       end do
 
-      ! Homogenize sig_t moments
-      mg_sig_t(min_index, :) = sum(mg_sig_t(min_index:max_index, :), 1) / (max_index - min_index + 1)
-      do i = min_index, max_index
-        mg_sig_t(i, :) = mg_sig_t(min_index, :)
+      ! Reset the homogenized totals
+      R_sig_t = 0.0
+      R_sig_f = 0.0
+      R_sig_s = 0.0
+      R_delta = 0.0
+
+      ! Compute the homogenized moments
+      do i = 1, size(homogenization_map)
+        if (mask(i)) then
+          ! Compute the total reaction rate over the region
+          R_sig_t(:) = R_sig_t(:) + mg_sig_t(i, :) * dx(i) * phi(0, i, :) / total_V_phi(:)
+          ! Compute the fission reaction rate over the region
+          R_sig_f(:) = R_sig_f(:) + mg_nu_sig_f(i, :) * dx(i) * phi(0, i, :) / total_V_phi(:)
+        end if
+      end do
+      do o = 0, expansion_order
+        ! Compute the scattering reaction rate over the region
+        do g = 1, number_fine_groups
+          do i = 1, size(homogenization_map)
+            if (mask(i)) then
+              do l = 0, number_legendre
+                R_sig_s(l, :, g, o) = R_sig_s(l, :, g, o) + sig_s_m(l, i, :, g, o) * dx(i) * phi(0, i, :) / total_V_phi(:)
+              end do
+            end if
+          end do
+        end do
+        ! Compute the delta (anuglar total) reaction rate over the region
+        do a = 1, number_angles * 2
+          do i = 1, size(homogenization_map)
+            if (mask(i)) then
+              R_delta(a, :, o) = R_delta(a, :, o) + delta_m(i, a, :, o) * dx(i) * phi(0, i, :) / total_V_phi(:)
+            end if
+          end do
+        end do
       end do
 
-      ! Homogenize nu_sig_f moments
-      mg_nu_sig_f(min_index, :) = sum(mg_nu_sig_f(min_index:max_index, :), 1) / (max_index - min_index + 1)
-      do i = min_index, max_index
-        mg_nu_sig_f(i, :) = mg_nu_sig_f(min_index, :)
+      ! Write the averaged XS to the containers
+      do i = 1, size(homogenization_map)
+        if (mask(i)) then
+          mg_sig_t(i, :) = R_sig_t(:)
+          mg_nu_sig_f(i, :) = R_sig_f(:)
+          sig_s_m(:, i, :, :, :) = R_sig_s(:, :, :, :)
+          delta_m(i, :, :, :) = R_delta(:, :, :)
+        end if
       end do
-
-      ! Homogenize sig_s moments
-      sig_s_m(:, min_index, :, :, :) = sum(sig_s_m(:, min_index:max_index, :, :, :), 2) / (max_index - min_index + 1)
-      do i = min_index, max_index
-        sig_s_m(:, i, :, :, :) = sig_s_m(:, min_index, :, :, :)
-      end do
-
-      ! Homogenize delta moments
-      delta_m(min_index, :, :, :) = sum(delta_m(min_index:max_index, :, :, :), 1) / (max_index - min_index + 1)
-      do i = min_index, max_index
-        delta_m(i, :, :, :) = delta_m(min_index, :, :, :)
-      end do
-
-      ! Determine if it is time to stop
-      if (max_index == size(homogenization_map)) then
-        exit
-      end if
-
-      ! Prepare for the next cycle
-      min_index = max_index + 1
     end do
 
   end subroutine homogenize_xs_moments

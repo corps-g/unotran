@@ -293,16 +293,10 @@ module control
         print *, 'INPUT ERROR : homogenization map is the wrong size'
         stop
       end if
-      if (homogenization_map(1) /= 1) then
-        print *, 'INPUT ERROR : homogenization map should begin with a 1'
+      if (minval(homogenization_map) /= 1) then
+        print *, 'INPUT ERROR : the first homogenization cell should be designated as 1'
         stop
       end if
-      do i = 2, size(homogenization_map)
-        if (.not. (homogenization_map(i) == homogenization_map(i-1) .or. homogenization_map(i) == homogenization_map(i-1) + 1)) then
-          print *, 'INPUT ERROR : homogenization map item out of order at position ', i
-          stop
-        end if
-      end do
     end if
 
     ! Check if the truncation array has the right number of entries
