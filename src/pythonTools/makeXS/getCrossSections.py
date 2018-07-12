@@ -1,6 +1,17 @@
 import numpy as np
 import binascii
 import h5py
+import matplotlib.pyplot as plt
+from matplotlib import rc
+rc('font',**{'family':'serif'})
+from matplotlib import rcParams
+rcParams['xtick.direction'] = 'out'
+rcParams['ytick.direction'] = 'out'
+rcParams['xtick.labelsize'] = 18
+rcParams['ytick.labelsize'] = 18
+rcParams['lines.linewidth'] = 1.85
+rcParams['axes.labelsize'] = 20
+rcParams.update({'figure.autolayout': True})
 
 def makeDB(name):
     name1 = '{}_res.m'.format(name)
@@ -15,7 +26,9 @@ def makeDB(name):
             material_names.append(key)
         else:
             if 'INF_TOT' in line:
-                db[key]['sig_t'] = np.array([float(i) for i in line.split()[6:-1:2]])
+                sig = np.array([float(i) for i in line.split()[6:-1]])
+                db[key]['sig_t'] = sig[::2]
+                db[key]['sig_t_err'] = sig[1::2]
             elif 'INF_NSF' in line:
                 db[key]['vsig_f'] = np.array([float(i) for i in line.split()[6:-1:2]])
             elif 'INF_S' in line:
@@ -212,14 +225,41 @@ def printCrossSections(db):
     ST = np.array([db[key]['sig_s'] for key in keys])#.flatten().tolist()
     printoutS(ST)
 
+def barchart(x, y) :
+    X = np.zeros(2 * len(y))
+    Y = np.zeros(2 * len(y))
+    for i in range(len(y)):
+        X[2 * i] = x[i]
+        X[2 * i + 1] = x[i + 1]
+        Y[2 * i] = y[i]
+        Y[2 * i + 1] = y[i]
+    return X, Y
+
+def plotXS(db):
+    E = db['0']['E']
+    sig = db['0']['sig_t']
+    EE, SIG = barchart(E, sig)
+    err = db['0']['sig_t_err']
+    print err
+    _, sig_min = barchart(E, sig - err)
+    _, sig_max = barchart(E, sig + err)
+
+    plt.plot(EE, SIG)
+    plt.fill_between(EE, sig_min, sig_max, alpha=0.5)
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.show()
+
+
 def main(name):
     db = makeDB(name)
     makeFile(db, 0)
     makeHDF5(db)
     #printCrossSections(db)
+    plotXS(db)
 
 if __name__ == '__main__':
-    Gs = [1968]
+    Gs = [44]
     names = ['uo2', 'moxlow', 'moxmid', 'moxhigh']
     for G in Gs:
         for name in names:

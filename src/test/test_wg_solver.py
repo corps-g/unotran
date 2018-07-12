@@ -53,7 +53,7 @@ class TestWG_SOLVER(unittest.TestCase):
         
         for g in range(3):
 
-            pydgm.wg_solver.wg_solve(g + 1, source[:,:,g], phi[:,:,g], psi[:,:,g], incident[:,g])
+            pydgm.wg_solver.wg_solve(g + 1, source[:,:,g], phi[:,:,g], psi[:,:,g], incident[:,g], False)
             
             np.testing.assert_array_almost_equal(phi[:,:,g].flatten(), phi_test[g], 12, 'group {} is wrong'.format(g))
             np.testing.assert_array_almost_equal(psi[:,:,g].flatten(), psi_test[g], 12, 'group {} is wrong'.format(g))
@@ -81,7 +81,7 @@ class TestWG_SOLVER(unittest.TestCase):
         
         for g in range(3):
 
-            pydgm.wg_solver.wg_solve(g + 1, source[:,:,g], phi[:,:,g], psi[:,:,g], incident[:,g])
+            pydgm.wg_solver.wg_solve(g + 1, source[:,:,g], phi[:,:,g], psi[:,:,g], incident[:,g], False)
             
             np.testing.assert_array_almost_equal(phi[:,:,g].flatten(), phi_test[g], 12, 'group {} is wrong'.format(g))
             np.testing.assert_array_almost_equal(psi[:,:,g].flatten(), psi_test[g], 12, 'group {} is wrong'.format(g))

@@ -21,8 +21,7 @@ module dgm
   integer, allocatable, dimension(:) :: &
       energyMesh,        & ! Array of number of fine groups per coarse group
       order,             & ! Expansion order for each coarse energy group
-      basismap,          & ! Starting index for fine group for each coarse group
-      cumsum               ! Temporary cumulative sum for energy groups
+      basismap             ! Starting index for fine group for each coarse group
 
   contains
 
@@ -53,20 +52,23 @@ module dgm
     ! Create the map of coarse groups and default to full expansion order
     allocate(energyMesh(number_fine_groups))
     allocate(order(number_coarse_groups))
-    allocate(basismap(number_coarse_groups))
-    order = -1
-    g = 1
+    allocate(basismap(number_coarse_groups + 1))
 
-    do gp = 1, number_fine_groups
-      energyMesh(gp) = g
-      order(g) = order(g) + 1
-      if (g < number_coarse_groups) then
-        if (gp == energy_group_map(g)) then
-          g = g + 1
-        end if
-      end if
+    ! Load the group map
+    basismap(1) = 0
+    if (number_coarse_groups > 1) then
+      basismap(2:number_coarse_groups) = energy_group_map
+    end if
+    basismap(number_coarse_groups + 1) = number_fine_groups
+
+    do cg = 1, number_coarse_groups
+      ! Create the energy map
+      do g = basismap(cg), basismap(cg+1) - 1
+        energyMesh(g + 1) = cg
+      end do
+      ! Get the DOF for full order
+      order(cg) = basismap(cg+1) - basismap(cg) - 1
     end do
-    basismap(:) = order(:)
 
     ! Check if the optional argument for the truncation is present
     if (allocated(truncation_map)) then
@@ -109,21 +111,9 @@ module dgm
     ! allocate the basis array
     allocate(basis(number_fine_groups, 0:expansion_order))
     allocate(array1(number_fine_groups))
-    allocate(cumsum(number_coarse_groups))
 
     ! initialize the basis to zero
     basis = 0.0
-
-    ! Compute the cumulative sum for the coarse group indexes
-    cumsum = basismap + 1
-
-    do cg = 1, number_coarse_groups
-      if (cg == 1) then
-        cycle
-      end if
-      cumsum(cg) = cumsum(cg - 1) + cumsum(cg)
-    end do
-    cumsum = cumsum - basismap
 
     ! open the file and read into the basis container
     open(unit=5, file=dgm_basis_name)
@@ -132,7 +122,7 @@ module dgm
       array1(:) = 0.0
       read(5,*) array1
       do i = 0, order(cg)
-        basis(g, i) = array1(cumsum(cg) + i)
+        basis(g, i) = array1(1 + basismap(cg) + i)
       end do
     end do
 
@@ -177,9 +167,6 @@ module dgm
     end if
     if (allocated(sig_s_m)) then
       deallocate(sig_s_m)
-    end if
-    if (allocated(cumsum)) then
-      deallocate(cumsum)
     end if
   end subroutine finalize_moments
 

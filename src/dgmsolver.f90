@@ -10,6 +10,7 @@ module dgmsolver
   subroutine initialize_dgmsolver()
     ! ##########################################################################
     ! Initialize all of the variables and solvers
+    ! The mg containers in state are set to coarse group size
     ! ##########################################################################
 
     ! Use Statements
@@ -21,7 +22,7 @@ module dgmsolver
 
   end subroutine initialize_dgmsolver
 
-  subroutine dgmsolve()
+  subroutine dgmsolve(bypass_arg)
     ! ##########################################################################
     ! Interate DGM equations to convergance
     ! ##########################################################################
@@ -30,12 +31,18 @@ module dgmsolver
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
                         ignore_warnings, lamb, number_cells, number_fine_groups, &
                         number_legendre, number_angles, solver_type
-    use state, only : d_keff, phi, psi, d_phi, d_psi, normalize_flux, norm_frac, &
+    use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, norm_frac, &
                       update_fission_density, output_moments
     use dgm, only : expansion_order, phi_m_zero, psi_m_zero
     use solver, only : solve
 
     ! Variable definitions
+    logical, intent(in), optional :: &
+        bypass_arg        ! Allow the dgmsolver to do one recon loop selectively
+    logical, parameter :: &
+        bypass_default = .false.  ! Default value of bypass_arg
+    logical :: &
+        bypass_flag       ! Local variable to signal an eigen loop bypass
     integer :: &
         recon_count,    & ! Iteration counter
         i                 ! Expansion index
@@ -45,6 +52,12 @@ module dgmsolver
         old_phi        ! Scalar flux from previous iteration
     double precision, dimension(number_cells, 2 * number_angles, number_fine_groups) :: &
         old_psi        ! Angular flux from previous iteration
+
+    if (present(bypass_arg)) then
+      bypass_flag = bypass_arg
+    else
+      bypass_flag = bypass_default
+    end if
 
     do recon_count = 1, max_recon_iters
       ! Save the old value of the scalar flux
@@ -58,8 +71,8 @@ module dgmsolver
       call compute_xs_moments()
 
       ! Fill the initial moments
-      d_phi = phi_m_zero
-      d_psi = psi_m_zero
+      mg_phi = phi_m_zero
+      mg_psi = psi_m_zero
       phi = 0.0
       psi = 0.0
 
@@ -77,8 +90,8 @@ module dgmsolver
           call solve()
 
           ! Save the new flux moments as the zeroth moments
-          phi_m_zero = d_phi
-          psi_m_zero = d_psi
+          phi_m_zero = mg_phi
+          psi_m_zero = mg_psi
         ! Converge the higher order moments
         else
           call solve(.true.)
@@ -86,11 +99,11 @@ module dgmsolver
 
         ! Print the moments if verbose printing is on
         if (recon_print > 1) then
-          print *, i, d_phi
+          print *, i, mg_phi
         end if
 
         ! Unfold ith order flux
-        call unfold_flux_moments(i, d_psi, phi, psi)
+        call unfold_flux_moments(i, mg_psi, phi, psi)
       end do
 
       ! Update flux using krasnoselskii iteration
@@ -99,14 +112,15 @@ module dgmsolver
         psi = (1.0 - lamb) * old_psi + lamb * psi
       end if
 
-      call normalize_flux(phi, psi)
+      ! Compute the fission density
+      call update_fission_density()
 
       ! Update the error
-      recon_error = maxval(abs(old_phi - phi))
+      recon_error = sum(abs(old_phi - phi))
 
       ! Print output
       if (recon_print > 0) then
-        write(*, 1001) recon_count, recon_error, d_keff
+        write(*, 1001) recon_count, recon_error, keff
         1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
         if (recon_print > 1) then
           call output_moments()
@@ -114,11 +128,14 @@ module dgmsolver
       end if
 
       ! Check if tolerance is reached
-      if (recon_error < recon_tolerance) then
+      if (recon_error < recon_tolerance .or. bypass_flag) then
         exit
       end if
 
     end do
+
+    ! Do final normalization
+    call normalize_flux(phi, psi)
 
     if (recon_count == max_recon_iters) then
       if (.not. ignore_warnings) then
@@ -127,9 +144,6 @@ module dgmsolver
         1002 format ('recon iteration did not converge in ', i4, ' iterations')
       end if
     end if
-
-    ! Compute the fission density
-    call update_fission_density()
 
   end subroutine dgmsolve
 
@@ -261,7 +275,7 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups
-    use state, only : d_incoming
+    use state, only : mg_incoming
     use dgm, only : basis, energyMesh
 
     ! Variable definitions
@@ -273,11 +287,11 @@ module dgmsolver
       g,     & ! Fine group index
       cg       ! Coarse group index
 
-    d_incoming = 0.0
+    mg_incoming = 0.0
     do g = 1, number_fine_groups
       cg = energyMesh(g)
       do a = 1, number_angles
-        d_incoming(a, cg) = d_incoming(a, cg) + basis(g, order) * psi(1, a + number_angles, g)
+        mg_incoming(a, cg) = mg_incoming(a, cg) + basis(g, order) * psi(1, a + number_angles, g)
       end do
     end do
 
@@ -289,7 +303,7 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use state, only : d_source, d_chi, d_sig_s, d_nu_sig_f, d_keff
+    use state, only : mg_source, mg_chi, mg_sig_s, mg_nu_sig_f, keff
     use angle, only : p_leg, wt
     use dgm, only : source_m, delta_m, chi_m, sig_s_m, phi_m_zero, psi_m_zero
     use control, only : number_legendre, number_angles, number_cells, number_groups, &
@@ -306,7 +320,7 @@ module dgmsolver
         l      ! Legendre index
 
     ! Get the external and delta sources
-    d_source(:, :, :) = source_m(:, :, :, order) - delta_m(:, :, :, order) * psi_m_zero(:, :, :)
+    mg_source(:, :, :) = source_m(:, :, :, order) - delta_m(:, :, :, order) * psi_m_zero(:, :, :)
 
     if (order > 0) then
       ! Get the combined fixed source
@@ -315,25 +329,26 @@ module dgmsolver
           do a = 1, number_angles * 2
             do c = 1, number_cells
               if (allow_fission) then
-                d_source(c, a, cg) = d_source(c, a, cg) + &
-                                     0.5 / d_keff * chi_m(c, cg, order) * d_nu_sig_f(c, cgp) * phi_m_zero(0, c, cgp)
+                mg_source(c, a, cg) = mg_source(c, a, cg) + &
+                                      0.5 / keff * chi_m(c, cg, order) * mg_nu_sig_f(c, cgp) * phi_m_zero(0, c, cgp)
               end if
               do l = 0, number_legendre
                 ! Get the scattering source
-                d_source(c, a, cg) = d_source(c, a, cg) + &
-                                     0.5 / (2 * l + 1) * p_leg(l, a) * sig_s_m(l, c, cgp, cg, order) * phi_m_zero(l, c, cgp)
+                mg_source(c, a, cg) = mg_source(c, a, cg) + &
+                                      0.5 / (2 * l + 1) * p_leg(l, a) * sig_s_m(l, c, cgp, cg, order) * phi_m_zero(l, c, cgp)
               end do
             end do
           end do
         end do
       end do
 
-      d_chi = 0.0
-      d_sig_s = 0.0
+      ! Since fission and scattering sources are already computed, turn them off in further calculations
+      mg_chi = 0.0
+      mg_sig_s = 0.0
     else
       ! Compute the source as normal
-      d_chi(:, :) = chi_m(:, :, order)
-      d_sig_s(:,:,:,:) = sig_s_m(:, :, :, :, order)
+      mg_chi(:, :) = chi_m(:, :, order)
+      mg_sig_s(:,:,:,:) = sig_s_m(:, :, :, :, order)
     end if
 
   end subroutine slice_xs_moments
@@ -346,7 +361,7 @@ module dgmsolver
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, number_legendre, number_groups, &
                         ignore_warnings
-    use state, only : d_sig_t, d_nu_sig_f, phi, psi
+    use state, only : mg_sig_t, mg_nu_sig_f, phi, psi
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap
     use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis, &
@@ -374,11 +389,11 @@ module dgmsolver
     allocate(delta_m(number_cells, 2 * number_angles, number_groups, 0:expansion_order))
     allocate(sig_s_m(0:number_legendre, number_cells, number_groups, number_groups, 0:expansion_order))
 
-    ! initialize all moments to zero
+    ! initialize all moments and mg containers to zero
     sig_s_m = 0.0
-    d_sig_t = 0.0
+    mg_sig_t = 0.0
     delta_m = 0.0
-    d_nu_sig_f = 0.0
+    mg_nu_sig_f = 0.0
 
     do o = 0, expansion_order
       do g = 1, number_fine_groups
@@ -396,9 +411,9 @@ module dgmsolver
               phi_m_zero(0, c, cg) = 1.0
             else if (phi_m_zero(0, c, cg) /= 0.0)  then
               ! total cross section moment
-              d_sig_t(c, cg) = d_sig_t(c, cg) + basis(g, 0) * sig_t(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
+              mg_sig_t(c, cg) = mg_sig_t(c, cg) + basis(g, 0) * sig_t(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
               ! fission cross section moment
-              d_nu_sig_f(c, cg) = d_nu_sig_f(c, cg) + nu_sig_f(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
+              mg_nu_sig_f(c, cg) = mg_nu_sig_f(c, cg) + nu_sig_f(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
             end if
           end do
         end if
@@ -442,7 +457,7 @@ module dgmsolver
                 psi_m_zero(c, a, cg) = 1.0
             else if (psi_m_zero(c, a, cg) /= 0.0) then
               delta_m(c, a, cg, o) = delta_m(c, a, cg, o) + basis(g, o) * (sig_t(g, mat) &
-                                  - d_sig_t(c, cg)) * psi(c, a, g) / psi_m_zero(c, a, cg)
+                                  - mg_sig_t(c, cg)) * psi(c, a, g) / psi_m_zero(c, a, cg)
             end if
           end do
         end do

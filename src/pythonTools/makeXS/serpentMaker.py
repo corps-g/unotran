@@ -123,7 +123,7 @@ def getENEGrid(G):
     else: return None
 
 
-def makeFile(serpentPath, fuelOption, numberGroups):
+def makeFile(fuelOption, numberGroups):
 
     fuelTitle, fuelComp = makeFuel(fuelOption)
 
@@ -184,7 +184,6 @@ def makeFile(serpentPath, fuelOption, numberGroups):
 
     s += '% **Cross section data library file path\n'
     s += '% *****************************************************************************\n'
-    s += 'set acelib "{}xsdata/endfb7/sss_endfb7u.xsdir"\n'.format(serpentPath)
 
     s += '%      ---??? lib setting---- \n'
 
@@ -207,12 +206,9 @@ def makeFile(serpentPath, fuelOption, numberGroups):
 
     s += '% ** Neutron population and criticality cycles: \n'
     s += '%*****************************************************************************\n'
-    s += 'set pop 100000 80 20 1.00  % according to the kcode 100000 1.000000 10 110\n'
+    s += 'set pop 1000000 100 20 1.00  % according to the kcode 100000 1.000000 10 110\n'
 
     s += '% ** Decay and fission yield libraries\n'
-
-    s += 'set declib "{}xsdata/endfb7/sss_endfb7.dec"\n'.format(serpentPath)
-    s += 'set nfylib "{}xsdata/endfb7/sss_endfb7.nfy"\n'.format(serpentPath)
 
     s += '% ** end **********************************************************************\n'
 
@@ -221,15 +217,15 @@ def makeFile(serpentPath, fuelOption, numberGroups):
 
 
 if __name__ == '__main__':
-    serpentPath = '/home/richard/opt/serpent/serpent/'
     gs = [2, 3, 4, 7, 8, 9, 12, 14, 16, 18, 23, 25, 27, 30, 33, 35, 40, 43, 44, 50, 69, 70, 100, 172, 174, 175, 238, 240, 315, 1968]
+    gs = [1968]
     for g in gs:
         directory = '{}g'.format(g)
         if not os.path.exists(directory):
             os.makedirs(directory)
         s = '#!/bin/bash\n\n'
         for op in ['uo2', 'moxlow', 'moxmid', 'moxhigh']:
-            makeFile(serpentPath, op, g)
+            makeFile(op, g)
             s += 'sss2 -omp 28 {}-{}.inp\n'.format(op, g)
         with open('{}g/runSerpentFiles.sh'.format(g), 'w') as f:
             f.write(s)

@@ -37,22 +37,22 @@ class TestMG_SOLVER(unittest.TestCase):
         ''' 
         Test convergence for the multigroup solver with limited iterations
         '''
-        
+
         pydgm.control.max_outer_iters = 2
         pydgm.control.max_inner_iters = 10
 
-        source = pydgm.state.d_source
-        phi = pydgm.state.d_phi
-        psi = pydgm.state.d_psi
-        incident = pydgm.state.d_incoming
+        source = pydgm.state.mg_source
+        phi = pydgm.state.mg_phi
+        psi = pydgm.state.mg_psi
+        incident = pydgm.state.mg_incoming
 
-        pydgm.mg_solver.mg_solve(source, phi, psi, incident)
-        
+        pydgm.mg_solver.mg_solve(source, phi, psi, incident, False)
+
         phi_test = [33.7869910712284636, 16.21623617487068, 6.7810024622273959]
         incident_test = np.array([[16.7848315072878371, 17.4223043071873391],
                                   [8.1244096150619072, 8.2065674159132111],
                                   [3.3905426593073713, 3.3937458743022715]])
-        
+
         np.testing.assert_array_almost_equal(phi.flatten(), phi_test, 12)
         np.testing.assert_array_almost_equal(incident.flatten(), incident_test.flatten('F'), 12)
 
@@ -60,21 +60,21 @@ class TestMG_SOLVER(unittest.TestCase):
         ''' 
         Test convergence for the multigroup solver with reflective conditions
         '''
-        
+
         pydgm.control.max_inner_iters = 10
 
-        source = pydgm.state.d_source
-        phi = pydgm.state.d_phi
-        psi = pydgm.state.d_psi
-        incident = pydgm.state.d_incoming
+        source = pydgm.state.mg_source
+        phi = pydgm.state.mg_phi
+        psi = pydgm.state.mg_psi
+        incident = pydgm.state.mg_incoming
 
-        pydgm.mg_solver.mg_solve(source, phi, psi, incident)
-        
+        pydgm.mg_solver.mg_solve(source, phi, psi, incident, False)
+
         phi_test = [161.534959460539, 25.4529297193052813, 6.9146161770064944]
         incident_test = np.array([[80.7674797302686329, 80.7674797302685761],
                                   [12.7264648596526406, 12.7264648596526424],
                                   [3.4573080885032477, 3.4573080885032477]])
-        
+
         np.testing.assert_array_almost_equal(phi.flatten(), phi_test, 12)
         np.testing.assert_array_almost_equal(incident.flatten(), incident_test.flatten('F'), 12)
 
@@ -82,22 +82,22 @@ class TestMG_SOLVER(unittest.TestCase):
         ''' 
         Test convergence for the multigroup solver with reflective conditions
         '''
-        
+
         pydgm.control.max_inner_iters = 10
         pydgm.control.boundary_type = [0.0, 0.0]
 
-        source = pydgm.state.d_source
-        phi = pydgm.state.d_phi
-        psi = pydgm.state.d_psi
-        incident = pydgm.state.d_incoming
+        source = pydgm.state.mg_source
+        phi = pydgm.state.mg_phi
+        psi = pydgm.state.mg_psi
+        incident = pydgm.state.mg_incoming
 
-        pydgm.mg_solver.mg_solve(source, phi, psi, incident)
-        
+        pydgm.mg_solver.mg_solve(source, phi, psi, incident, False)
+
         phi_test = [1.1128139420344907, 1.0469097961254414, 0.9493149657672653]
         incident_test = np.array([[0.6521165715780991, 1.3585503570955177],
                                   [0.6642068017193753, 1.2510439369070607],
                                   [0.589237898650032, 1.1413804154385336]])
-        
+
         np.testing.assert_array_almost_equal(phi.flatten(), phi_test, 12)
         np.testing.assert_array_almost_equal(incident.flatten(), incident_test.flatten('F'), 12)
 
@@ -108,12 +108,12 @@ class TestMG_SOLVER(unittest.TestCase):
 
         phi = np.ones((1, 1, 3), order='F')
         source = np.ones((1, 4, 3), order='F') * 0.5
-        
+
         source_test = np.array([0.5, 0.50058041595, 0.5007291251])
 
         for g in range(3):
-            pydgm.mg_solver.compute_source(g + 1, phi, source[:,:,g])
-            np.testing.assert_array_almost_equal(source[:,:,g].flatten(), np.ones(4) * source_test[g], 12)
+            pydgm.mg_solver.compute_mg_source(g + 1, phi, source[:, :, g])
+            np.testing.assert_array_almost_equal(source[:, :, g].flatten(), np.ones(4) * source_test[g], 12)
 
     def tearDown(self):
         pydgm.solver.finalize_solver()
@@ -123,4 +123,3 @@ class TestMG_SOLVER(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
-

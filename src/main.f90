@@ -7,7 +7,7 @@ program main
   ! ############################################################################
 
   use control, only : initialize_control, use_DGM, finalize_control
-  !use dgmsolver
+  use dgmsolver
   use solver, only : initialize_solver, solve, output, finalize_solver
 
   implicit none
@@ -27,10 +27,10 @@ program main
 
   ! Call the correct solver
   if (use_DGM) then
-!    call initialize_dgmsolver()
-!    call dgmsolve()
-!    call dgmoutput()
-!    call finalize_dgmsolver()
+    call initialize_dgmsolver()
+    call dgmsolve()
+    call dgmoutput()
+    call finalize_dgmsolver()
   else
     call initialize_solver()
     call solve()
