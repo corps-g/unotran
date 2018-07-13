@@ -454,16 +454,19 @@ module dgmsolver
 
       ! set up angular approximation containers if warranted.
       if (truncate_delta) then
+        m2d = 0.0_8
+
         ! define discrete to moment, i.e., the integration
         do l = 0, delta_legendre_order
           do a = 1, number_angles
             aa =  2 * number_angles - a + 1
             ! int( P_l(mu) psi(mu), dmu)
-            d2m(l, a) = wt(a) * legendre_p(l, mu(a))
-            d2m(l, aa)= wt(a) * legendre_p(l, -mu(a))
+            d2m(l, a) = wt(a) * legendre_p(l, mu(a)) * (2_8*l + 1_8)*0.5_8
+            d2m(l, aa)= wt(a) * legendre_p(l, -mu(a))* (2_8*l + 1_8)*0.5_8
             ! psi(mu) ~ (1/2) phi_0 * P_0(mu) + (3/2) phi_1 P_1(mu) + ...
-            m2d(a, l) = (1_8/(2_8*l+1)) * legendre_p(l, mu(a))
-            m2d(aa, l) = (1_8/(2_8*l+1)) * legendre_p(l, -mu(a))
+            !print *, "l=", l, "a=", a, " mu(a)=", mu(a), " legp(l, mu(a))=", legendre_p(l, mu(a))
+            m2d(a, l) = legendre_p(l, mu(a))
+            m2d(aa, l) = legendre_p(l, -mu(a))
           end do
         end do
       end if
@@ -478,19 +481,45 @@ module dgmsolver
           ! the angular moments and then the discrete delta term would be
           ! generated on the fly from the corresponding delta moments)
           if (truncate_delta) then
+
+!            do a = 1, number_angles
+!              psi(c, a, g) = 1_8+mu(a)+mu(a)*mu(a)
+!              psi(c, 2*number_angles - a + 1, g) = 1_8-mu(a)+mu(a)*mu(a)
+!            end do
+
             moments = matmul(d2m, psi(c, :, g))
             tmp_psi = matmul(m2d, moments)
+!
+!            print *, "psi = "
+!            print *, psi(c, :, g)
+!            print *, " d2m = "
+!            do l = 0, delta_legendre_order
+!              print *, d2m(l, :)
+!            end do
+!            print *, " moments = "
+!            print *, moments
+!            print *, " m2d = "
+!            do l = 1, number_angles * 2
+!              print *, m2d(l, :)
+!            end do
+!            print *, " tmp_psi = "
+!            print *, tmp_psi
+
+!            stop "hello"
+
             moments = matmul(d2m, psi_m_zero(c, :, cg))
             tmp_psi_m_zero = matmul(m2d, moments)
+
           else
             tmp_psi(:) = psi(c, :, g)
             tmp_psi_m_zero(:) = psi_m_zero(c, :, cg)
           end if
+
           do a = 1, number_angles * 2
             ! get the material for the current cell
             mat = mMap(c)
             ! Check if producing nan and not computing with a nan
-            if (psi_m_zero(c, a, cg) /= psi_m_zero(c, a, cg)) then
+            if (tmp_psi_m_zero(a) /= tmp_psi_m_zero(a)) then
               ! Detected NaN
                 if (.not. ignore_warnings) then
                   print *, "NaN detected, limiting"
@@ -504,6 +533,9 @@ module dgmsolver
         end do
       end do
     end do
+
+    !print *, "delta = "
+    !print *, delta_m
 
   end subroutine compute_xs_moments
 
