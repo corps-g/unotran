@@ -4,7 +4,7 @@ module dgmsolver
   ! ############################################################################
 
   implicit none
-  
+
   contains
   
   subroutine initialize_dgmsolver()
@@ -360,17 +360,19 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, number_legendre, number_groups, &
-                        ignore_warnings
+                        ignore_warnings, delta_legendre_order, truncate_delta
     use state, only : mg_sig_t, mg_nu_sig_f, phi, psi
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap
     use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis, &
                     sig_s_m, delta_m, expansion_order
+    use angle, only : mu, wt, legendre_p
 
     ! Variable definitions
     integer :: &
         o,   & ! Order index
         a,   & ! Angle index
+        aa,  & ! Temporary angle index (negative half space)
         c,   & ! Cell index
         cg,  & ! Outer coarse group index
         cgp, & ! Inner coarse group index
@@ -378,6 +380,15 @@ module dgmsolver
         gp,  & ! Inner fine group index
         l,   & ! Legendre moment index
         mat    ! Material index
+
+    ! temporary containters to study angle approximation
+    double precision :: tmp_psi(2 * number_angles), &                   ! temporary angular
+                        tmp_psi_m_zero(2 * number_angles), &            ! flux arrays
+                        d2m(0:delta_legendre_order, 2*number_angles), & ! discrete-to-moment
+                        m2d(2*number_angles, 0:delta_legendre_order), & ! moment-to-discrete
+                        moments(0:delta_legendre_order)
+
+
 
     if (allocated(delta_m)) then
       deallocate(delta_m)
@@ -441,11 +452,41 @@ module dgmsolver
         end do
       end do
 
+      ! set up angular approximation containers if warranted.
+      if (truncate_delta) then
+        ! define discrete to moment, i.e., the integration
+        do l = 0, delta_legendre_order
+          do a = 1, number_angles
+            aa =  2 * number_angles - a + 1
+            ! int( P_l(mu) psi(mu), dmu)
+            d2m(l, a) = wt(a) * legendre_p(l, mu(a))
+            d2m(l, aa)= wt(a) * legendre_p(l, -mu(a))
+            ! psi(mu) ~ (1/2) phi_0 * P_0(mu) + (3/2) phi_1 P_1(mu) + ...
+            m2d(a, l) = (1_8/(2_8*l+1)) * legendre_p(l, mu(a))
+            m2d(aa, l) = (1_8/(2_8*l+1)) * legendre_p(l, -mu(a))
+          end do
+        end do
+      end if
+
       do g = 1, number_fine_groups
         cg = energyMesh(g)
+
         ! Add angular total cross section moment (delta) to the external source
-        do a = 1, number_angles * 2
-          do c = 1, number_cells
+        do c = 1, number_cells
+          ! If we are truncating the delta term, then first truncate
+          ! the angular flux (because the idea is that we would only store
+          ! the angular moments and then the discrete delta term would be
+          ! generated on the fly from the corresponding delta moments)
+          if (truncate_delta) then
+            moments = matmul(d2m, psi(c, :, g))
+            tmp_psi = matmul(m2d, moments)
+            moments = matmul(d2m, psi_m_zero(c, :, cg))
+            tmp_psi_m_zero = matmul(m2d, moments)
+          else
+            tmp_psi(:) = psi(c, :, g)
+            tmp_psi_m_zero(:) = psi_m_zero(c, :, cg)
+          end if
+          do a = 1, number_angles * 2
             ! get the material for the current cell
             mat = mMap(c)
             ! Check if producing nan and not computing with a nan
@@ -457,7 +498,7 @@ module dgmsolver
                 psi_m_zero(c, a, cg) = 1.0
             else if (psi_m_zero(c, a, cg) /= 0.0) then
               delta_m(c, a, cg, o) = delta_m(c, a, cg, o) + basis(g, o) * (sig_t(g, mat) &
-                                  - mg_sig_t(c, cg)) * psi(c, a, g) / psi_m_zero(c, a, cg)
+                                  - mg_sig_t(c, cg)) * tmp_psi(a) / tmp_psi_m_zero(a)
             end if
           end do
         end do
