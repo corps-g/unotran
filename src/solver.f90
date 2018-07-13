@@ -111,7 +111,7 @@ module solver
         call normalize_flux(mg_phi, mg_psi)
 
         ! Update the error
-        eigen_error = sum(abs(mg_phi - old_phi))
+        eigen_error = maxval(abs(mg_phi - old_phi))
 
         ! Print output
         if (eigen_print > 0) then

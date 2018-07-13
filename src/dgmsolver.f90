@@ -116,7 +116,7 @@ module dgmsolver
       call update_fission_density()
 
       ! Update the error
-      recon_error = sum(abs(old_phi - phi))
+      recon_error = maxval(abs(old_phi - phi))
 
       ! Print output
       if (recon_print > 0) then

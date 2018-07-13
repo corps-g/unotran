@@ -60,7 +60,7 @@ module mg_solver
       end do
 
       ! Update the error
-      outer_error = sum(abs(phi_old - phi))
+      outer_error = maxval(abs(phi_old - phi))
 
       ! Check for NaN during convergence
       if (outer_error /= outer_error) then
