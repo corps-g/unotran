@@ -12,7 +12,8 @@ module control
       fine_mesh,                  & ! Number of fine cells per coarse region
       material_map,               & ! Material ID within each coarse region
       energy_group_map,           & ! Coarse energy group boundaries
-      truncation_map                ! Expansion order within each coarse group (optional)
+      truncation_map,             & ! Expansion order within each coarse group (optional)
+      homogenization_map            ! Map of which fine cells to homogenize for DGM (optional)
   double precision :: &
       boundary_type(2),           & ! Albedo value at [left, right] boundary
       recon_tolerance=1e-8,       & ! Convergance criteria for recon iteration
@@ -55,7 +56,8 @@ module control
       use_dgm=.false.,            & ! Enable/Disable DGM solver
       store_psi=.false.,          & ! Enable/Disable storing the angular flux
       ignore_warnings=.true.,     & ! Enable/Disable warning messages
-      truncate_delta=.false.         ! Enable/Disable truncated expansion of delta term
+      truncate_delta=.false.,     & ! Enable/Disable truncated expansion of delta term
+      verify_control=.true.         ! Enable/Disable checking control variables
 
   contains
 
@@ -120,6 +122,9 @@ module control
         case ('material_map')
           allocate(material_map(nitems(buffer)))
           read(buffer, *, iostat=ios) material_map
+        case ('homogenization_map')
+          allocate(homogenization_map(nitems(buffer)))
+          read(buffer, *, iostat=ios) homogenization_map
         case ('xs_file')
           xs_name=trim(adjustl(buffer))
         case ('initial_phi')
@@ -201,16 +206,6 @@ module control
       call output_control()
     end if
 
-    ! Kill the program if an invalid solver_type is selected
-    if (solver_type == 'eigen') then
-      continue
-    else if (solver_type == 'fixed') then
-      continue
-    else
-      print *, 'FATAL ERROR : Invalid solver type'
-      stop
-    end if
-
   end subroutine initialize_control
 
   subroutine output_control()
@@ -263,17 +258,57 @@ module control
       print *, '  recon_print        = ', recon_print
       print *, '  recon_tolerance    = ', recon_tolerance
       print *, '  max_recon_iters    = ', max_recon_iters
-      if (allocated(truncation_map)) then
+      if (allocated(energy_group_map)) then
         print *, '  energy_group_map   = [', energy_group_map, ']'
       end if
       if (allocated(truncation_map)) then
         print *, '  truncation_map     = [', truncation_map, ']'
+      end if
+      if (allocated(homogenization_map)) then
+        print *, '  homogenization_map = [', homogenization_map, ']'
       end if
     else
       print *, '  use_dgm            = ', use_dgm
     end if
 
   end subroutine output_control
+
+  subroutine check_inputs()
+    ! ##########################################################################
+    ! Verify the inputs are defined correctly
+    ! ##########################################################################
+
+    integer :: &
+      i ! Looping variable
+
+    ! Check solver type
+    if (.not. (solver_type == 'eigen' .or. solver_type == 'fixed')) then
+      print *, 'INPUT ERROR : Invalid solver type'
+      stop
+    end if
+
+    ! Check that the homogenization_map is provided correctly
+    if (allocated(homogenization_map)) then
+      if (sum(fine_mesh) /= size(homogenization_map)) then
+        print *, 'INPUT ERROR : homogenization map is the wrong size'
+        stop
+      end if
+      if (minval(homogenization_map) /= 1) then
+        print *, 'INPUT ERROR : the first homogenization cell should be designated as 1'
+        stop
+      end if
+    end if
+
+    ! Check if the truncation array has the right number of entries
+    if (allocated(truncation_map)) then
+      if (size(truncation_map) /= 1 + merge(size(energy_group_map), 0, allocated(energy_group_map))) then
+        print *, "INPUT ERROR : Incorrect number of entries in truncation array"
+        stop
+      end if
+    end if
+
+
+  end subroutine check_inputs
 
   subroutine finalize_control()
     ! ##########################################################################
@@ -294,6 +329,9 @@ module control
     end if
     if (allocated(truncation_map)) then
       deallocate(truncation_map)
+    end if
+    if (allocated(homogenization_map)) then
+      deallocate(homogenization_map)
     end if
   end subroutine finalize_control
 

@@ -116,7 +116,7 @@ module dgmsolver
       call update_fission_density()
 
       ! Update the error
-      recon_error = sum(abs(old_phi - phi))
+      recon_error = maxval(abs(old_phi - phi))
 
       ! Print output
       if (recon_print > 0) then
@@ -360,12 +360,11 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, number_legendre, number_groups, &
-                        ignore_warnings, delta_legendre_order, truncate_delta
+                        ignore_warnings, delta_legendre_order, truncate_delta, homogenization_map
     use state, only : mg_sig_t, mg_nu_sig_f, phi, psi
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap
-    use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis, &
-                    sig_s_m, delta_m, expansion_order
+    use dgm, only : phi_m_zero, psi_m_zero, energyMesh, basis, sig_s_m, delta_m, expansion_order
     use angle, only : mu, wt, legendre_p
 
     ! Variable definitions
@@ -537,7 +536,113 @@ module dgmsolver
     !print *, "delta = "
     !print *, delta_m
 
+    ! Spatially homogenize the XS
+    if (allocated(homogenization_map)) then
+      call homogenize_xs_moments()
+    end if
+
   end subroutine compute_xs_moments
+
+  subroutine homogenize_xs_moments()
+    ! ##########################################################################
+    ! Spatially homogenize the XS moments based on homogenization_map
+    ! ##########################################################################
+
+    ! Use Statements
+    use control, only : number_cells, homogenization_map, number_groups, &
+                        number_angles, number_legendre
+    use state, only : mg_sig_t, mg_nu_sig_f
+    use dgm, only : phi_m_zero, sig_s_m, delta_m, expansion_order
+    use mesh, only : dx
+
+    ! Variable definitions
+    integer :: &
+      i,           & ! Spatial looping index
+      ind,         & ! Homogenization cell index
+      a,           & ! Angle index
+      l,           & ! Legendre index
+      g,           & ! Outer fine group index
+      o,           & ! Order index
+      nC             ! Number of homogenization cells
+    double precision, dimension(number_groups) :: &
+      total_V_phi, & ! Sum of the volume times the scalar flux over the cell range
+      R_sig_t,     & ! Total reaction rate
+      R_sig_f        ! Fission reaction rate
+    double precision, dimension(2 * number_angles, number_groups, 0:expansion_order) :: &
+      R_delta        ! Delta (angular total) reaction rate
+    double precision, dimension(0:number_legendre, number_groups, number_groups, 0:expansion_order) :: &
+      R_sig_s        ! Scattering reaction rate
+    logical, dimension(number_cells) :: &
+      mask           ! Array containing which cells to homogenize together
+
+    ! Initialize the homogenization sweep
+    do ind = 1, maxval(homogenization_map)
+      ! Reset the total tracker
+      total_V_phi = 0.0
+
+      ! Reset the mask
+      mask = .false.
+
+      ! Determine the indicies over which to homogenize
+      do i = 1, size(homogenization_map)
+        ! Check if still in the homogenization region
+        if (homogenization_map(i) == ind) then
+          ! Set the mask at index i to true
+          mask(i) = .true.
+
+          ! Add to the total tracker
+          total_V_phi(:) = total_V_phi(:) + dx(i) * phi_m_zero(0,i,:)
+        end if
+      end do
+
+      ! Reset the homogenized totals
+      R_sig_t = 0.0
+      R_sig_f = 0.0
+      R_sig_s = 0.0
+      R_delta = 0.0
+
+      ! Compute the homogenized moments
+      do i = 1, size(homogenization_map)
+        if (mask(i)) then
+          ! Compute the total reaction rate over the region
+          R_sig_t(:) = R_sig_t(:) + mg_sig_t(i, :) * dx(i) * phi_m_zero(0, i, :) / total_V_phi(:)
+          ! Compute the fission reaction rate over the region
+          R_sig_f(:) = R_sig_f(:) + mg_nu_sig_f(i, :) * dx(i) * phi_m_zero(0, i, :) / total_V_phi(:)
+        end if
+      end do
+      do o = 0, expansion_order
+        ! Compute the scattering reaction rate over the region
+        do g = 1, number_groups
+          do i = 1, size(homogenization_map)
+            if (mask(i)) then
+              do l = 0, number_legendre
+                R_sig_s(l, :, g, o) = R_sig_s(l, :, g, o) + sig_s_m(l, i, :, g, o) * dx(i) * phi_m_zero(0, i, :) / total_V_phi(:)
+              end do
+            end if
+          end do
+        end do
+        ! Compute the delta (anuglar total) reaction rate over the region
+        do a = 1, number_angles * 2
+          do i = 1, size(homogenization_map)
+            if (mask(i)) then
+              R_delta(a, :, o) = R_delta(a, :, o) + delta_m(i, a, :, o) * dx(i) * phi_m_zero(0, i, :) / total_V_phi(:)
+            end if
+          end do
+        end do
+      end do
+
+      ! Write the averaged XS to the containers
+      do i = 1, size(homogenization_map)
+        if (mask(i)) then
+          mg_sig_t(i, :) = R_sig_t(:)
+          mg_nu_sig_f(i, :) = R_sig_f(:)
+          sig_s_m(:, i, :, :, :) = R_sig_s(:, :, :, :)
+          delta_m(i, :, :, :) = R_delta(:, :, :)
+        end if
+      end do
+    end do
+
+  end subroutine homogenize_xs_moments
 
   subroutine compute_source_moments()
     ! ##########################################################################
