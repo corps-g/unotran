@@ -48,12 +48,14 @@ module control
       recon_print=1,              & ! Enable/Disable recon iteration printing
       eigen_print=1,              & ! Enable/Disable eigen iteration printing
       outer_print=1,              & ! Enable/Disable outer iteration printing
-      inner_print=0                 ! Enable/Disable inner iteration printing
+      inner_print=0,              & ! Enable/Disable inner iteration printing
+      delta_legendre_order=1        ! Legendre order for truncated expansion of delta term
   logical :: &
       allow_fission=.false.,      & ! Enable/Disable fission in the problem
       use_dgm=.false.,            & ! Enable/Disable DGM solver
       store_psi=.false.,          & ! Enable/Disable storing the angular flux
-      ignore_warnings=.true.        ! Enable/Disable warning messages
+      ignore_warnings=.true.,     & ! Enable/Disable warning messages
+      truncate_delta=.false.         ! Enable/Disable truncated expansion of delta term
 
   contains
 
