@@ -56,7 +56,7 @@ module control
       use_dgm=.false.,            & ! Enable/Disable DGM solver
       store_psi=.false.,          & ! Enable/Disable storing the angular flux
       ignore_warnings=.true.,     & ! Enable/Disable warning messages
-      truncate_delta=.false.         ! Enable/Disable truncated expansion of delta term
+      truncate_delta=.false.,     & ! Enable/Disable truncated expansion of delta term
       verify_control=.true.         ! Enable/Disable checking control variables
 
   contains

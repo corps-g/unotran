@@ -1091,7 +1091,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten()
-        np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
+        np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 11)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
