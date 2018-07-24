@@ -103,7 +103,7 @@ module mg_solver
 
     ! Use Statements
     use angle, only : p_leg
-    use state, only : mg_nu_sig_f, mg_sig_s, mg_chi, keff
+    use state, only : mg_nu_sig_f, mg_sig_s, mg_chi, keff, mg_mMap
     use control, only : solver_type, number_groups, number_cells, number_angles, &
                         number_legendre, allow_fission
 
@@ -118,12 +118,14 @@ module mg_solver
         c,    & ! Cell index
         gp,   & ! Alternate group index
         a,    & ! Angle index
+        mat,  & ! Material index
         l       ! Legendre index
 
     ! Add the fission source if fixed source problem
     if (solver_type == 'fixed' .and. allow_fission) then
       do c = 1, number_cells
-        source(c,:) = source(c,:) + 0.5 * mg_chi(c, g) * dot_product(mg_nu_sig_f(c,:), phi(0,c,:)) / keff
+        mat = mg_mMap(c)
+        source(c,:) = source(c,:) + 0.5 * mg_chi(mat, g) * dot_product(mg_nu_sig_f(mat,:), phi(0,c,:)) / keff
       end do
     end if
 
@@ -136,8 +138,9 @@ module mg_solver
 
       do a = 1, 2 * number_angles
         do c = 1, number_cells
+          mat = mg_mMap(c)
           do l = 0, number_legendre
-            source(c,a) = source(c,a) + 0.5 * p_leg(l, a) * mg_sig_s(l, c, gp, g) * phi(l,c,gp)
+            source(c,a) = source(c,a) + 0.5 * p_leg(l, a) * mg_sig_s(l, mat, gp, g) * phi(l,c,gp)
           end do
         end do
       end do

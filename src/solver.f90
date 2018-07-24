@@ -16,28 +16,31 @@ module solver
     ! Use Statements
     use state, only : initialize_state, mg_nu_sig_f, mg_chi, mg_sig_s, mg_sig_t, &
                       mg_source, source, mg_phi, phi, mg_psi, psi, &
-                      mg_incoming
+                      mg_incoming, mg_mMap
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
-    use control, only : store_psi, number_cells, number_angles, number_legendre
+    use control, only : store_psi, number_cells, number_angles, number_legendre, &
+                        number_regions
 
     ! Variable definitions
     integer :: &
         c,  & ! Cell index
         a,  & ! Angle index
+        r,  & ! Region index
         l     ! Legendre moment index
 
     ! allocate the solutions variables
     call initialize_state()
 
     ! Fill multigroup arrays with the fine group data
-    do c = 1, number_cells
-      mg_nu_sig_f(c, :) = nu_sig_f(:, mMap(c))
-      mg_chi(c, :) = chi(:, mMap(c))
+    mg_mMap(:) = mMap(:)
+    do r = 1, number_regions
+      mg_nu_sig_f(r,:) = nu_sig_f(:,r)
+      mg_chi(r,:) = chi(:,r)
       do l = 0, number_legendre
-        mg_sig_s(l, c, :, :) = sig_s(l, :, :, mMap(c))
+        mg_sig_s(l,r,:,:) = sig_s(l,:,:,r)
       end do
-      mg_sig_t(c, :) = sig_t(:, mMap(c))
+      mg_sig_t(r,:) = sig_t(:,r)
     end do
     mg_source(:, :, :) = source(:, :, :)
     mg_phi(:, :, :) = phi(:, :, :)
@@ -154,7 +157,7 @@ module solver
     ! ##########################################################################
 
     ! Use Statements
-    use state, only : mg_chi, mg_nu_sig_f, keff, mg_source
+    use state, only : mg_chi, mg_nu_sig_f, keff, mg_source, mg_mMap
     use control, only : source_value, number_cells, number_groups, use_DGM
 
     ! Variable definitions
@@ -164,12 +167,14 @@ module solver
       source  ! Container to hold the computed source
     integer :: &
       c,    & ! Cell index
+      mat,  & ! Material index
       g       ! Energy index
 
 
     do g = 1, number_groups
       do c = 1, number_cells
-        source(c,:,g) = mg_source(c,:,g) + 0.5 / keff * mg_chi(c, g) * dot_product(mg_nu_sig_f(c,:), phi(0,c,:))
+        mat = mg_mMap(c)
+        source(c,:,g) = mg_source(c,:,g) + 0.5 / keff * mg_chi(mat, g) * dot_product(mg_nu_sig_f(mat,:), phi(0,c,:))
       end do
     end do
 

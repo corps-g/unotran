@@ -95,7 +95,7 @@ module wg_solver
 
     ! Use Statements
     use angle, only : p_leg
-    use state, only : mg_sig_s
+    use state, only : mg_sig_s, mg_mMap
     use control, only : number_cells, number_angles, number_legendre
 
     ! Variable definitions
@@ -108,14 +108,16 @@ module wg_solver
     integer :: &
         a,    & ! Angle index
         c,    & ! Cell index
+        mat,  & ! Material index
         l       ! Legendre index
 
     ! Include the within-group scattering into source
     do a = 1, 2 * number_angles
       do c = 1, number_cells
+        mat = mg_mMap(c)
         do l = 0, number_legendre
           source(c, a) = source(c, a) &
-                         + 0.5 * p_leg(l, a) * mg_sig_s(l, c, g, g) * phi_g(l, c)
+                         + 0.5 * p_leg(l, a) * mg_sig_s(l, mat, g, g) * phi_g(l, c)
         end do
       end do
     end do
