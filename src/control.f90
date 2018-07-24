@@ -41,6 +41,7 @@ module control
       max_outer_iters=1000,       & ! Maximum iterations for outer loop
       max_inner_iters=1000,       & ! Maximum iterations for inner loop
       number_cells,               & ! Total number of cells in the mesh
+      number_regions,             & ! Number of unique material regions
       number_angles,              & ! Number angles per *half space*
       number_groups,              & ! Number of groups for the MG problem
       number_fine_groups,         & ! Number of groups in the cross section library

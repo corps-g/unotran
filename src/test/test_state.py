@@ -18,18 +18,17 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.boundary_type = [0.0, 0.0]
         pydgm.control.allow_fission = True
-        pydgm.control.energy_group_map = [4]
-        pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
-        pydgm.control.outer_print = True
+        pydgm.control.eigen_print = False
+        pydgm.control.outer_print = False
         pydgm.control.inner_print = False
+        pydgm.control.eigen_tolerance = 1e-15
         pydgm.control.outer_tolerance = 1e-14
         pydgm.control.inner_tolerance = 1e-14
-        pydgm.control.lamb = 0.5
-        pydgm.control.use_dgm = True
+        pydgm.control.lamb = 1.0
         pydgm.control.store_psi = False
-        pydgm.control.use_recondensation = False
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 0.0
+        pydgm.control.equation_type = 'DD'
         pydgm.control.legendre_order = 0
         pydgm.control.use_DGM = False
 
@@ -75,7 +74,7 @@ class TestSTATE(unittest.TestCase):
 
     def tearDown(self):
         # Finalize the dependancies
-        pydgm.state.finalize_state()
+        pydgm.solver.finalize_solver()
         pydgm.control.finalize_control()
 
 
