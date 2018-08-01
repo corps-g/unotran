@@ -52,7 +52,7 @@ class TestDGM(unittest.TestCase):
 
         # Check that arrays were properly resized
         assert(pydgm.state.mg_phi.shape == (8, 1, 2))
-        assert(pydgm.state.mg_source.shape == (1, 4, 2))
+        assert(pydgm.state.mg_source.shape == (1, 4))
         assert(pydgm.state.mg_nu_sig_f.shape == (1, 2))
         assert(pydgm.state.mg_sig_t.shape == (1, 2))
         assert(pydgm.state.mg_chi.shape == (1, 2))

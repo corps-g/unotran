@@ -4,7 +4,7 @@ module mg_solver
   
   contains
   
-  subroutine mg_solve(source, phi, psi, incident, higher_dgm_flag)
+  subroutine mg_solve(phi, psi, incident)
     ! ##########################################################################
     ! Solve the within group equation
     ! ##########################################################################
@@ -13,12 +13,10 @@ module mg_solver
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
                         number_groups, number_cells, number_angles, number_legendre
     use wg_solver, only : wg_solve
+    use sources, only : compute_in_source
+    use dgm, only : dgm_order
 
     ! Variable definitions
-    double precision, intent(in), dimension(:,:,:) :: &
-        source               ! External source
-    logical, intent(in) :: &
-        higher_dgm_flag      ! Flag to limit iterations to 1
     double precision, intent(inout), dimension(0:,:,:) :: &
         phi                  ! Scalar flux
     double precision, intent(inout), dimension(:,:,:) :: &
@@ -27,8 +25,6 @@ module mg_solver
         incident             ! Angular flux incident on the cell
     double precision, allocatable, dimension(:,:,:) :: &
         phi_old              ! Save the previous scalar flux
-    double precision, dimension(number_cells, 2 * number_angles) :: &
-        total_S              ! Sum of all sources
     integer :: &
         outer_count,       & ! Counter for the outer loop
         l,                 & ! Legendre index
@@ -47,15 +43,11 @@ module mg_solver
 
       ! Loop over the energy groups
       do g = 1, number_groups
-        total_S = source(:,:,g)
-
-        ! compute fixed source if not a higher moment DGM sweep
-        if (.not. higher_dgm_flag) then
-            call compute_mg_source(g, phi, total_S)
-        end if
+        ! Compute the into group sources for group g
+        call compute_in_source(g)
 
         ! Solve the within group problem
-        call wg_solve(g, total_S, phi(:,:,g), psi(:,:,g), incident(:,g), higher_dgm_flag)
+        call wg_solve(g, phi(:,:,g), psi(:,:,g), incident(:,g))
 
       end do
 
@@ -78,7 +70,7 @@ module mg_solver
       end if
 
       ! Check if tolerance is reached
-      if (outer_error < outer_tolerance .or. higher_dgm_flag) then
+      if (outer_error < outer_tolerance .or. dgm_order > 0) then
         exit
       end if
     end do
@@ -95,57 +87,5 @@ module mg_solver
     deallocate(phi_old)
 
   end subroutine mg_solve
-
-  subroutine compute_mg_source(g, phi, source)
-    ! ##########################################################################
-    ! Get the source including external, fission, and in-scatter
-    ! ##########################################################################
-
-    ! Use Statements
-    use angle, only : p_leg
-    use state, only : mg_nu_sig_f, mg_sig_s, mg_chi, keff, mg_mMap
-    use control, only : solver_type, number_groups, number_cells, number_angles, &
-                        number_legendre, allow_fission
-
-    ! Variable definitions
-    integer, intent(in) :: &
-        g       ! Group index
-    double precision, intent(in), dimension(0:,:,:) :: &
-        phi     ! Scalar flux
-    double precision, intent(inout), dimension(:,:) :: &
-        source  ! Container to hold the computed source
-    integer :: &
-        c,    & ! Cell index
-        gp,   & ! Alternate group index
-        a,    & ! Angle index
-        mat,  & ! Material index
-        l       ! Legendre index
-
-    ! Add the fission source if fixed source problem
-    if (solver_type == 'fixed' .and. allow_fission) then
-      do c = 1, number_cells
-        mat = mg_mMap(c)
-        source(c,:) = source(c,:) + 0.5 * mg_chi(mat, g) * dot_product(mg_nu_sig_f(mat,:), phi(0,c,:)) / keff
-      end do
-    end if
-
-    ! Add the in-scattering source for each Legendre moment
-    do gp = 1, number_groups
-      ! Ignore the within-group terms
-      if (g == gP) then
-        cycle
-      end if
-
-      do a = 1, 2 * number_angles
-        do c = 1, number_cells
-          mat = mg_mMap(c)
-          do l = 0, number_legendre
-            source(c,a) = source(c,a) + 0.5 * p_leg(l, a) * mg_sig_s(l, mat, gp, g) * phi(l,c,gp)
-          end do
-        end do
-      end do
-    end do
-
-  end subroutine compute_mg_source
 
 end module mg_solver

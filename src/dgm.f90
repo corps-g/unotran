@@ -6,22 +6,23 @@ module dgm
   implicit none
 
   double precision, allocatable, dimension(:,:) :: &
-      basis                ! Basis for expansion in energy
+      basis                   ! Basis for expansion in energy
   double precision, allocatable, dimension(:,:,:) :: &
-      chi_m,             & ! Chi spectrum moments
-      phi_m_zero,        & ! Zeroth moment of scalar flux
-      psi_m_zero           ! Zeroth moment of angular flux
+      chi_m,                & ! Chi spectrum moments
+      phi_m_zero,           & ! Zeroth moment of scalar flux
+      psi_m_zero              ! Zeroth moment of angular flux
   double precision, allocatable, dimension(:,:,:,:) :: &
-      delta_m,           & ! Angular total XS moments
-      source_m             ! Source moments
+      delta_m,              & ! Angular total XS moments
+      source_m                ! Source moments
   double precision, allocatable, dimension(:,:,:,:,:) :: &
-      sig_s_m              ! Scattering XS moments
+      sig_s_m                 ! Scattering XS moments
   integer :: &
-      expansion_order      ! Maximum expansion order
+      expansion_order,      & ! Maximum expansion order
+      dgm_order=0             ! Current order
   integer, allocatable, dimension(:) :: &
-      energyMesh,        & ! Array of number of fine groups per coarse group
-      order,             & ! Expansion order for each coarse energy group
-      basismap             ! Starting index for fine group for each coarse group
+      energyMesh,           & ! Array of number of fine groups per coarse group
+      order,                & ! Expansion order for each coarse energy group
+      basismap                ! Starting index for fine group for each coarse group
 
   contains
 

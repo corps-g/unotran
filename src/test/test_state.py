@@ -39,10 +39,8 @@ class TestSTATE(unittest.TestCase):
         pydgm.state.initialize_state()
 
         phi_test = np.ones((1, 7))
-        source_test = np.zeros((1, 4, 7))
 
         np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test, 12)
-        np.testing.assert_array_almost_equal(pydgm.state.source, source_test, 12)
 
     def test_state_initialize2(self):
         ''' 
@@ -53,11 +51,9 @@ class TestSTATE(unittest.TestCase):
 
         phi_test = np.ones((1, 7))
         psi_test = np.ones((1, 4, 7)) / 2
-        source_test = np.zeros((1, 4, 7))
 
         np.testing.assert_array_almost_equal(pydgm.state.phi[0], phi_test, 12)
         np.testing.assert_array_almost_equal(pydgm.state.psi, psi_test, 12)
-        np.testing.assert_array_almost_equal(pydgm.state.source, source_test, 12)
 
     def test_state_update_fission_density(self):
         pydgm.control.fine_mesh = [3, 10, 3]

@@ -9,20 +9,20 @@ module state
       mg_sig_s       ! Scattering cross section moments
   double precision, allocatable, dimension(:,:,:) :: &
       psi,         & ! Angular flux
-      source,      & ! External source
       phi,         & ! Scalar Flux
-      mg_source,   & ! Extermal source mg container
       mg_phi,      & ! Scalar flux mg container
       mg_psi         ! Angular flux mg container
   double precision, allocatable, dimension(:,:) :: &
       mg_nu_sig_f, & ! Fission cross section mg container (times nu)
       mg_chi,      & ! Chi spectrum mg container
       mg_sig_t,    & ! Scalar total cross section mg container
+      mg_source,   & ! External source mg container
       mg_incoming    ! Angular flux incident on the current cell
   double precision, allocatable, dimension(:) :: &
       density,     & ! Fission density
       mg_mMap        ! material map mg container
   double precision :: &
+      mg_constant_source, & ! Constant multigroup source
       keff,        & ! k-eigenvalue
       norm_frac,   & ! Fraction of normalization for eigenvalue problems
       sweep_count    ! Counter for the number of transport sweeps
@@ -65,6 +65,9 @@ module state
     call initialize_angle()
     ! get the basis vectors
     call initialize_polynomials()
+
+    ! Initialize the constant source
+    mg_constant_source = 0.5 * source_value
 
     ! Determine the correct size for the multigroup containers
     number_groups = number_fine_groups
@@ -112,10 +115,6 @@ module state
     end if
     close(10) ! close the file
 
-    allocate(source(number_cells, 2 * number_angles, number_fine_groups))
-    ! Initialize source as isotropic
-    source = 0.5 * source_value
-
     ! Only allocate psi if the option is to store psi    
     if (store_psi) then
       allocate(psi(number_cells, 2 * number_angles, number_fine_groups))
@@ -157,14 +156,6 @@ module state
       keff = initial_keff
     end if
 
-    ! Set external source to zero if eigen problem
-    if (solver_type == 'eigen') then
-      if (norm2(source) > 0.0) then
-        print *, "WARNING : Eigen solver is setting external source to zero"
-      end if
-      source = 0.0
-    end if
-
     ! Initialize the material map container
     allocate(mg_mMap(number_cells))
 
@@ -176,7 +167,7 @@ module state
     call normalize_flux(phi, psi)
 
     ! Size the mg containers to be fine/coarse group for non/DGM problems
-    allocate(mg_source(number_cells, 2 * number_angles, number_groups))
+    allocate(mg_source(number_cells, 2 * number_angles))
     allocate(mg_nu_sig_f(number_regions, number_groups))
     allocate(mg_sig_t(number_regions, number_groups))
     allocate(mg_phi(0:number_legendre, number_cells, number_groups))
@@ -211,9 +202,6 @@ module state
     ! Deallocate the state variables
     if (allocated(phi)) then
       deallocate(phi)
-    end if
-    if (allocated(source)) then
-      deallocate(source)
     end if
     if (allocated(psi)) then
       deallocate(psi)

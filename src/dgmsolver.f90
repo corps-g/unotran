@@ -43,7 +43,7 @@ module dgmsolver
                         number_legendre, number_angles, solver_type
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, norm_frac, &
                       update_fission_density, output_moments
-    use dgm, only : expansion_order, phi_m_zero, psi_m_zero
+    use dgm, only : expansion_order, phi_m_zero, psi_m_zero, dgm_order
     use solver, only : solve
 
     ! Variable definitions
@@ -87,33 +87,30 @@ module dgmsolver
       psi = 0.0
 
       ! Solve for order 0
-      do i = 0, expansion_order
+      do dgm_order = 0, expansion_order
 
         ! Set Incoming to the proper order
-        call compute_incoming_flux(i, old_psi)
+        call compute_incoming_flux(dgm_order, old_psi)
 
         ! Compute the cross section moments
-        call slice_xs_moments(order=i)
+        call slice_xs_moments(order=dgm_order)
+
+        call solve()
 
         ! Converge the 0th order flux moments
-        if (i == 0) then
-          call solve()
-
+        if (dgm_order == 0) then
           ! Save the new flux moments as the zeroth moments
           phi_m_zero = mg_phi
           psi_m_zero = mg_psi
-        ! Converge the higher order moments
-        else
-          call solve(.true.)
         end if
 
         ! Print the moments if verbose printing is on
         if (recon_print > 1) then
-          print *, i, mg_phi
+          print *, dgm_order, mg_phi
         end if
 
         ! Unfold ith order flux
-        call unfold_flux_moments(i, mg_psi, phi, psi)
+        call unfold_flux_moments(dgm_order, mg_psi, phi, psi)
       end do
 
       ! Update flux using krasnoselskii iteration
@@ -325,44 +322,9 @@ module dgmsolver
     ! Variable definitions
     integer, intent(in) :: &
         order  ! Expansion order
-    integer :: &
-        a, & ! Angle index
-        c, & ! Cell index
-        cg, & ! Coarse group index
-        cgp, & ! Alternate coarse group index
-        l      ! Legendre index
 
-    ! Get the external and delta sources
-    mg_source(:, :, :) = source_m(:, :, :, order) - delta_m(:, :, :, order) * psi_m_zero(:, :, :)
-
-    if (order > 0) then
-      ! Get the combined fixed source
-      do cg = 1, number_groups
-        do cgp = 1, number_groups
-          do a = 1, number_angles * 2
-            do c = 1, number_cells
-              if (allow_fission) then
-                mg_source(c, a, cg) = mg_source(c, a, cg) + &
-                                      0.5 / keff * chi_m(c, cg, order) * mg_nu_sig_f(c, cgp) * phi_m_zero(0, c, cgp)
-              end if
-              do l = 0, number_legendre
-                ! Get the scattering source
-                mg_source(c, a, cg) = mg_source(c, a, cg) + &
-                                      0.5 / (2 * l + 1) * p_leg(l, a) * sig_s_m(l, c, cgp, cg, order) * phi_m_zero(l, c, cgp)
-              end do
-            end do
-          end do
-        end do
-      end do
-
-      ! Since fission and scattering sources are already computed, turn them off in further calculations
-      mg_chi = 0.0
-      mg_sig_s = 0.0
-    else
-      ! Compute the source as normal
-      mg_chi(:, :) = chi_m(:, :, order)
-      mg_sig_s(:,:,:,:) = sig_s_m(:, :, :, :, order)
-    end if
+    mg_chi(:, :) = chi_m(:, :, order)
+    mg_sig_s(:,:,:,:) = sig_s_m(:, :, :, :, order)
 
   end subroutine slice_xs_moments
 
@@ -545,7 +507,7 @@ module dgmsolver
     ! Use Statements
     use control, only : number_cells, number_fine_groups, number_angles, number_groups
     use material, only : chi
-    use state, only : source
+    use state, only : mg_constant_source
     use mesh, only : mMap
     use dgm, only : chi_m, source_m, expansion_order, energyMesh, basis
 
@@ -576,7 +538,7 @@ module dgmsolver
             end if
 
             ! Source moment
-            source_m(c, a, cg, order) = source_m(c, a, cg, order) + basis(g, order) * source(c, a, g)
+            source_m(c, a, cg, order) = source_m(c, a, cg, order) + basis(g, order) * mg_constant_source
           end do
         end do
       end do
