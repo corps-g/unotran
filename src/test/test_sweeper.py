@@ -80,7 +80,7 @@ class TestSWEEPER(unittest.TestCase):
         Test the sweep through cells and angles with reflecting conditions and DD
         '''
         g = 1
-        source = np.ones((1, 4), order='F') * 1.2760152893 * 0.5
+        pydgm.sources.compute_in_source(g)
         phi_g = np.array([1.0])
         psi_g = np.ones((1, 4), order='F') * 0.5
         incident = np.ones((2), order='F') * 0.5
@@ -99,12 +99,12 @@ class TestSWEEPER(unittest.TestCase):
 
         pydgm.control.boundary_type = [0.0, 0.0]
         g = 1
-        source = np.ones((1, 4), order='F') * 1.2760152893 * 0.5
+        pydgm.sources.compute_in_source(g)
         phi_g = np.array([1.0])
         psi_g = np.ones((1, 4), order='F') * 0.5
         incident = np.ones((2), order='F') * 0.5
 
-        pydgm.sweeper.sweep(g, source, phi_g, psi_g, incident)
+        pydgm.sweeper.sweep(g, phi_g, psi_g, incident)
 
         np.testing.assert_array_almost_equal(phi_g, 1.0863050345964158, 12)
         psi_test = np.array([0.31829108536954637, 0.6630938187058939, 0.6630938187058939, 0.31829108536954637])

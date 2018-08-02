@@ -77,7 +77,7 @@ module sweeper
 
         do c = cmin, cmax, cstep  ! Sweep over cells
           ! Get the source in this cell, group, and angle
-          call compute_within_group_source(g, c, a, source)
+          source = compute_within_group_source(g, c, a)
 
           mat = mg_mMap(c)
 

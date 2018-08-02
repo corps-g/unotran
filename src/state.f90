@@ -19,7 +19,8 @@ module state
       mg_source,   & ! External source mg container
       mg_incoming    ! Angular flux incident on the current cell
   double precision, allocatable, dimension(:) :: &
-      density,     & ! Fission density
+      density        ! Fission density
+  integer, allocatable, dimension(:) :: &
       mg_mMap        ! material map mg container
   double precision :: &
       mg_constant_source, & ! Constant multigroup source
