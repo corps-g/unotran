@@ -80,7 +80,10 @@ class TestSWEEPER(unittest.TestCase):
         Test the sweep through cells and angles with reflecting conditions and DD
         '''
         g = 1
-        pydgm.sources.compute_in_source(g)
+        for a in range(2 * pydgm.control.number_angles):
+            for c in range(pydgm.control.number_cells):
+                pydgm.state.mg_source[c, a] = 0.5 * 1.2760152893 - pydgm.sources.compute_within_group_source(g, c + 1, a + 1)
+
         phi_g = np.array([1.0])
         psi_g = np.ones((1, 4), order='F') * 0.5
         incident = np.ones((2), order='F') * 0.5
@@ -99,7 +102,10 @@ class TestSWEEPER(unittest.TestCase):
 
         pydgm.control.boundary_type = [0.0, 0.0]
         g = 1
-        pydgm.sources.compute_in_source(g)
+        for a in range(2 * pydgm.control.number_angles):
+            for c in range(pydgm.control.number_cells):
+                pydgm.state.mg_source[c, a] = 0.5 * 1.2760152893 - pydgm.sources.compute_within_group_source(g, c + 1, a + 1)
+
         phi_g = np.array([1.0])
         psi_g = np.ones((1, 4), order='F') * 0.5
         incident = np.ones((2), order='F') * 0.5

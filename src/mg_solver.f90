@@ -13,7 +13,6 @@ module mg_solver
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
                         number_groups, number_cells, number_angles, number_legendre
     use wg_solver, only : wg_solve
-    use sources, only : compute_in_source
     use dgm, only : dgm_order
 
     ! Variable definitions
@@ -43,9 +42,6 @@ module mg_solver
 
       ! Loop over the energy groups
       do g = 1, number_groups
-        ! Compute the into group sources for group g
-        call compute_in_source(g)
-
         ! Solve the within group problem
         call wg_solve(g, phi(:,:,g), psi(:,:,g), incident(:,g))
 

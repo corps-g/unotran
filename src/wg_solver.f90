@@ -13,6 +13,7 @@ module wg_solver
     use control, only : ignore_warnings, max_inner_iters, inner_print, &
                         inner_tolerance, number_cells, number_legendre, number_angles
     use sweeper, only : sweep
+    use sources, only : compute_in_source
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -33,6 +34,9 @@ module wg_solver
     ! Initialize container to hold the old scalar flux for error calculations
     allocate(phi_g_old(0:number_legendre, number_cells))
     phi_g_old = 0.0
+
+    ! Compute the into group sources for group g
+    call compute_in_source(g)
 
     ! Begin loop to converge on the within-group scattering source
     do inner_count = 1, max_inner_iters
