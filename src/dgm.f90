@@ -39,7 +39,6 @@ module dgm
     ! Variable definitions
     integer :: &
         g,  & ! outer fine group index
-        gp, & ! inner coarse group index
         cg    ! coarse group index
 
     ! Get the number of coarse groups
@@ -95,10 +94,10 @@ module dgm
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : dgm_basis_name, number_fine_groups, number_coarse_groups
+    use control, only : dgm_basis_name, number_fine_groups
 
     ! Variable definitions
-    double precision, allocatable, dimension(:) :: &
+    double precision, dimension(number_fine_groups) :: &
         array1 ! Temporary array
     integer :: &
         g,   & ! Fine group index
@@ -107,7 +106,6 @@ module dgm
 
     ! allocate the basis array
     allocate(basis(number_fine_groups, 0:expansion_order))
-    allocate(array1(number_fine_groups))
 
     ! initialize the basis to zero
     basis = 0.0
@@ -125,8 +123,6 @@ module dgm
 
     ! clean up
     close(unit=5)
-
-    deallocate(array1)
 
   end subroutine initialize_basis
 

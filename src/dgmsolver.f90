@@ -16,11 +16,7 @@ module dgmsolver
     ! Use Statements
     use state, only : initialize_state
     use state, only : mg_mMap
-    use control, only : homogenization_map, number_cells
-
-    ! Variable definitions
-    integer :: &
-      c  ! Cell index
+    use control, only : homogenization_map
 
     ! allocate the solutions variables
     call initialize_state()
@@ -40,8 +36,8 @@ module dgmsolver
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
                         ignore_warnings, lamb, number_cells, number_fine_groups, &
-                        number_legendre, number_angles, solver_type
-    use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, norm_frac, &
+                        number_legendre, number_angles
+    use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments
     use dgm, only : expansion_order, phi_m_zero, psi_m_zero, dgm_order
     use solver, only : solve
@@ -54,14 +50,13 @@ module dgmsolver
     logical :: &
         bypass_flag       ! Local variable to signal an eigen loop bypass
     integer :: &
-        recon_count,    & ! Iteration counter
-        i                 ! Expansion index
+        recon_count       ! Iteration counter
     double precision :: &
         recon_error       ! Error between successive iterations
     double precision, dimension(0:number_legendre, number_cells, number_fine_groups) :: &
-        old_phi        ! Scalar flux from previous iteration
+        old_phi           ! Scalar flux from previous iteration
     double precision, dimension(number_cells, 2 * number_angles, number_fine_groups) :: &
-        old_psi        ! Angular flux from previous iteration
+        old_psi           ! Angular flux from previous iteration
 
     if (present(bypass_arg)) then
       bypass_flag = bypass_arg
@@ -176,7 +171,7 @@ module dgmsolver
     double precision, intent(inout), dimension(:,:,:) :: &
         psi_new,    & ! Scalar flux for current iteration
         phi_new       ! Angular flux for current iteration
-    double precision, allocatable, dimension(:) :: &
+    double precision, dimension(0:number_legendre) :: &
         M                    ! Legendre polynomial integration vector
     integer :: &
         a,          & ! Angle index
@@ -186,8 +181,6 @@ module dgmsolver
         an            ! Global angle index
     double precision :: &
         val           ! Variable to hold a double value
-
-    allocate(M(number_legendre))
 
     ! Recover the angular flux from moments
     do g = 1, number_fine_groups
@@ -207,8 +200,6 @@ module dgmsolver
         end do
       end do
     end do
-
-    deallocate(M)
 
   end subroutine unfold_flux_moments
 
@@ -246,7 +237,6 @@ module dgmsolver
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells
     use state, only : phi, psi
-    use mesh, only : mMap
     use dgm, only : phi_m_zero, psi_m_zero, basis, energyMesh
 
     ! Variable definitions
@@ -254,8 +244,7 @@ module dgmsolver
         a,   & ! Angle index
         c,   & ! Cell index
         cg,  & ! Outer coarse group index
-        g,   & ! Outer fine group index
-        mat    ! Material index
+        g      ! Outer fine group index
 
     ! initialize all moments to zero
     phi_m_zero = 0.0
@@ -313,11 +302,8 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use state, only : mg_source, mg_chi, mg_sig_s, mg_nu_sig_f, keff
-    use angle, only : p_leg, wt
-    use dgm, only : source_m, delta_m, chi_m, sig_s_m, phi_m_zero, psi_m_zero
-    use control, only : number_legendre, number_angles, number_cells, number_groups, &
-                        allow_fission
+    use state, only : mg_chi, mg_sig_s
+    use dgm, only : chi_m, sig_s_m
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -336,8 +322,7 @@ module dgmsolver
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, &
                         number_legendre, number_groups, ignore_warnings, &
-                        delta_legendre_order, truncate_delta, homogenization_map, &
-                        number_regions
+                        delta_legendre_order, truncate_delta, number_regions
     use state, only : mg_sig_t, mg_nu_sig_f, phi, psi, mg_mMap
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap, dx

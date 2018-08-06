@@ -30,7 +30,6 @@ module sweeper
         c,          & ! Cell index
         mat,        & ! Material index
         a,          & ! Angle index
-        l,          & ! Legendre index
         an,         & ! Global angle index
         cmin,       & ! Lower cell number
         cmax,       & ! Upper cell number
@@ -38,16 +37,13 @@ module sweeper
         amin,       & ! Lower angle number
         amax,       & ! Upper angle number
         astep         ! Angle stepping direction
-    double precision, allocatable, dimension(:) :: &
+    double precision, dimension(0:number_legendre) :: &
         M           ! Legendre polynomial integration vector
     double precision :: &
         psi_center, & ! Angular flux at cell center
         source        ! Fission, In-Scattering, External source in group g
     logical :: &
         octant        ! Positive/Negative octant flag
-
-    ! Allocations
-    allocate(M(0:number_legendre))
 
     ! Increment the sweep counter
     sweep_count = sweep_count + 1
@@ -76,10 +72,10 @@ module sweeper
         M = wt(a) * p_leg(:, an)
 
         do c = cmin, cmax, cstep  ! Sweep over cells
-          ! Get the source in this cell, group, and angle
-          source = compute_within_group_source(g, c, a)
-
           mat = mg_mMap(c)
+
+          ! Get the source in this cell, group, and angle
+          source = compute_within_group_source(g, c, an)
 
           ! Use the specified equation.  Defaults to DD
           call computeEQ(source, incident(a), mg_sig_t(mat, g), dx(c), mu(a), psi_center)
@@ -93,8 +89,6 @@ module sweeper
         end do
       end do
     end do
-
-    deallocate(M)
 
   end subroutine sweep
   

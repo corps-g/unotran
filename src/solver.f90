@@ -15,16 +15,13 @@ module solver
 
     ! Use Statements
     use state, only : initialize_state, mg_nu_sig_f, mg_chi, mg_sig_s, mg_sig_t, &
-                      mg_phi, phi, mg_psi, psi, &
-                      mg_incoming, mg_mMap
+                      mg_phi, phi, mg_psi, psi, mg_incoming, mg_mMap
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
-    use control, only : store_psi, number_cells, number_angles, number_legendre, &
-                        number_regions
+    use control, only : store_psi, number_angles, number_legendre, number_regions
 
     ! Variable definitions
     integer :: &
-        c,  & ! Cell index
         a,  & ! Angle index
         r,  & ! Region index
         l     ! Legendre moment index
@@ -63,11 +60,11 @@ module solver
 
     ! Use Statements
     use mg_solver, only : mg_solve
-    use state, only : mg_phi, mg_psi, mg_incoming, keff, normalize_flux, &
+    use state, only : mg_phi, mg_psi, keff, normalize_flux, &
                       phi, psi, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
-                        use_DGM, number_angles
+                        use_DGM
     use dgm, only : dgm_order
 
     ! Variable definitions
@@ -80,7 +77,7 @@ module solver
 
     ! Run eigen loop only if eigen problem
     if (solver_type == 'fixed' .or. dgm_order > 0) then
-      call mg_solve(mg_phi, mg_psi, mg_incoming)
+      call mg_solve()
     else if (solver_type == 'eigen') then
       do eigen_count = 1, max_eigen_iters
 
@@ -88,7 +85,7 @@ module solver
         old_phi = mg_phi
 
         ! Solve the multigroup problem
-        call mg_solve(mg_phi, mg_psi, mg_incoming)
+        call mg_solve()
 
         ! Compute new eigenvalue if eigen problem
         keff = keff * sum(abs(mg_phi(0,:,:))) / sum(abs(old_phi(0,:,:)))

@@ -6,8 +6,7 @@ module angle
   implicit none
 
   double precision, allocatable, dimension(:) :: &
-      mu                          ! cosine of angles
-  double precision, allocatable, dimension(:) :: &
+      mu,                       & ! cosine of angles
       wt                          ! quadrature weight (sum to 1)
   double precision, allocatable, dimension(:,:) :: &
       p_leg                       ! Container for the legendre polynomials

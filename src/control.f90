@@ -108,7 +108,7 @@ module control
         line = line + 1
 
         ! Find the first whitespace and split label and data
-        pos = scan(buffer, '    ')
+        pos = scan(buffer, ' ')
         label = buffer(1:pos)
         buffer = buffer(pos+1:)
 
@@ -278,9 +278,6 @@ module control
     ! ##########################################################################
     ! Verify the inputs are defined correctly
     ! ##########################################################################
-
-    integer :: &
-      i ! Looping variable
 
     ! Check solver type
     if (.not. (solver_type == 'eigen' .or. solver_type == 'fixed')) then

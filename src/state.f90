@@ -116,7 +116,7 @@ module state
     end if
     close(10) ! close the file
 
-    ! Only allocate psi if the option is to store psi    
+    ! Only allocate psi if the option is to store psi
     if (store_psi) then
       allocate(psi(number_cells, 2 * number_angles, number_fine_groups))
 
@@ -186,7 +186,6 @@ module state
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : use_DGM
     use angle, only : finalize_angle
     use mesh, only : finalize_mesh
     use material, only : finalize_material
@@ -196,9 +195,7 @@ module state
     call finalize_angle()
     call finalize_mesh()
     call finalize_material()
-    if (use_DGM) then
-      call finalize_moments()
-    end if
+    call finalize_moments()
 
     ! Deallocate the state variables
     if (allocated(phi)) then
@@ -266,6 +263,8 @@ module state
       write(10) psi ! write the data in array x to the file
       close(10) ! close the file
     end if
+
+    deallocate(fname)
 
   end subroutine output_state
 

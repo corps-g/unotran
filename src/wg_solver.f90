@@ -11,7 +11,7 @@ module wg_solver
 
     ! Use Statements
     use control, only : ignore_warnings, max_inner_iters, inner_print, &
-                        inner_tolerance, number_cells, number_legendre, number_angles
+                        inner_tolerance, number_cells, number_legendre
     use sweeper, only : sweep
     use sources, only : compute_in_source
 
@@ -24,7 +24,7 @@ module wg_solver
         psi_g       ! Angular flux
     double precision, intent(inout), dimension(:) :: &
         incident    ! Angular flux incident on the cell in group g
-    double precision, allocatable, dimension(:,:) :: &
+    double precision, dimension(0:number_legendre, number_cells) :: &
         phi_g_old   ! Save the previous scalar flux
     integer :: &
         inner_count ! Counter for the inner loop
@@ -32,7 +32,6 @@ module wg_solver
         inner_error ! Residual error between iterations
 
     ! Initialize container to hold the old scalar flux for error calculations
-    allocate(phi_g_old(0:number_legendre, number_cells))
     phi_g_old = 0.0
 
     ! Compute the into group sources for group g
@@ -72,9 +71,6 @@ module wg_solver
         1002 format ('inner iteration did not converge in ', i4, ' iterations')
       end if
     end if
-
-    ! Deallocate memory
-    deallocate(phi_g_old)
 
   end subroutine wg_solve
 
