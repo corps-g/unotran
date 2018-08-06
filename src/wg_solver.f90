@@ -11,7 +11,8 @@ module wg_solver
 
     ! Use Statements
     use control, only : ignore_warnings, max_inner_iters, inner_print, &
-                        inner_tolerance, number_cells, number_legendre
+                        inner_tolerance, number_cells, number_legendre, &
+                        min_inner_iters
     use sweeper, only : sweep
     use sources, only : compute_in_source
 
@@ -59,7 +60,7 @@ module wg_solver
       end if
 
       ! Check if tolerance is reached
-      if (inner_error < inner_tolerance) then
+      if (inner_error < inner_tolerance .and. inner_count >= min_inner_iters) then
         exit
       end if
     end do

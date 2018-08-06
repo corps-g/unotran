@@ -14,7 +14,7 @@ module sources
 
     ! Use Statements
     use state, only : mg_source
-    use control, only : number_cells, number_angles
+    use control, only : number_cells, number_angles, allow_fission, solver_type
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -32,7 +32,9 @@ module sources
         mg_source(c,a) = mg_source(c,a) + compute_external(g, c, a)
 
         ! Add the fission source
-        mg_source(c,a) = mg_source(c,a) + compute_in_fission(g, c)
+        if (allow_fission .or. solver_type == 'eigen') then
+          mg_source(c,a) = mg_source(c,a) + compute_in_fission(g, c)
+        end if
 
         ! Add the scatter source
         mg_source(c,a) = mg_source(c,a) + compute_in_scatter(g, c, a)
@@ -48,7 +50,7 @@ module sources
 
     ! Use Statements
     use state, only : mg_source
-    use control, only : use_DGM
+    use control, only : use_DGM, allow_fission, solver_type
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -60,9 +62,10 @@ module sources
 
     ! Get the sources into group g
     source = mg_source(c,a)
-
     ! Add the fission source
-    source = source + compute_within_group_fission(g, c)
+    if (allow_fission .or. solver_type == 'eigen') then
+      source = source + compute_within_group_fission(g, c)
+    end if
 
     ! Add the scatter source
     source = source + compute_within_group_scatter(g, c, a)
@@ -189,7 +192,7 @@ module sources
 
     ! Use Statements
     use state, only : mg_mMap, keff, mg_phi, mg_chi, mg_nu_sig_f
-    use control, only : number_cells, number_groups, use_DGM
+    use control, only : number_groups, use_DGM
     use dgm, only : dgm_order, phi_m_zero
 
     ! Variable definitions
