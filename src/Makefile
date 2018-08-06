@@ -65,6 +65,10 @@ pydgm: control.f90 angle.f90 material.f90 mesh.f90 dgm.f90 state.f90 sources.f90
 	@rm -f pydgm*so
 	f2py --f90flags="$(F90FLAGS)" -c -m $@ $^
 
+# Debug module
+debug: F90FLAGS += -g -Wall -pedantic -fbacktrace
+debug: xdgm
+
 # Remove objects, module files, and exectables
 clean:
 	@rm -f *.o *.mod pydgm*so xdgm test/*.x
