@@ -11,7 +11,8 @@ module mg_solver
 
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
-                        number_groups, number_cells, number_legendre, min_outer_iters
+                        number_groups, number_cells, number_legendre, min_outer_iters, &
+                        solver_type
     use wg_solver, only : wg_solve
     use state, only : mg_phi, mg_psi, mg_incoming
     use dgm, only : dgm_order
@@ -59,6 +60,8 @@ module mg_solver
 
       ! Check if tolerance is reached
       if ((outer_error < outer_tolerance .and. outer_count >= min_outer_iters) .or. dgm_order > 0) then
+        exit
+      else if (solver_type == 'eigen') then
         exit
       end if
     end do

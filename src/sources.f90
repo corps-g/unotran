@@ -93,7 +93,7 @@ module sources
       a,   & ! Angle index
       c      ! Cell index
     double precision :: &
-      source   ! Source for group g
+      source ! Source for group g
 
     if (use_DGM) then
       source = source_m(c,a,g,dgm_order)

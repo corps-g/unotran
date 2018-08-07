@@ -64,7 +64,7 @@ module solver
                       phi, psi, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
-                        use_DGM
+                        use_DGM, min_eigen_iters
     use dgm, only : dgm_order
 
     ! Variable definitions
@@ -106,7 +106,7 @@ module solver
         end if
 
         ! Check if tolerance is reached
-        if (eigen_error < eigen_tolerance) then
+        if (eigen_error < eigen_tolerance .and. eigen_count >= min_eigen_iters) then
           exit
         end if
 

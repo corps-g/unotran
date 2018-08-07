@@ -28,9 +28,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.legendre_order = 0
         pydgm.control.ignore_warnings = True
         pydgm.control.max_recon_iters = 1000
-        pydgm.control.max_eigen_iters = 1000
-        pydgm.control.max_outer_iters = 100
-        pydgm.control.max_inner_iters = 100
+        pydgm.control.max_eigen_iters = 100
+        pydgm.control.max_outer_iters = 10
+        pydgm.control.max_inner_iters = 45
 
     # Define methods to set various variables for the tests
 
@@ -93,7 +93,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 0
-
+        pydgm.dgm.dgm_order = order
         phi = np.array([[[1.0270690018072897, 1.1299037448361107, 1.031220528952085, 1.0309270835964415, 1.0404782471236467, 1.6703756546880606, 0.220435842109856]]])
         psi = np.array([[[0.28670426208182, 0.3356992956691126, 0.3449054812807308, 0.3534008341488156, 0.3580544322663831, 0.6250475242024148, 0.0981878157679874],
                          [0.6345259657784981, 0.6872354146444389, 0.6066643580008859, 0.6019079440169605, 0.6067485919732419, 0.9472768646717264, 0.1166347906435061],
@@ -136,9 +136,8 @@ class TestDGMSOLVER(unittest.TestCase):
             np.testing.assert_array_almost_equal(pydgm.state.mg_psi[0, a, :].flatten(), psi_m[a], 12)
 
         ########################################################################
-        pydgm.control.solver_type = 'fixed'.ljust(256)
         order = 1
-
+        pydgm.dgm.dgm_order = order
         pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
         pydgm.state.mg_psi = pydgm.dgm.psi_m_zero
 
@@ -156,7 +155,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 2
-
+        pydgm.dgm.dgm_order = order
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
 
@@ -171,7 +170,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 3
-
+        pydgm.dgm.dgm_order = order
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
 
@@ -202,6 +201,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 0
+        pydgm.dgm.dgm_order = order
         # Set the converged fluxes
         T = np.diag(pydgm.material.sig_t[:, 0])
         S = pydgm.material.sig_s[0, :, :, 0].T
@@ -234,9 +234,8 @@ class TestDGMSOLVER(unittest.TestCase):
             np.testing.assert_array_almost_equal(psi_m[0, a, :].flatten(), 0.5 * phi_m_test, 12)
 
         ########################################################################
-        pydgm.control.solver_type = 'fixed'.ljust(256)
         order = 1
-
+        pydgm.dgm.dgm_order = order
         pydgm.dgm.phi_m_zero = pydgm.state.mg_phi
         pydgm.dgm.psi_m_zero = pydgm.state.mg_psi
 
@@ -256,6 +255,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 2
+        pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-10.382535949686881, -23.8247979105656675])
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
@@ -272,6 +272,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 3
+        pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-7.4878268473063185, 0.0])
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
@@ -302,6 +303,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 0
+        pydgm.dgm.dgm_order = order
         # Set the converged fluxes
         phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
         pydgm.state.phi[0, 0, :] = phi
@@ -337,7 +339,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 1
-
+        pydgm.dgm.dgm_order = order
         pydgm.dgm.phi_m_zero = pydgm.state.mg_phi
         pydgm.dgm.psi_m_zero = pydgm.state.mg_psi
 
@@ -347,7 +349,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
 
-        pydgm.solver.solve(True)
+        pydgm.solver.solve()
 
         phi_m = pydgm.state.mg_phi
         psi_m = pydgm.state.mg_psi
@@ -358,13 +360,14 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 2
+        pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-1.4562664776830221, -0.3610274595244746])
         phi_m_test *= norm_frac
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
 
-        pydgm.solver.solve(True)
+        pydgm.solver.solve()
 
         phi_m = pydgm.state.mg_phi
         psi_m = pydgm.state.mg_psi
@@ -375,13 +378,14 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 3
+        pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-1.0699480859043353, 0.0])
         phi_m_test *= norm_frac
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
 
-        pydgm.solver.solve(True)
+        pydgm.solver.solve()
 
         phi_m = pydgm.state.mg_phi
         psi_m = pydgm.state.mg_psi
@@ -419,6 +423,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 0
+        pydgm.dgm.dgm_order = order
         # Set the converged fluxes
         phi = np.array([[[1.6242342173603628, 1.6758532156636183, 0.8405795956015387, 0.1625775747329378, 0.1563516098298166, 0.1085336308306435, 0.0620903836758187],
                          [2.6801570555785044, 3.0677447677828793, 1.449823985768667, 0.2681250437495656, 0.223283519933589, 0.1450135178081014, 0.0801799450539108],
@@ -498,7 +503,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 1
-
+        pydgm.dgm.dgm_order = order
         pydgm.dgm.phi_m_zero = pydgm.state.mg_phi
         pydgm.dgm.psi_m_zero = pydgm.state.mg_psi
 
@@ -507,7 +512,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
 
-        pydgm.solver.solve(True)
+        pydgm.solver.solve()
 
         phi_m = pydgm.state.mg_phi
         psi_m = pydgm.state.mg_psi
@@ -516,12 +521,13 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 2
+        pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-0.20710920655711104, -0.44545552454860282, -0.46438347612912256, -0.41828263508757896, -0.18748642683048020, 3.1862102568187112E-004, 3.1141556263365915E-003, 5.3924924332473369E-003, 5.0995287080187754E-003, 3.0030380436572414E-003])
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
 
-        pydgm.solver.solve(True)
+        pydgm.solver.solve()
 
         phi_m = pydgm.state.mg_phi
         psi_m = pydgm.state.mg_psi
@@ -530,12 +536,13 @@ class TestDGMSOLVER(unittest.TestCase):
 
         ########################################################################
         order = 3
+        pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-0.13255187402833862, -0.30996650357216082, -0.42418668341792881, -0.32530149073950271, -0.15053175043041164, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000])
 
         pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
         pydgm.dgmsolver.slice_xs_moments(order)
 
-        pydgm.solver.solve(True)
+        pydgm.solver.solve()
 
         phi_m = pydgm.state.mg_phi
         psi_m = pydgm.state.mg_psi
@@ -853,6 +860,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setSolver('eigen')
         self.setMesh('10')
         self.setBoundary('reflect')
+        pydgm.control.lamb = 0.6
         pydgm.control.material_map = [1]
 
         # Initialize the dependancies

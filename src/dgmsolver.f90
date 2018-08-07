@@ -36,7 +36,7 @@ module dgmsolver
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
                         ignore_warnings, lamb, number_cells, number_fine_groups, &
-                        number_legendre, number_angles
+                        number_legendre, number_angles, min_recon_iters
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments
     use dgm, only : expansion_order, phi_m_zero, psi_m_zero, dgm_order
@@ -130,7 +130,7 @@ module dgmsolver
       end if
 
       ! Check if tolerance is reached
-      if (recon_error < recon_tolerance .or. bypass_flag) then
+      if ((recon_error < recon_tolerance .and. recon_count >= min_recon_iters) .or. bypass_flag) then
         exit
       end if
 

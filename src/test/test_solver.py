@@ -297,6 +297,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
+        pydgm.control.max_outer_iters = 1
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
