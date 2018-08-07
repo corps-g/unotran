@@ -15,9 +15,19 @@ module dgmsolver
 
     ! Use Statements
     use state, only : initialize_state
+    use state, only : mg_mMap
+    use control, only : homogenization_map, number_cells
+
+    ! Variable definitions
+    integer :: &
+      c  ! Cell index
 
     ! allocate the solutions variables
     call initialize_state()
+
+    ! Fill the multigroup material map
+    mg_mMap = homogenization_map
+
     call compute_source_moments()
 
   end subroutine initialize_dgmsolver
@@ -116,7 +126,7 @@ module dgmsolver
       call update_fission_density()
 
       ! Update the error
-      recon_error = sum(abs(old_phi - phi))
+      recon_error = maxval(abs(old_phi - phi))
 
       ! Print output
       if (recon_print > 0) then
@@ -136,6 +146,9 @@ module dgmsolver
 
     ! Do final normalization
     call normalize_flux(phi, psi)
+
+    ! Compute the fission density
+    call update_fission_density()
 
     if (recon_count == max_recon_iters) then
       if (.not. ignore_warnings) then
@@ -359,13 +372,14 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_fine_groups, number_cells, number_legendre, number_groups, &
-                        ignore_warnings, delta_legendre_order, truncate_delta
-    use state, only : mg_sig_t, mg_nu_sig_f, phi, psi
+    use control, only : number_angles, number_fine_groups, number_cells, &
+                        number_legendre, number_groups, ignore_warnings, &
+                        delta_legendre_order, truncate_delta, homogenization_map, &
+                        number_regions
+    use state, only : mg_sig_t, mg_nu_sig_f, phi, psi, mg_mMap
     use material, only : sig_t, nu_sig_f, sig_s
-    use mesh, only : mMap
-    use dgm, only : source_m, chi_m, phi_m_zero, psi_m_zero, energyMesh, basis, &
-                    sig_s_m, delta_m, expansion_order
+    use mesh, only : mMap, dx
+    use dgm, only : phi_m_zero, psi_m_zero, energyMesh, basis, sig_s_m, delta_m, expansion_order
     use angle, only : mu, wt, legendre_p
 
     ! Variable definitions
@@ -379,6 +393,7 @@ module dgmsolver
         g,   & ! Outer fine group index
         gp,  & ! Inner fine group index
         l,   & ! Legendre moment index
+        r,   & ! Region index
         mat    ! Material index
 
     ! temporary containters to study angle approximation
@@ -386,9 +401,8 @@ module dgmsolver
                         tmp_psi_m_zero(2 * number_angles), &            ! flux arrays
                         d2m(0:delta_legendre_order, 2*number_angles), & ! discrete-to-moment
                         m2d(2*number_angles, 0:delta_legendre_order), & ! moment-to-discrete
-                        moments(0:delta_legendre_order)
-
-
+                        moments(0:delta_legendre_order), &
+                        homog_phi(0:number_legendre, number_regions, number_groups) ! Homogenization container
 
     if (allocated(delta_m)) then
       deallocate(delta_m)
@@ -397,14 +411,21 @@ module dgmsolver
       deallocate(sig_s_m)
     end if
 
-    allocate(delta_m(number_cells, 2 * number_angles, number_groups, 0:expansion_order))
-    allocate(sig_s_m(0:number_legendre, number_cells, number_groups, number_groups, 0:expansion_order))
+    allocate(delta_m(number_regions, 2 * number_angles, number_groups, 0:expansion_order))
+    allocate(sig_s_m(0:number_legendre, number_regions, number_groups, number_groups, 0:expansion_order))
 
     ! initialize all moments and mg containers to zero
     sig_s_m = 0.0
     mg_sig_t = 0.0
     delta_m = 0.0
     mg_nu_sig_f = 0.0
+
+    ! Compute the denominator for spatial homogenization
+    homog_phi = 0.0
+    do c = 1, number_cells
+      r = mg_mMap(c)
+      homog_phi(0:, r, :) = homog_phi(0:, r, :) + dx(c) * phi_m_zero(0:, c, :)
+    end do
 
     do o = 0, expansion_order
       do g = 1, number_fine_groups
@@ -413,6 +434,7 @@ module dgmsolver
           do c = 1, number_cells
             ! get the material for the current cell
             mat = mMap(c)
+            r = mg_mMap(c)
             ! Check if producing nan and not computing with a nan
             if (phi_m_zero(0, c, cg) /= phi_m_zero(0, c, cg)) then
               ! Detected NaN
@@ -422,9 +444,9 @@ module dgmsolver
               phi_m_zero(0, c, cg) = 1.0
             else if (phi_m_zero(0, c, cg) /= 0.0)  then
               ! total cross section moment
-              mg_sig_t(c, cg) = mg_sig_t(c, cg) + basis(g, 0) * sig_t(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
+              mg_sig_t(r, cg) = mg_sig_t(r, cg) + dx(c) * basis(g, 0) * sig_t(g, mat) * phi(0, c, g) / homog_phi(0, r, cg)
               ! fission cross section moment
-              mg_nu_sig_f(c, cg) = mg_nu_sig_f(c, cg) + nu_sig_f(g, mat) * phi(0, c, g) / phi_m_zero(0, c, cg)
+              mg_nu_sig_f(r, cg) = mg_nu_sig_f(r, cg) + dx(c) * nu_sig_f(g, mat) * phi(0, c, g) / homog_phi(0, r, cg)
             end if
           end do
         end if
@@ -435,6 +457,7 @@ module dgmsolver
           do c = 1, number_cells
             ! get the material for the current cell
             mat = mMap(c)
+            r = mg_mMap(c)
             do l = 0, number_legendre
               ! Check if producing nan
               if (phi_m_zero(l, c, cgp) /= phi_m_zero(l, c, cgp)) then
@@ -444,8 +467,8 @@ module dgmsolver
                 end if
                 phi_m_zero(l, c, cgp) = 1.0
               else if (phi_m_zero(l, c, cgp) /= 0.0) then
-                sig_s_m(l, c, cgp, cg, o) = sig_s_m(l, c, cgp, cg, o) &
-                                       + basis(g, o) * sig_s(l, gp, g, mat) * phi(l, c, gp) / phi_m_zero(l, c, cgp)
+                sig_s_m(l, r, cgp, cg, o) = sig_s_m(l, r, cgp, cg, o) &
+                                       + dx(c) * basis(g, o) * sig_s(l, gp, g, mat) * phi(l, c, gp) / homog_phi(l, r, cgp)
               end if
             end do
           end do
@@ -482,30 +505,8 @@ module dgmsolver
           ! generated on the fly from the corresponding delta moments)
           if (truncate_delta) then
 
-!            do a = 1, number_angles
-!              psi(c, a, g) = 1_8+mu(a)+mu(a)*mu(a)
-!              psi(c, 2*number_angles - a + 1, g) = 1_8-mu(a)+mu(a)*mu(a)
-!            end do
-
             moments = matmul(d2m, psi(c, :, g))
             tmp_psi = matmul(m2d, moments)
-!
-!            print *, "psi = "
-!            print *, psi(c, :, g)
-!            print *, " d2m = "
-!            do l = 0, delta_legendre_order
-!              print *, d2m(l, :)
-!            end do
-!            print *, " moments = "
-!            print *, moments
-!            print *, " m2d = "
-!            do l = 1, number_angles * 2
-!              print *, m2d(l, :)
-!            end do
-!            print *, " tmp_psi = "
-!            print *, tmp_psi
-
-!            stop "hello"
 
             moments = matmul(d2m, psi_m_zero(c, :, cg))
             tmp_psi_m_zero = matmul(m2d, moments)
@@ -514,10 +515,10 @@ module dgmsolver
             tmp_psi(:) = psi(c, :, g)
             tmp_psi_m_zero(:) = psi_m_zero(c, :, cg)
           end if
-
+          ! get the material for the current cell
+          mat = mMap(c)
+          r = mg_mMap(c)
           do a = 1, number_angles * 2
-            ! get the material for the current cell
-            mat = mMap(c)
             ! Check if producing nan and not computing with a nan
             if (tmp_psi_m_zero(a) /= tmp_psi_m_zero(a)) then
               ! Detected NaN
@@ -526,16 +527,13 @@ module dgmsolver
                 end if
                 psi_m_zero(c, a, cg) = 1.0
             else if (psi_m_zero(c, a, cg) /= 0.0) then
-              delta_m(c, a, cg, o) = delta_m(c, a, cg, o) + basis(g, o) * (sig_t(g, mat) &
-                                  - mg_sig_t(c, cg)) * tmp_psi(a) / tmp_psi_m_zero(a)
+              delta_m(r, a, cg, o) = delta_m(r, a, cg, o) + dx(c) * basis(g, o) * (sig_t(g, mat) &
+                                  - mg_sig_t(r, cg)) * tmp_psi(a) / tmp_psi_m_zero(a) * phi_m_zero(0, c, cg) / homog_phi(0, r, cg)
             end if
           end do
         end do
       end do
     end do
-
-    !print *, "delta = "
-    !print *, delta_m
 
   end subroutine compute_xs_moments
 

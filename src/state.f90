@@ -6,23 +6,24 @@ module state
   implicit none
 
   double precision, allocatable, dimension(:,:,:,:) :: &
-      mg_sig_s        ! Scattering cross section moments
+      mg_sig_s       ! Scattering cross section moments
   double precision, allocatable, dimension(:,:,:) :: &
       psi,         & ! Angular flux
       source,      & ! External source
       phi,         & ! Scalar Flux
-      mg_source,    & ! Extermal source mg container
-      mg_phi,       & ! Scalar flux mg container
-      mg_psi          ! Angular flux mg container
+      mg_source,   & ! Extermal source mg container
+      mg_phi,      & ! Scalar flux mg container
+      mg_psi         ! Angular flux mg container
   double precision, allocatable, dimension(:,:) :: &
-      mg_nu_sig_f,  & ! Fission cross section mg container (times nu)
-      mg_chi,       & ! Chi spectrum mg container
-      mg_sig_t,     & ! Scalar total cross section mg container
-      mg_incoming     ! Angular flux incident on the current cell
+      mg_nu_sig_f, & ! Fission cross section mg container (times nu)
+      mg_chi,      & ! Chi spectrum mg container
+      mg_sig_t,    & ! Scalar total cross section mg container
+      mg_incoming    ! Angular flux incident on the current cell
   double precision, allocatable, dimension(:) :: &
-      density      ! Fission density
+      density,     & ! Fission density
+      mg_mMap        ! material map mg container
   double precision :: &
-      keff,      & ! k-eigenvalue
+      keff,        & ! k-eigenvalue
       norm_frac,   & ! Fraction of normalization for eigenvalue problems
       sweep_count    ! Counter for the number of transport sweeps
   
@@ -37,9 +38,10 @@ module state
     use control, only : number_fine_groups, number_coarse_groups, number_groups, &
                         use_DGM, ignore_warnings, initial_keff, initial_phi, &
                         initial_psi, number_angles, number_cells, number_legendre, &
-                        solver_type, source_value, store_psi
+                        solver_type, source_value, store_psi, check_inputs, &
+                        verify_control, homogenization_map, number_regions
     use mesh, only : mMap, create_mesh
-    use material, only : nu_sig_f, create_material
+    use material, only : nu_sig_f, create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials
     use dgm, only : initialize_moments, initialize_basis
 
@@ -51,6 +53,10 @@ module state
         g          ! Group index
 
     ! Initialize the sub-modules
+    ! Verify the inputs
+    if (verify_control) then
+      call check_inputs()
+    end if
     ! initialize the mesh
     call create_mesh()
     ! read the material cross sections
@@ -62,11 +68,21 @@ module state
 
     ! Determine the correct size for the multigroup containers
     number_groups = number_fine_groups
+    number_regions = number_materials
     if (use_DGM) then
       ! Initialize DGM moments
       call initialize_moments()
       call initialize_basis()
       number_groups = number_coarse_groups
+      if (allocated(homogenization_map)) then
+        number_regions = maxval(homogenization_map)
+      else
+        allocate(homogenization_map(number_cells))
+        number_regions = number_cells
+        do c = 1, number_cells
+          homogenization_map(c) = c
+        end do
+      end if
     end if
 
     ! Set the sweep counter to zero
@@ -149,6 +165,9 @@ module state
       source = 0.0
     end if
 
+    ! Initialize the material map container
+    allocate(mg_mMap(number_cells))
+
     ! Initialize the fission density
     allocate(density(number_cells))
     call update_fission_density()
@@ -158,11 +177,11 @@ module state
 
     ! Size the mg containers to be fine/coarse group for non/DGM problems
     allocate(mg_source(number_cells, 2 * number_angles, number_groups))
-    allocate(mg_nu_sig_f(number_cells, number_groups))
-    allocate(mg_sig_t(number_cells, number_groups))
+    allocate(mg_nu_sig_f(number_regions, number_groups))
+    allocate(mg_sig_t(number_regions, number_groups))
     allocate(mg_phi(0:number_legendre, number_cells, number_groups))
-    allocate(mg_chi(number_cells, number_groups))
-    allocate(mg_sig_s(0:number_legendre, number_cells, number_groups, number_groups))
+    allocate(mg_chi(number_regions, number_groups))
+    allocate(mg_sig_s(0:number_legendre, number_regions, number_groups, number_groups))
     if (store_psi) then
       allocate(mg_psi(number_cells, 2 * number_angles, number_groups))
     end if
@@ -225,6 +244,9 @@ module state
     end if
     if (allocated(density)) then
       deallocate(density)
+    end if
+    if (allocated(mg_mMap)) then
+      deallocate(mg_mMap)
     end if
   end subroutine finalize_state
 

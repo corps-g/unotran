@@ -72,10 +72,6 @@ module dgm
 
     ! Check if the optional argument for the truncation is present
     if (allocated(truncation_map)) then
-      ! Check if the truncation array has the right number of entries
-      if (size(truncation_map) /= number_coarse_groups) then
-        error stop "Incorrect number of entries in truncation array"
-      end if
       ! Update the order array with the truncated value if sensible
       do cg = 1, number_coarse_groups
         if ((truncation_map(cg) < order(cg)) .and. (truncation_map(cg) >= 0)) then
