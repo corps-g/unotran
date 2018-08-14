@@ -13,8 +13,9 @@ module sources
     ! ##########################################################################
 
     ! Use Statements
-    use state, only : mg_source
+    use state, only : mg_source, update_fission_density
     use control, only : number_cells, number_angles, allow_fission, solver_type
+    use dgm, only : dgm_order
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -33,7 +34,11 @@ module sources
 
         ! Add the fission source
         if (allow_fission .or. solver_type == 'eigen') then
-          mg_source(c,a) = mg_source(c,a) + compute_in_fission(g, c)
+          if (solver_type == 'fixed' .or. dgm_order > 0) then
+            call update_fission_density()
+          end if
+
+          mg_source(c,a) = mg_source(c,a) + compute_fission(g, c)
         end if
 
         ! Add the scatter source
@@ -62,10 +67,6 @@ module sources
 
     ! Get the sources into group g
     source = mg_source(c,a)
-    ! Add the fission source
-    if (allow_fission .or. solver_type == 'eigen') then
-      source = source + compute_within_group_fission(g, c)
-    end if
 
     ! Add the scatter source
     source = source + compute_within_group_scatter(g, c, a)
@@ -185,15 +186,14 @@ module sources
 
   end function compute_within_group_scatter
 
-  function compute_in_fission(g, c) result(source)
+  function compute_fission(g, c) result(source)
     ! ##########################################################################
     ! Compute the fission source into group g from gp (excluding from g <- g)
     ! ##########################################################################
 
     ! Use Statements
-    use state, only : mg_mMap, keff, mg_phi, mg_chi, mg_nu_sig_f
-    use control, only : number_groups, use_DGM
-    use dgm, only : dgm_order, phi_m_zero
+    use state, only : mg_mMap, keff, mg_chi, mg_density
+    use control, only : number_groups
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -203,56 +203,11 @@ module sources
       gp,    & ! Group prime index
       m        ! Material index
     double precision :: &
-      phi      ! Scalar flux container
-    double precision :: &
       source   ! Source for group g
 
-    source = 0.0
-    do gp = 1, number_groups
-      if (g == gp) then
-        cycle
-      end if
-      m = mg_mMap(c)
-      if (use_DGM .and. dgm_order > 0) then
-        phi = phi_m_zero(0,c,gp)
-      else
-        phi = mg_phi(0,c,gp)
-      end if
-      source = source + 0.5 * mg_chi(m,g) * mg_nu_sig_f(m,gp) * phi / keff
-    end do
+    source = 0.5 * mg_chi(mg_mMap(c),g) * mg_density(c) / keff
 
-  end function compute_in_fission
-
-  function compute_within_group_fission(g, c) result(source)
-    ! ##########################################################################
-    ! Compute the fission source into group g from g in cell c
-    ! ##########################################################################
-
-    ! Use Statements
-    use state, only : mg_mMap, keff, mg_phi, mg_chi, mg_nu_sig_f
-    use dgm, only : dgm_order, phi_m_zero
-    use control, only : use_DGM
-
-    ! Variable definitions
-    integer, intent(in) :: &
-      g,     & ! Group index
-      c        ! Cell index
-    integer :: &
-      m        ! Material index
-    double precision :: &
-      phi      ! Scalar flux container
-    double precision :: &
-      source   ! Source for group g in cell c
-
-    m = mg_mMap(c)
-    if (use_DGM .and. dgm_order > 0) then
-      phi = phi_m_zero(0,c,g)
-    else
-      phi = mg_phi(0,c,g)
-    end if
-    source = 0.5 * mg_chi(m,g) * mg_nu_sig_f(m,g) * phi / keff
-
-  end function compute_within_group_fission
+  end function compute_fission
 
   function compute_delta(g, c, a) result(source)
     ! ##########################################################################

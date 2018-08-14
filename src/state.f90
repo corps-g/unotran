@@ -19,7 +19,7 @@ module state
       mg_source,   & ! External source mg container
       mg_incoming    ! Angular flux incident on the current cell
   double precision, allocatable, dimension(:) :: &
-      density        ! Fission density
+      mg_density     ! Fission density
   integer, allocatable, dimension(:) :: &
       mg_mMap        ! material map mg container
   double precision :: &
@@ -161,8 +161,7 @@ module state
     allocate(mg_mMap(number_cells))
 
     ! Initialize the fission density
-    allocate(density(number_cells))
-    call update_fission_density()
+    allocate(mg_density(number_cells))
 
     ! Normalize the scalar and angular fluxes
     call normalize_flux(phi, psi)
@@ -228,8 +227,8 @@ module state
     if (allocated(mg_incoming)) then
       deallocate(mg_incoming)
     end if
-    if (allocated(density)) then
-      deallocate(density)
+    if (allocated(mg_density)) then
+      deallocate(mg_density)
     end if
     if (allocated(mg_mMap)) then
       deallocate(mg_mMap)
@@ -304,25 +303,33 @@ module state
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_fine_groups
+    use control, only : number_cells, number_groups, use_DGM, number_regions
     use mesh, only : mMap
-    use material, only : nu_sig_f, number_materials
+    use material, only : number_materials
+    use dgm, only : dgm_order, phi_m_zero
 
     ! Variable definitions
     integer :: &
       c, & ! Cell index
       g    ! Group index
-    double precision, dimension(number_materials) :: &
+    double precision, dimension(number_regions) :: &
       f    ! Temporary array to hold the fission cross section
+    double precision :: &
+      phi  ! Scalar flux container
 
     ! Reset the fission density
-    density = 0.0
+    mg_density = 0.0
 
     ! Sum the fission reaction rate over groups for each cell
-    do g = 1, number_fine_groups
-      f = nu_sig_f(g, :)
+    do g = 1, number_groups
+      f = mg_nu_sig_f(:, g)
       do c = 1, number_cells
-        density(c) = density(c) + f(mMap(c)) * phi(0, c, g)
+        if (use_DGM .and. dgm_order > 0) then
+          phi = phi_m_zero(0,c,g)
+        else
+          phi = mg_phi(0,c,g)
+        end if
+        mg_density(c) = mg_density(c) + f(mg_mMap(c)) * phi
       end do
     end do
 

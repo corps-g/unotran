@@ -56,22 +56,15 @@ class TestSOURCES(unittest.TestCase):
                     source = pydgm.sources.compute_within_group_scatter(g + 1, c + 1, a + 1)
                     np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={} c={} a={}'.format(g + 1, c + 1, a + 1))
 
-    def test_compute_in_fission(self):
-        test = [0.148388387426464, 0.000047673532156474, 0.0]
+    def test_compute_fission(self):
+        test = [0.152227008050471, 0.0000516465790925616, 0.0]
         for g in range(3):
             for c in range(pydgm.control.number_cells):
-                source = pydgm.sources.compute_in_fission(g + 1, c + 1)
-                np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={} c={}'.format(g + 1, c + 1))
-
-    def test_compute_within_group_fission(self):
-        test = [0.0038386206240063, 0.000003973046936088, 0.0]
-        for g in range(3):
-            for c in range(pydgm.control.number_cells):
-                source = pydgm.sources.compute_within_group_fission(g + 1, c + 1)
+                source = pydgm.sources.compute_fission(g + 1, c + 1)
                 np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={} c={}'.format(g + 1, c + 1))
 
     def test_compute_in_source(self):
-        test = [0.648388387426, 0.500628089482, 0.5007291251]
+        test = [0.652227008050471, 0.500632062529093, 0.5007291251]
         for g in range(3):
             pydgm.sources.compute_in_source(g + 1)
             source = pydgm.state.mg_source
@@ -123,6 +116,7 @@ class TestSOURCESdgm(unittest.TestCase):
         pydgm.state.mg_phi = pydgm.dgm.phi_m_zero
         pydgm.dgmsolver.compute_xs_moments()
         pydgm.dgmsolver.slice_xs_moments(0)
+        pydgm.state.update_fission_density()
 
     def test_compute_external(self):
         for g in range(2):
@@ -147,18 +141,11 @@ class TestSOURCESdgm(unittest.TestCase):
                     source = pydgm.sources.compute_within_group_scatter(g + 1, c + 1, a + 1)
                     np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={} c={} a={}'.format(g + 1, c + 1, a + 1))
 
-    def test_compute_in_fission(self):
-        test = [0.011530259496, 0.000106066931]
+    def test_compute_fission(self):
+        test = [0.02086831427, 0.000237034168]
         for g in range(2):
             for c in range(pydgm.control.number_cells):
-                source = pydgm.sources.compute_in_fission(g + 1, c + 1)
-                np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={} c={}'.format(g + 1, c + 1))
-
-    def test_compute_within_group_fission(self):
-        test = [0.009338054774, 0.000130967237]
-        for g in range(2):
-            for c in range(pydgm.control.number_cells):
-                source = pydgm.sources.compute_within_group_fission(g + 1, c + 1)
+                source = pydgm.sources.compute_fission(g + 1, c + 1)
                 np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={} c={}'.format(g + 1, c + 1))
 
     def test_compute_delta(self):
@@ -170,7 +157,7 @@ class TestSOURCESdgm(unittest.TestCase):
                     np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={} c={}'.format(g + 1, c + 1))
 
     def test_compute_in_source(self):
-        test = [0.721498050227, 0.707212848117]
+        test = [0.7308361050009999, 0.707343815354]
         for g in range(2):
             pydgm.sources.compute_in_source(g + 1)
             source = pydgm.state.mg_source

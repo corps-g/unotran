@@ -15,7 +15,8 @@ module solver
 
     ! Use Statements
     use state, only : initialize_state, mg_nu_sig_f, mg_chi, mg_sig_s, mg_sig_t, &
-                      mg_phi, phi, mg_psi, psi, mg_incoming, mg_mMap
+                      mg_phi, phi, mg_psi, psi, mg_incoming, mg_mMap, &
+                      update_fission_density
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
     use control, only : store_psi, number_angles, number_legendre, number_regions
@@ -51,6 +52,9 @@ module solver
       end do
     end if
 
+    ! Update the fission density
+    call update_fission_density()
+
   end subroutine initialize_solver
 
   subroutine solve()
@@ -80,6 +84,9 @@ module solver
       call mg_solve()
     else if (solver_type == 'eigen') then
       do eigen_count = 1, max_eigen_iters
+
+        ! Update the fission density
+        call update_fission_density()
 
         ! Save the old value of the scalar flux
         old_phi = mg_phi

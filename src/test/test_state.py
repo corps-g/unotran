@@ -60,13 +60,13 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.coarse_mesh = [0.0, 1.0, 2.0, 3.0]
         pydgm.control.material_map = [1, 2, 6]
 
-        pydgm.state.initialize_state()
+        pydgm.solver.initialize_solver()
 
         density_test = [0.85157342, 0.85157342, 0.85157342, 1.08926612, 1.08926612,
                         1.08926612, 1.08926612, 1.08926612, 1.08926612, 1.08926612,
                         1.08926612, 1.08926612, 1.08926612, 0.0, 0.0, 0.0]
 
-        np.testing.assert_array_almost_equal(pydgm.state.density, density_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_density, density_test, 12)
 
     def tearDown(self):
         # Finalize the dependancies
