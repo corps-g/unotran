@@ -206,11 +206,6 @@ module control
       store_psi = .true.
     end if
 
-    ! If eigenvalue problem, set maximum outer iterations to 1
-    if (solver_type == 'eigen') then
-      max_outer_iters = 1
-    end if
-
     ! Unless disabled, send the options to standard output
     if (.not. no_print) then
       call output_control()

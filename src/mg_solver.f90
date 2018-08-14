@@ -61,8 +61,6 @@ module mg_solver
       ! Check if tolerance is reached
       if ((outer_error < outer_tolerance .and. outer_count >= min_outer_iters) .or. dgm_order > 0) then
         exit
-      else if (solver_type == 'eigen') then
-        exit
       end if
     end do
 
