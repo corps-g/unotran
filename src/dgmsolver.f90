@@ -158,10 +158,10 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_fine_groups, number_angles, number_cells
+    use control, only : number_fine_groups, number_angles, number_cells, energy_group_map
     use angle, only : p_leg, wt
     use control, only : store_psi, number_angles, number_legendre
-    use dgm, only : energyMesh, basis
+    use dgm, only : basis
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -185,7 +185,7 @@ module dgmsolver
     ! Recover the angular flux from moments
     do g = 1, number_fine_groups
       ! Get the coarse group index
-      cg = energyMesh(g)
+      cg = energy_group_map(g)
       do a = 1, number_angles * 2
         ! legendre polynomial integration vector
         an = merge(a, 2 * number_angles - a + 1, a <= number_angles)
@@ -235,9 +235,9 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_fine_groups, number_cells
+    use control, only : number_angles, number_fine_groups, number_cells, energy_group_map
     use state, only : phi, psi
-    use dgm, only : phi_m_zero, psi_m_zero, basis, energyMesh
+    use dgm, only : phi_m_zero, psi_m_zero, basis
 
     ! Variable definitions
     integer :: &
@@ -252,7 +252,7 @@ module dgmsolver
 
     ! Get moments for the fluxes
     do g = 1, number_fine_groups
-      cg = energyMesh(g)
+      cg = energy_group_map(g)
       do a = 1, number_angles * 2
         do c = 1, number_cells
           ! Scalar flux
@@ -273,9 +273,9 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_fine_groups
+    use control, only : number_angles, number_fine_groups, energy_group_map
     use state, only : mg_incoming
-    use dgm, only : basis, energyMesh
+    use dgm, only : basis
 
     ! Variable definitions
     double precision, intent(in), dimension(:,:,:) :: &
@@ -288,7 +288,7 @@ module dgmsolver
 
     mg_incoming = 0.0
     do g = 1, number_fine_groups
-      cg = energyMesh(g)
+      cg = energy_group_map(g)
       do a = 1, number_angles
         mg_incoming(a, cg) = mg_incoming(a, cg) + basis(g, order) * psi(1, a + number_angles, g)
       end do
@@ -322,11 +322,12 @@ module dgmsolver
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, &
                         number_legendre, number_groups, ignore_warnings, &
-                        delta_legendre_order, truncate_delta, number_regions
+                        delta_legendre_order, truncate_delta, number_regions, &
+                        energy_group_map
     use state, only : mg_sig_t, mg_nu_sig_f, phi, psi, mg_mMap
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap, dx
-    use dgm, only : phi_m_zero, psi_m_zero, energyMesh, basis, sig_s_m, delta_m, expansion_order
+    use dgm, only : phi_m_zero, psi_m_zero, basis, sig_s_m, delta_m, expansion_order
     use angle, only : mu, wt, legendre_p
 
     ! Variable definitions
@@ -376,7 +377,7 @@ module dgmsolver
 
     do o = 0, expansion_order
       do g = 1, number_fine_groups
-        cg = energyMesh(g)
+        cg = energy_group_map(g)
         if (o == 0) then
           do c = 1, number_cells
             ! get the material for the current cell
@@ -400,7 +401,7 @@ module dgmsolver
 
         ! Scattering cross section moment
         do gp = 1, number_fine_groups
-          cgp = energyMesh(gp)
+          cgp = energy_group_map(gp)
           do c = 1, number_cells
             ! get the material for the current cell
             mat = mMap(c)
@@ -442,7 +443,7 @@ module dgmsolver
       end if
 
       do g = 1, number_fine_groups
-        cg = energyMesh(g)
+        cg = energy_group_map(g)
 
         ! Add angular total cross section moment (delta) to the external source
         do c = 1, number_cells
@@ -490,11 +491,12 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_fine_groups, number_angles, number_groups
+    use control, only : number_cells, number_fine_groups, number_angles, &
+                        number_groups, energy_group_map
     use material, only : chi
     use state, only : mg_constant_source
     use mesh, only : mMap
-    use dgm, only : chi_m, source_m, expansion_order, energyMesh, basis
+    use dgm, only : chi_m, source_m, expansion_order, basis
 
     ! Variable definitions
     integer :: &
@@ -513,7 +515,7 @@ module dgmsolver
 
     do order = 0, expansion_order
       do g = 1, number_fine_groups
-        cg = energyMesh(g)
+        cg = energy_group_map(g)
         do a = 1, number_angles * 2
           do c = 1, number_cells
             mat = mMap(c)

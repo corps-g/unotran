@@ -54,14 +54,14 @@ module state
         g          ! Group index
 
     ! Initialize the sub-modules
+    ! read the material cross sections
+    call create_material()
     ! Verify the inputs
     if (verify_control) then
       call check_inputs()
     end if
     ! initialize the mesh
     call create_mesh()
-    ! read the material cross sections
-    call create_material()
     ! initialize the angle quadrature
     call initialize_angle()
     ! get the basis vectors

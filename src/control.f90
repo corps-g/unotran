@@ -301,14 +301,17 @@ module control
       end if
     end if
 
-    ! Check if the truncation array has the right number of entries
-    if (allocated(truncation_map)) then
-      if (size(truncation_map) /= 1 + merge(size(energy_group_map), 0, allocated(energy_group_map))) then
-        print *, "INPUT ERROR : Incorrect number of entries in truncation array"
+    ! Check that the energy_group_map is provided correctly
+    if (allocated(energy_group_map)) then
+      if (size(energy_group_map) /= number_fine_groups) then
+        print *, 'INPUT ERROR : energy group map must have a coarse group for all fine groups'
+        stop
+      end if
+      if (minval(energy_group_map) /= 1) then
+        print *, 'INPUT ERROR : the first energy group mapping should be designated as 1'
         stop
       end if
     end if
-
 
   end subroutine check_inputs
 

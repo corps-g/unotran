@@ -20,7 +20,6 @@ module dgm
       expansion_order,      & ! Maximum expansion order
       dgm_order=0             ! Current order
   integer, allocatable, dimension(:) :: &
-      energyMesh,           & ! Array of number of fine groups per coarse group
       order,                & ! Expansion order for each coarse energy group
       basismap                ! Starting index for fine group for each coarse group
 
@@ -42,33 +41,41 @@ module dgm
         cg    ! coarse group index
 
     ! Get the number of coarse groups
-    if (allocated(energy_group_map)) then
-      number_coarse_groups = size(energy_group_map) + 1
-    else
-      number_coarse_groups = 1
+    if (.not. allocated(energy_group_map)) then
+      allocate(energy_group_map(number_fine_groups))
+      energy_group_map = 1
     end if
+
+    number_coarse_groups = maxval(energy_group_map)
     number_groups = number_coarse_groups
 
     ! Create the map of coarse groups and default to full expansion order
-    allocate(energyMesh(number_fine_groups))
     allocate(order(number_coarse_groups))
-    allocate(basismap(number_coarse_groups + 1))
+    allocate(basismap(number_coarse_groups))
 
-    ! Load the group map
-    basismap(1) = 0
-    if (number_coarse_groups > 1) then
-      basismap(2:number_coarse_groups) = energy_group_map
-    end if
-    basismap(number_coarse_groups + 1) = number_fine_groups
-
-    do cg = 1, number_coarse_groups
-      ! Create the energy map
-      do g = basismap(cg), basismap(cg+1) - 1
-        energyMesh(g + 1) = cg
-      end do
-      ! Get the DOF for full order
-      order(cg) = basismap(cg+1) - basismap(cg) - 1
+    order = 0
+    ! Compute the order within each coarse group
+    do g = 1, number_fine_groups
+      order(energy_group_map(g)) = order(energy_group_map(g)) + 1
     end do
+
+    ! The basis map is the index to start reading the basis from the file
+    basisMap(1) = 1
+    do cg = 2, number_coarse_groups
+      basisMap(cg) = sum(order(1:(cg-1))) + 1
+    end do
+
+    ! Order begins at zero, so need to subtract one
+    order(:) = order(:) - 1
+
+    ! Check if the truncation array has the right number of entries
+    if (allocated(truncation_map)) then
+      if (size(truncation_map) /= merge(number_coarse_groups, 1, allocated(energy_group_map))) then
+        print *, "INPUT ERROR : Incorrect number of entries in truncation array"
+        print *, "The truncation map must contain ", merge(number_coarse_groups, 1, allocated(energy_group_map)), " entries"
+        stop
+      end if
+    end if
 
     ! Check if the optional argument for the truncation is present
     if (allocated(truncation_map)) then
@@ -94,7 +101,7 @@ module dgm
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : dgm_basis_name, number_fine_groups
+    use control, only : dgm_basis_name, number_fine_groups, energy_group_map
 
     ! Variable definitions
     double precision, dimension(number_fine_groups) :: &
@@ -113,11 +120,11 @@ module dgm
     ! open the file and read into the basis container
     open(unit=5, file=dgm_basis_name)
     do g = 1, number_fine_groups
-      cg = energyMesh(g)
+      cg = energy_group_map(g)
       array1(:) = 0.0
       read(5,*) array1
-      do i = 0, order(cg)
-        basis(g, i) = array1(1 + basismap(cg) + i)
+      do i = basismap(cg), basismap(cg) + order(cg)
+        basis(g, i - basismap(cg)) = array1(i)
       end do
     end do
 
@@ -136,9 +143,6 @@ module dgm
     end if
     if (allocated(order)) then
       deallocate(order)
-    end if
-    if (allocated(energyMesh)) then
-      deallocate(energyMesh)
     end if
     if (allocated(basismap)) then
       deallocate(basismap)

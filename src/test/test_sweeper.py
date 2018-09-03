@@ -108,7 +108,8 @@ class TestSWEEPER(unittest.TestCase):
         nA = pydgm.control.number_angles
         for a in range(2 * nA):
             for c in range(pydgm.control.number_cells):
-                pydgm.state.mg_source[c, a] = 0.5 * 1.2760152893 - pydgm.sources.compute_within_group_source(g, c + 1, a + 1)
+                pydgm.state.mg_source[c, a] = 0.5 * 1.2760152893
+                pydgm.state.mg_source[c, a] = 1.2760152893 - pydgm.sources.compute_within_group_source(g, c + 1, a + 1)
 
         phi_g = np.array([1.0])
         psi_g = np.ones((1, 4), order='F') * 0.5

@@ -1,8 +1,8 @@
 import pydgm
 import numpy as np
-np.set_printoptions(precision=16)
+np.set_printoptions(precision=16, linewidth=132)
 
-G = 44
+G = 7
 geo = 4
 bound = 'R'
 solver = 'eigen'
@@ -79,14 +79,15 @@ elif G == 4:
     pydgm.control.dgm_basis_name = 'test/4gbasis'.ljust(256)
     pydgm.control.energy_group_map = [2]
 elif G == 7:
-    pydgm.control.xs_name = '7gXS.anlxs'.ljust(256)
+    pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
     pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
-    pydgm.control.energy_group_map = [4]
+    pydgm.control.energy_group_map = [1, 1, 1, 2, 3, 4, 4]
+    #pydgm.control.truncation_map = [1, 1, 0, 2]
 elif G == 1:
     pydgm.control.xs_name = 'aniso.anlxs'.ljust(256)
 elif G == 44:
     pydgm.control.xs_name = 'pythonTools/makeXS/44g/44gXS.anlxs'.ljust(256)
-    pydgm.control.dgm_basis_name = 'pythonTools/basisMaking/dlp/dlp_44g'.ljust(256)
+    pydgm.control.dgm_basis_name = 'pythonTools/basisMaking/44g/dlp_44g'.ljust(256)
     pydgm.control.energy_group_map = [14, 37, 42]
 
 if pydgm.control.use_dgm:
@@ -94,13 +95,18 @@ if pydgm.control.use_dgm:
     pydgm.dgmsolver.initialize_dgmsolver()
 
     # Solve the problem
-    pydgm.dgmsolver.dgmsolve()
+    #pydgm.dgmsolver.dgmsolve()
 else:
     # Initialize the dependancies
     pydgm.solver.initialize_solver()
 
     # Solve the problem
     pydgm.solver.solve()
+
+print pydgm.dgm.order
+print pydgm.dgm.basismap
+print pydgm.dgm.basis
+exit()
 
 
 # Print the output
