@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import os
 import sys
 sys.path.append('~/workspace/unotran/src')
 import pydgm
@@ -43,7 +44,7 @@ def modGramSchmidt(A):
     return Q, R
 
 def plotBasis(G):
-    basis = np.loadtxt('dlp/dlp_{}g'.format(G))
+    basis = np.loadtxt('{0}g/dlp_{0}g'.format(G))
     vectors = np.zeros((3, G))
     for g in range(G):
         b = np.trim_zeros(basis[g], trim='f')
@@ -97,60 +98,10 @@ def DLP(size):
     return modGramSchmidt(A)[0]
 
 def getGroupBounds(G):
-    if G == 2:
-        groupBounds = [1]
-    elif G == 3:
-        groupBounds = [1, 3]
-    elif G == 4:
-        groupBounds = [1, 3]
-    elif G == 7:
-        groupBounds = [1, 5]
-    elif G == 8:
-        groupBounds = [1, 6]
-    elif G == 9:
-        groupBounds = [1, 7]
-    elif G == 12:
-        groupBounds = [1, 4, 10]
-    elif G == 14:
-        groupBounds = [1, 4, 12]
-    elif G == 16:
-        groupBounds = [1, 3, 14]
-    elif G == 18:
-        groupBounds = [1, 16]
-    elif G == 23:
-        groupBounds = [1, 8, 21]
-    elif G == 25:
-        groupBounds = [1, 8, 23]
-    elif G == 30:
-        groupBounds = [1, 19]
-    elif G == 33:
-        groupBounds = [1, 32]
-    elif G == 40:
-        groupBounds = [1, 23, 38]
-    elif G == 43:
-        groupBounds = [1, 26, 40]
-    elif G == 44:
+    if G == 44:
         groupBounds = [1, 15, 38, 43]
-    elif G == 50:
-        groupBounds = [1, 17]
-    elif G == 69:
-        groupBounds = [1, 10, 57, 67]
-    elif G == 70:
-        groupBounds = [1, 10, 58, 68]
-    elif G == 100:
-        groupBounds = [1, 58]
-    elif G == 172:
-        groupBounds = [1, 40, 100, 160, 169]
-    elif G == 174:
-        groupBounds = [1, 52, 112, 172]
-    elif G == 175:
-        groupBounds = [1, 53, 113, 173]
     elif G == 238:
-        groupBounds = [1, 15, 75, 135, 138, 157, 217, 226, 233, 238]
-    elif G == 240:
-        groupBounds = [1, 60, 120, 180]
-    elif G == 315:
-        groupBounds = [1, 4, 64, 124, 184, 244, 304, 312, 315]
+        groupBounds = [1, 18, 78, 79, 80, 82, 85, 86, 92, 93, 102, 108, 110, 119, 121, 135, 136, 137, 138, 139, 161, 221, 227, 233, 238]
     elif G == 1968:
         groupBounds = [1, 11, 71, 131, 191, 251, 311, 371, 431, 491, 551, 611, 671, 731, 791, 851, 911, 971, 1031, 1091, 1151, 1211, 1271, 1331, 1391, 1393, 1448, 1451, 1465, 1467, 1518, 1520, 1527, 1587, 1591, 1594, 1654, 1659, 1666, 1726, 1786, 1797, 1836, 1896, 1956, 1965]
     else:
@@ -181,12 +132,16 @@ def makeBasis(G):
         P.append(A)
         basis = A if i == 0 else sp.linalg.block_diag(basis, A)
 
+    directory = '{}g'.format(G)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     # Save the basis to file
-    np.savetxt('{0}/{0}_{1}g'.format('dlp', G), basis)
+    np.savetxt('{1}g/{0}_{1}g'.format('dlp', G), basis)
 
 
 if __name__ == '__main__':
-    for G in [2, 3, 4, 7, 8, 9, 12, 14, 16, 18, 23, 25, 30, 33, 40, 43, 44, 50, 69, 70, 100, 172, 174, 175, 238, 240, 315, 1968]:
+    for G in [44, 238]:
         makeBasis(G)
         plotBasis(G)
 

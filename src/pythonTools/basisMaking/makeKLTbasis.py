@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import sys
 sys.path.append('~/workspace/unotran/src')
+import os
 import pydgm
 import numpy as np
 import scipy as sp
@@ -75,8 +76,8 @@ def getSnapshots(G, geoOption):
 def setVariables(G, geoOption):
     # Set the variables for the discrete ordinance problem
 
-    setGeometry(geoOption)
     pydgm.control.boundary_type = [1.0, 1.0]  # reflective boundarys
+    setGeometry(geoOption)
     pydgm.control.solver_type = 'eigen'.ljust(256)
     pydgm.control.allow_fission = True
     pydgm.control.source_value = 0.0
@@ -84,14 +85,14 @@ def setVariables(G, geoOption):
     pydgm.control.angle_order = 8
     pydgm.control.angle_option = pydgm.angle.gl
     pydgm.control.eigen_print = 1
-    pydgm.control.outer_print = 1
+    pydgm.control.outer_print = 0
     pydgm.control.inner_print = 0
     pydgm.control.eigen_tolerance = 1e-14
     pydgm.control.outer_tolerance = 1e-14
     pydgm.control.inner_tolerance = 1e-14
     pydgm.control.max_eigen_iters = 10000
-    pydgm.control.max_outer_iters = 10
-    pydgm.control.max_inner_iters = 2
+    pydgm.control.max_outer_iters = 100
+    pydgm.control.max_inner_iters = 1
     pydgm.control.store_psi = True
     pydgm.control.equation_type = 'DD'
     pydgm.control.legendre_order = 0
@@ -103,11 +104,84 @@ def setGeometry(geoOption):
     if geoOption == 'uo2':
         pydgm.control.fine_mesh = [3, 22, 3]
         pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
-        pydgm.control.material_map = [5, 1, 5]
+        pydgm.control.material_map = [8, 1, 8]
     elif geoOption == 'mox':
         pydgm.control.fine_mesh = [3, 22, 3]
         pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
-        pydgm.control.material_map = [5, 3, 5]
+        pydgm.control.material_map = [8, 3, 8]
+    elif geoOption == 'assay1':
+        pydgm.control.fine_mesh = [6, 18, 18, 18, 18, 6]
+        pydgm.control.coarse_mesh = [0.0, 1.1176, 4.3688, 7.62, 10.8712, 14.1224, 15.24]
+        pydgm.control.material_map = [8, 5, 6, 6, 5, 8]
+    elif geoOption == 'assay2':
+        pydgm.control.fine_mesh = [6, 18, 18, 18, 18, 6]
+        pydgm.control.coarse_mesh = [0.0, 1.1176, 4.3688, 7.62, 10.8712, 14.1224, 15.24]
+        pydgm.control.material_map = [8, 5, 5, 5, 5, 8]
+    elif geoOption == 'assay3':
+        pydgm.control.fine_mesh = [6, 18, 18, 18, 18, 6]
+        pydgm.control.coarse_mesh = [0.0, 1.1176, 4.3688, 7.62, 10.8712, 14.1224, 15.24]
+        pydgm.control.material_map = [8, 5, 7, 7, 5, 8]
+    elif geoOption == 'assay4':
+        pydgm.control.fine_mesh = [6, 18, 18, 18, 18, 6]
+        pydgm.control.coarse_mesh = [0.0, 1.1176, 4.3688, 7.62, 10.8712, 14.1224, 15.24]
+        pydgm.control.material_map = [8, 7, 7, 7, 7, 8]
+    elif geoOption == 'core1':
+        ass1 = [8, 5, 6, 6, 5, 8]
+        ass2 = [8, 5, 5, 5, 5, 8]
+        fm_ass = [6, 18, 18, 18, 18, 6]
+        cm_ass = [1.1176, 3.2512, 3.2512, 3.2512, 3.2512, 1.1176]
+        ass_map = [1, 2, 1, 2, 1, 2, 1]
+        cm = [0.0]
+        fm = []
+        mm = []
+        for i, ass in enumerate(ass_map):
+            mm += ass1 if ass == 1 else ass2
+            cm += cm_ass
+            fm += fm_ass
+        cm = np.cumsum(cm)
+
+        pydgm.control.fine_mesh = fm
+        pydgm.control.coarse_mesh = cm
+        pydgm.control.material_map = mm
+        pydgm.control.boundary_type = [0.0, 0.0]  # vacuum boundaries
+    elif geoOption == 'core2':
+        ass1 = [8, 5, 6, 6, 5, 8]
+        ass2 = [8, 5, 7, 7, 5, 8]
+        fm_ass = [6, 18, 18, 18, 18, 6]
+        cm_ass = [1.1176, 3.2512, 3.2512, 3.2512, 3.2512, 1.1176]
+        ass_map = [1, 2, 1, 2, 1, 2, 1]
+        cm = [0.0]
+        fm = []
+        mm = []
+        for i, ass in enumerate(ass_map):
+            mm += ass1 if ass == 1 else ass2
+            cm += cm_ass
+            fm += fm_ass
+        cm = np.cumsum(cm)
+
+        pydgm.control.fine_mesh = fm
+        pydgm.control.coarse_mesh = cm
+        pydgm.control.material_map = mm
+        pydgm.control.boundary_type = [0.0, 0.0]  # vacuum boundaries
+    elif geoOption == 'core3':
+        ass1 = [8, 5, 6, 6, 5, 8]
+        ass2 = [8, 7, 7, 7, 7, 8]
+        fm_ass = [6, 18, 18, 18, 18, 6]
+        cm_ass = [1.1176, 3.2512, 3.2512, 3.2512, 3.2512, 1.1176]
+        ass_map = [1, 2, 1, 2, 1, 2, 1]
+        cm = [0.0]
+        fm = []
+        mm = []
+        for i, ass in enumerate(ass_map):
+            mm += ass1 if ass == 1 else ass2
+            cm += cm_ass
+            fm += fm_ass
+        cm = np.cumsum(cm)
+
+        pydgm.control.fine_mesh = fm
+        pydgm.control.coarse_mesh = cm
+        pydgm.control.material_map = mm
+        pydgm.control.boundary_type = [0.0, 0.0]  # vacuum boundaries
     elif geoOption == 'junction':
         pydgm.control.fine_mesh = [3, 22, 3, 3, 22, 3]
         pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26, 1.35, 2.43, 2.52]
@@ -152,7 +226,7 @@ def modGramSchmidt(A):
     return Q, R
 
 def plotBasis(G, basisType):
-    basis = np.loadtxt('klt_{0}/klt_{0}_{1}g'.format(basisType, G))
+    basis = np.loadtxt('{1}g/klt_{0}_{1}g'.format(basisType, G))
     vectors = np.zeros((3, G))
     for g in range(G):
         b = np.trim_zeros(basis[g], trim='f')
@@ -221,60 +295,10 @@ def KLT(Data, flat=False):
 
 
 def getGroupBounds(G):
-    if G == 2:
-        groupBounds = [1]
-    elif G == 3:
-        groupBounds = [1, 3]
-    elif G == 4:
-        groupBounds = [1, 3]
-    elif G == 7:
-        groupBounds = [1, 5]
-    elif G == 8:
-        groupBounds = [1, 6]
-    elif G == 9:
-        groupBounds = [1, 7]
-    elif G == 12:
-        groupBounds = [1, 4, 10]
-    elif G == 14:
-        groupBounds = [1, 4, 12]
-    elif G == 16:
-        groupBounds = [1, 3, 14]
-    elif G == 18:
-        groupBounds = [1, 16]
-    elif G == 23:
-        groupBounds = [1, 8, 21]
-    elif G == 25:
-        groupBounds = [1, 8, 23]
-    elif G == 30:
-        groupBounds = [1, 19]
-    elif G == 33:
-        groupBounds = [1, 32]
-    elif G == 40:
-        groupBounds = [1, 23, 38]
-    elif G == 43:
-        groupBounds = [1, 26, 40]
-    elif G == 44:
+    if G == 44:
         groupBounds = [1, 15, 38, 43]
-    elif G == 50:
-        groupBounds = [1, 17]
-    elif G == 69:
-        groupBounds = [1, 10, 57, 67]
-    elif G == 70:
-        groupBounds = [1, 10, 58, 68]
-    elif G == 100:
-        groupBounds = [1, 58]
-    elif G == 172:
-        groupBounds = [1, 40, 100, 160, 169]
-    elif G == 174:
-        groupBounds = [1, 52, 112, 172]
-    elif G == 175:
-        groupBounds = [1, 53, 113, 173]
     elif G == 238:
-        groupBounds = [1, 15, 75, 135, 138, 157, 217, 226, 233, 238]
-    elif G == 240:
-        groupBounds = [1, 60, 120, 180]
-    elif G == 315:
-        groupBounds = [1, 4, 64, 124, 184, 244, 304, 312, 315]
+        groupBounds = [1, 18, 78, 79, 80, 82, 85, 86, 92, 93, 102, 108, 110, 119, 121, 135, 136, 137, 138, 139, 161, 221, 227, 233, 238]
     elif G == 1968:
         groupBounds = [1, 11, 71, 131, 191, 251, 311, 371, 431, 491, 551, 611, 671, 731, 791, 851, 911, 971, 1031, 1091, 1151, 1211, 1271, 1331, 1391, 1393, 1448, 1451, 1465, 1467, 1518, 1520, 1527, 1587, 1591, 1594, 1654, 1659, 1666, 1726, 1786, 1797, 1836, 1896, 1956, 1965]
     else:
@@ -302,6 +326,27 @@ def makeBasis(G, basisType, flat=False):
     elif basisType == 'combine':
         name = 'klt_combine'
         data = np.concatenate((getSnapshots(G, 'uo2'), getSnapshots(G, 'mox'), getSnapshots(G, 'junction')), axis=1)
+    elif basisType == 'core1':
+        name = 'klt_core1'
+        data = getSnapshots(G, 'core1')
+    elif basisType == 'core2':
+        name = 'klt_core2'
+        data = getSnapshots(G, 'core2')
+    elif basisType == 'core3':
+        name = 'klt_core3'
+        data = getSnapshots(G, 'core3')
+    elif basisType == 'assay_12':
+        name = 'klt_assay_12'
+        data = np.concatenate((getSnapshots(G, 'assay1'), getSnapshots(G, 'assay2')), axis=1)
+    elif basisType == 'assay_13':
+        name = 'klt_assay_13'
+        data = np.concatenate((getSnapshots(G, 'assay1'), getSnapshots(G, 'assay3')), axis=1)
+    elif basisType == 'assay_14':
+        name = 'klt_assay_14'
+        data = np.concatenate((getSnapshots(G, 'assay1'), getSnapshots(G, 'assay4')), axis=1)
+    elif basisType == 'assay_all':
+        name = 'klt_assay_all'
+        data = np.concatenate((getSnapshots(G, 'assay1'), getSnapshots(G, 'assay2'), getSnapshots(G, 'assay3'), getSnapshots(G, 'assay4')), axis=1)
     else:
         raise NotImplementedError('The type: {} has not been implemented'.format(basisType))
 
@@ -322,18 +367,21 @@ def makeBasis(G, basisType, flat=False):
 
     plt.plot(basis[:,:2])
 
+    directory = '{}g'.format(G)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+
     # Save the basis to file
-    np.savetxt('{0}/{1}_{2}g'.format(name, name, G), basis)
+    np.savetxt('{1}g/{0}_{1}g'.format(name, G), basis)
     #np.savetxt('{0}/{1}_{2}g'.format(name, name if flat else 'f_' + name, G), basis)
 
 
 if __name__ == '__main__':
     task = -1
-    Gs = [2, 3, 4, 7, 8, 9, 12, 14, 16, 18, 23, 25, 30, 33, 40, 43, 44, 50, 69, 70, 100, 172, 174, 175, 238, 240, 315, 1968]
-    Gs = [44, 238, 1968]
+    Gs = [44, 238]
     for G in Gs:
-        makePlot(G)
-        for basisType in ['full', 'mox', 'uo2', 'combine']:
+        #makePlot(G)
+        for basisType in ['core1', 'core2', 'core3', 'assay_12', 'assay_13', 'assay_14', 'assay_all', 'full', 'mox', 'uo2', 'combine']:
             task += 1
             print G, basisType
             makeBasis(G, basisType, flat=True)
