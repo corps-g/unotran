@@ -3,6 +3,7 @@ from test_angle import TestANGLE
 from test_mesh import TestMESH
 from test_material import TestMATERIAL
 from test_state import TestSTATE
+from test_sources import TestSOURCES
 from test_sweeper import TestSWEEPER
 from test_wg_solver import TestWG_SOLVER
 from test_mg_solver import TestMG_SOLVER
@@ -17,6 +18,7 @@ def AllSuite():
     suite.addTests(unittest.makeSuite(TestMESH))
     suite.addTests(unittest.makeSuite(TestMATERIAL))
     suite.addTests(unittest.makeSuite(TestSTATE))
+    suite.addTests(unittest.makeSuite(TestSOURCES))
     suite.addTests(unittest.makeSuite(TestSWEEPER))
     suite.addTests(unittest.makeSuite(TestWG_SOLVER))
     suite.addTests(unittest.makeSuite(TestMG_SOLVER))

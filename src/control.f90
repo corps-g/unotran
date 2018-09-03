@@ -40,6 +40,10 @@ module control
       max_eigen_iters=1000,       & ! Maximum iterations for eigen loop
       max_outer_iters=1000,       & ! Maximum iterations for outer loop
       max_inner_iters=1000,       & ! Maximum iterations for inner loop
+      min_recon_iters=1,          & ! Minimum iterations for recon loop
+      min_eigen_iters=1,          & ! Minimum iterations for eigen loop
+      min_outer_iters=1,          & ! Minimum iterations for outer loop
+      min_inner_iters=1,          & ! Minimum iterations for inner loop
       number_cells,               & ! Total number of cells in the mesh
       number_regions,             & ! Number of unique material regions
       number_angles,              & ! Number angles per *half space*
@@ -108,7 +112,7 @@ module control
         line = line + 1
 
         ! Find the first whitespace and split label and data
-        pos = scan(buffer, '    ')
+        pos = scan(buffer, ' ')
         label = buffer(1:pos)
         buffer = buffer(pos+1:)
 
@@ -278,9 +282,6 @@ module control
     ! ##########################################################################
     ! Verify the inputs are defined correctly
     ! ##########################################################################
-
-    integer :: &
-      i ! Looping variable
 
     ! Check solver type
     if (.not. (solver_type == 'eigen' .or. solver_type == 'fixed')) then

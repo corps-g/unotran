@@ -4,7 +4,7 @@ module sweeper
   
   contains
   
-  subroutine sweep(g, source, phi_g, psi_g, incident)
+  subroutine sweep(g, phi_g, psi_g, incident)
     ! ##########################################################################
     ! Sweep over each cell, angle, and octant
     ! ##########################################################################
@@ -15,39 +15,35 @@ module sweeper
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
                         number_legendre
     use state, only : mg_sig_t, sweep_count, mg_mMap
+    use sources, only : compute_within_group_source
 
     ! Variable definitions
     integer, intent(in) :: &
         g           ! Group index
-    double precision, intent(in), dimension(:,:) :: &
-        source      ! Fission, In-Scattering, External source in group g
     double precision, intent(inout), dimension(:,:) :: &
         phi_g,    & ! Scalar flux for current iteration and group g
         psi_g       ! Angular flux for current iteration and group g
     double precision, intent(inout), dimension(:) :: &
         incident    ! Angular flux incident on the cell in group g
     integer :: &
-        o,        & ! Octant index
-        c,        & ! Cell index
-        mat,      & ! Material index
-        a,        & ! Angle index
-        l,        & ! Legendre index
-        an,       & ! Global angle index
-        cmin,     & ! Lower cell number
-        cmax,     & ! Upper cell number
-        cstep,    & ! Cell stepping direction
-        amin,     & ! Lower angle number
-        amax,     & ! Upper angle number
-        astep       ! Angle stepping direction
-    double precision, allocatable, dimension(:) :: &
+        o,          & ! Octant index
+        c,          & ! Cell index
+        mat,        & ! Material index
+        a,          & ! Angle index
+        an,         & ! Global angle index
+        cmin,       & ! Lower cell number
+        cmax,       & ! Upper cell number
+        cstep,      & ! Cell stepping direction
+        amin,       & ! Lower angle number
+        amax,       & ! Upper angle number
+        astep         ! Angle stepping direction
+    double precision, dimension(0:number_legendre) :: &
         M           ! Legendre polynomial integration vector
     double precision :: &
-        psi_center  ! Angular flux at cell center
+        psi_center, & ! Angular flux at cell center
+        source        ! Fission, In-Scattering, External source in group g
     logical :: &
-        octant      ! Positive/Negative octant flag
-
-    ! Allocations
-    allocate(M(0:number_legendre))
+        octant        ! Positive/Negative octant flag
 
     ! Increment the sweep counter
     sweep_count = sweep_count + 1
@@ -77,8 +73,12 @@ module sweeper
 
         do c = cmin, cmax, cstep  ! Sweep over cells
           mat = mg_mMap(c)
+
+          ! Get the source in this cell, group, and angle
+          source = compute_within_group_source(g, c, an)
+
           ! Use the specified equation.  Defaults to DD
-          call computeEQ(source(c, an), incident(a), mg_sig_t(mat, g), dx(c), mu(a), psi_center)
+          call computeEQ(source, incident(a), mg_sig_t(mat, g), dx(c), mu(a), psi_center)
 
           if (store_psi) then
             psi_g(c, an) = psi_center
@@ -89,8 +89,6 @@ module sweeper
         end do
       end do
     end do
-
-    deallocate(M)
 
   end subroutine sweep
   

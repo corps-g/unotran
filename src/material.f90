@@ -51,17 +51,16 @@ module material
         array1           ! Temp array for storing scattering XS values
     
     ! Read the file parameters
-    open(unit=5, file=xs_name)
-    read(5,*) number_materials, number_groups, debugFlag
+    open(unit=1, file=xs_name)
+    read(1,*) number_materials, number_groups, debugFlag
     number_fine_groups = number_groups
     number_coarse_groups = number_groups
     allocate(ebounds(number_groups + 1))
-    read(5,*) ebounds
+    read(1,*) ebounds
     allocate(velocity(number_groups))
-    read(5,*) velocity
-    read(5,'(a)') materialName
-    read(5,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
-
+    read(1,*) velocity
+    read(1,'(a)') materialName
+    read(1,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
     ! Count the highest order + zeroth order
     number_legendre = number_legendre - 1
 
@@ -72,26 +71,26 @@ module material
     allocate(chi(number_groups, number_materials))
     allocate(sig_s(0:number_legendre, number_groups, number_groups, number_materials))
     allocate(array1(number_groups))
-    
+
     ! Read the cross sections from the file
     do mat = 1, number_materials
       if (mat > 1) then  ! The first material was read above to get array sizes
-        read(5,'(a)') materialName
-        read(5,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
+        read(1,'(a)') materialName
+        read(1,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
         ! Count the highest order + zeroth order
         number_legendre = number_legendre - 1
       end if
       do g = 1, number_groups
         if (dataPresent == 1) then
           ! Read total and fission cross sections
-          read(5,*) t, f, vf, c
+          read(1,*) t, f, vf, c
           sig_t(g, mat) = t
           sig_f(g, mat) = f
           nu_sig_f(g, mat) = vf
           chi(g, mat) = c
         else
           ! Read just the total cross section
-          read(5,*) t
+          read(1,*) t
           sig_t(g, mat) = t
           sig_f(g, mat) = 0.0
           nu_sig_f(g, mat) = 0.0
@@ -101,14 +100,14 @@ module material
       ! Read scattering cross section
       do l = 0, number_legendre
         do g = 1, number_groups
-          read(5,*) array1
+          read(1,*) array1
           sig_s(l, g, :, mat) = array1(:)
         end do
       end do
     end do
 
     ! Close the file and clean up
-    close(unit=5)
+    close(unit=1)
     deallocate(array1)
 
     ! If fissioning is not allowed, set fission cross sections to zero

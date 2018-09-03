@@ -4,55 +4,45 @@ module wg_solver
   
   contains
   
-  subroutine wg_solve(g, source, phi_g, psi_g, incident, higher_dgm_flag)
+  subroutine wg_solve(g, phi_g, psi_g, incident)
     ! ##########################################################################
     ! Solve the within group equation
     ! ##########################################################################
 
     ! Use Statements
     use control, only : ignore_warnings, max_inner_iters, inner_print, &
-                        inner_tolerance, number_cells, number_legendre, number_angles
+                        inner_tolerance, number_cells, number_legendre, &
+                        min_inner_iters
     use sweeper, only : sweep
+    use sources, only : compute_in_source
 
     ! Variable definitions
     integer, intent(in) :: &
         g           ! Group index
-    double precision, intent(in), dimension(:,:) :: &
-        source      ! Fission, In-Scattering, External source in group g
-    logical, intent(in) :: &
-        higher_dgm_flag ! Flag to turn off computing the source
     double precision, intent(inout), dimension(0:,:) :: &
         phi_g       ! Scalar flux
     double precision, intent(inout), dimension(:,:) :: &
         psi_g       ! Angular flux
     double precision, intent(inout), dimension(:) :: &
         incident    ! Angular flux incident on the cell in group g
-    double precision, allocatable, dimension(:,:) :: &
+    double precision, dimension(0:number_legendre, number_cells) :: &
         phi_g_old   ! Save the previous scalar flux
     integer :: &
         inner_count ! Counter for the inner loop
     double precision :: &
         inner_error ! Residual error between iterations
-    double precision, dimension(number_cells, 2 * number_angles) :: &
-        total_S     ! Sum of all sources
 
     ! Initialize container to hold the old scalar flux for error calculations
-    allocate(phi_g_old(0:number_legendre, number_cells))
     phi_g_old = 0.0
+
+    ! Compute the into group sources for group g
+    call compute_in_source(g)
 
     ! Begin loop to converge on the within-group scattering source
     do inner_count = 1, max_inner_iters
-      ! Reset the source to only be in-scattering, fission, and external
-      total_S = source
-
-      ! Don't compute the source if solveing for higher DGM moment
-      if (.not. higher_dgm_flag) then
-        ! Add the within-group scattering to the source
-        call compute_within_scattering(g, phi_g, total_S)
-      end if
 
       ! Sweep through the mesh
-      call sweep(g, total_S, phi_g, psi_g, incident)
+      call sweep(g, phi_g, psi_g, incident)
 
       ! Update the error
       inner_error = maxval(abs(phi_g_old - phi_g))
@@ -70,7 +60,7 @@ module wg_solver
       end if
 
       ! Check if tolerance is reached
-      if (inner_error < inner_tolerance) then
+      if (inner_error < inner_tolerance .and. inner_count >= min_inner_iters) then
         exit
       end if
     end do
@@ -83,46 +73,6 @@ module wg_solver
       end if
     end if
 
-    ! Deallocate memory
-    deallocate(phi_g_old)
-
   end subroutine wg_solve
-
-  subroutine compute_within_scattering(g, phi_g, source)
-    ! ##########################################################################
-    ! Compute the within-group scattering and add to the source term
-    ! ##########################################################################
-
-    ! Use Statements
-    use angle, only : p_leg
-    use state, only : mg_sig_s, mg_mMap
-    use control, only : number_cells, number_angles, number_legendre
-
-    ! Variable definitions
-    integer, intent(in) :: &
-        g       ! Group index
-    double precision, intent(in), dimension(0:,:) :: &
-        phi_g   ! Scalar flux for group g
-    double precision, intent(inout), dimension(:,:) :: &
-        source  ! Fission, Scattering, and External sources for group g
-    integer :: &
-        a,    & ! Angle index
-        c,    & ! Cell index
-        mat,  & ! Material index
-        l       ! Legendre index
-
-    ! Include the within-group scattering into source
-    do a = 1, 2 * number_angles
-      do c = 1, number_cells
-        mat = mg_mMap(c)
-        do l = 0, number_legendre
-          source(c, a) = source(c, a) &
-                         + 0.5 * p_leg(l, a) * mg_sig_s(l, mat, g, g) * phi_g(l, c)
-        end do
-      end do
-    end do
-
-
-  end subroutine compute_within_scattering
 
 end module wg_solver

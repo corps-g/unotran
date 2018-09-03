@@ -9,20 +9,21 @@ module state
       mg_sig_s       ! Scattering cross section moments
   double precision, allocatable, dimension(:,:,:) :: &
       psi,         & ! Angular flux
-      source,      & ! External source
       phi,         & ! Scalar Flux
-      mg_source,   & ! Extermal source mg container
       mg_phi,      & ! Scalar flux mg container
       mg_psi         ! Angular flux mg container
   double precision, allocatable, dimension(:,:) :: &
       mg_nu_sig_f, & ! Fission cross section mg container (times nu)
       mg_chi,      & ! Chi spectrum mg container
       mg_sig_t,    & ! Scalar total cross section mg container
+      mg_source,   & ! External source mg container
       mg_incoming    ! Angular flux incident on the current cell
   double precision, allocatable, dimension(:) :: &
-      density,     & ! Fission density
+      mg_density     ! Fission density
+  integer, allocatable, dimension(:) :: &
       mg_mMap        ! material map mg container
   double precision :: &
+      mg_constant_source, & ! Constant multigroup source
       keff,        & ! k-eigenvalue
       norm_frac,   & ! Fraction of normalization for eigenvalue problems
       sweep_count    ! Counter for the number of transport sweeps
@@ -65,6 +66,9 @@ module state
     call initialize_angle()
     ! get the basis vectors
     call initialize_polynomials()
+
+    ! Initialize the constant source
+    mg_constant_source = 0.5 * source_value
 
     ! Determine the correct size for the multigroup containers
     number_groups = number_fine_groups
@@ -112,11 +116,7 @@ module state
     end if
     close(10) ! close the file
 
-    allocate(source(number_cells, 2 * number_angles, number_fine_groups))
-    ! Initialize source as isotropic
-    source = 0.5 * source_value
-
-    ! Only allocate psi if the option is to store psi    
+    ! Only allocate psi if the option is to store psi
     if (store_psi) then
       allocate(psi(number_cells, 2 * number_angles, number_fine_groups))
 
@@ -157,26 +157,17 @@ module state
       keff = initial_keff
     end if
 
-    ! Set external source to zero if eigen problem
-    if (solver_type == 'eigen') then
-      if (norm2(source) > 0.0) then
-        print *, "WARNING : Eigen solver is setting external source to zero"
-      end if
-      source = 0.0
-    end if
-
     ! Initialize the material map container
     allocate(mg_mMap(number_cells))
 
     ! Initialize the fission density
-    allocate(density(number_cells))
-    call update_fission_density()
+    allocate(mg_density(number_cells))
 
     ! Normalize the scalar and angular fluxes
     call normalize_flux(phi, psi)
 
     ! Size the mg containers to be fine/coarse group for non/DGM problems
-    allocate(mg_source(number_cells, 2 * number_angles, number_groups))
+    allocate(mg_source(number_cells, 2 * number_angles))
     allocate(mg_nu_sig_f(number_regions, number_groups))
     allocate(mg_sig_t(number_regions, number_groups))
     allocate(mg_phi(0:number_legendre, number_cells, number_groups))
@@ -194,7 +185,6 @@ module state
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : use_DGM
     use angle, only : finalize_angle
     use mesh, only : finalize_mesh
     use material, only : finalize_material
@@ -204,16 +194,11 @@ module state
     call finalize_angle()
     call finalize_mesh()
     call finalize_material()
-    if (use_DGM) then
-      call finalize_moments()
-    end if
+    call finalize_moments()
 
     ! Deallocate the state variables
     if (allocated(phi)) then
       deallocate(phi)
-    end if
-    if (allocated(source)) then
-      deallocate(source)
     end if
     if (allocated(psi)) then
       deallocate(psi)
@@ -242,8 +227,8 @@ module state
     if (allocated(mg_incoming)) then
       deallocate(mg_incoming)
     end if
-    if (allocated(density)) then
-      deallocate(density)
+    if (allocated(mg_density)) then
+      deallocate(mg_density)
     end if
     if (allocated(mg_mMap)) then
       deallocate(mg_mMap)
@@ -277,6 +262,8 @@ module state
       write(10) psi ! write the data in array x to the file
       close(10) ! close the file
     end if
+
+    deallocate(fname)
 
   end subroutine output_state
 
@@ -316,25 +303,33 @@ module state
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_fine_groups
+    use control, only : number_cells, number_groups, use_DGM, number_regions
     use mesh, only : mMap
-    use material, only : nu_sig_f, number_materials
+    use material, only : number_materials
+    use dgm, only : dgm_order, phi_m_zero
 
     ! Variable definitions
     integer :: &
       c, & ! Cell index
       g    ! Group index
-    double precision, dimension(number_materials) :: &
+    double precision, dimension(number_regions) :: &
       f    ! Temporary array to hold the fission cross section
+    double precision :: &
+      phi  ! Scalar flux container
 
     ! Reset the fission density
-    density = 0.0
+    mg_density = 0.0
 
     ! Sum the fission reaction rate over groups for each cell
-    do g = 1, number_fine_groups
-      f = nu_sig_f(g, :)
+    do g = 1, number_groups
+      f = mg_nu_sig_f(:, g)
       do c = 1, number_cells
-        density(c) = density(c) + f(mMap(c)) * phi(0, c, g)
+        if (use_DGM .and. dgm_order > 0) then
+          phi = phi_m_zero(0,c,g)
+        else
+          phi = mg_phi(0,c,g)
+        end if
+        mg_density(c) = mg_density(c) + f(mg_mMap(c)) * phi
       end do
     end do
 
