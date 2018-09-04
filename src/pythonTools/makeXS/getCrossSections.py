@@ -259,8 +259,8 @@ def main(name):
     plotXS(db)
 
 if __name__ == '__main__':
-    Gs = [44]
-    names = ['uo2', 'moxlow', 'moxmid', 'moxhigh']
+    Gs = [2, 44, 238]
+    names = ['uo2', 'moxlow', 'moxmid', 'moxhigh', 'BWR1', 'BWR2', 'BWR3']
     for G in Gs:
         for name in names:
             print G, name

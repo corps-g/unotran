@@ -1,4 +1,5 @@
 from collections import OrderedDict
+import os
 import sys
 sys.path.append('~/workspace/unotran/src')
 import pydgm
@@ -7,7 +8,7 @@ import scipy as sp
 from scipy.io import FortranFile
 import matplotlib.pyplot as plt
 from matplotlib import rc
-rc('font',**{'family':'serif'})
+rc('font', **{'family': 'serif'})
 from matplotlib import rcParams
 rcParams['xtick.direction'] = 'out'
 rcParams['ytick.direction'] = 'out'
@@ -17,6 +18,7 @@ rcParams['lines.linewidth'] = 1.85
 rcParams['axes.labelsize'] = 20
 rcParams.update({'figure.autolayout': True})
 np.set_printoptions(linewidth=132)
+
 
 def getSpectrum(G, geoOption):
     try:
@@ -29,7 +31,8 @@ def getSpectrum(G, geoOption):
         pydgm.solver.finalize_solver()
         np.save('inf_phi_g{}_{}'.format(G, geoOption), phi)
         # plot(phi[0])
-    return phi[0,0]
+    return phi[0, 0]
+
 
 def setVariables(G, geoOption):
     # Set the variables for the discrete ordinance problem
@@ -56,6 +59,7 @@ def setVariables(G, geoOption):
     pydgm.control.legendre_order = 0
     pydgm.control.ignore_warnings = True
 
+
 def setGeometry(geoOption):
     '''Construct the geometry for the snapshot problems'''
     pydgm.control.fine_mesh = [1]
@@ -65,32 +69,35 @@ def setGeometry(geoOption):
     elif geoOption == 'mox':
         pydgm.control.material_map = [3]
 
-def barchart(x, y) :
-    X = np.zeros(2*len(y))
-    Y = np.zeros(2*len(y))
-    for i in range(0, len(y)) :
-        X[2*i]   = x[i]
-        X[2*i+1] = x[i+1]
-        Y[2*i]   = y[i]
-        Y[2*i+1] = y[i]
+
+def barchart(x, y):
+    X = np.zeros(2 * len(y))
+    Y = np.zeros(2 * len(y))
+    for i in range(0, len(y)):
+        X[2 * i] = x[i]
+        X[2 * i + 1] = x[i + 1]
+        Y[2 * i] = y[i]
+        Y[2 * i + 1] = y[i]
     return X, Y
 
+
 def modGramSchmidt(A):
-    m,n= A.shape
-    A= A.copy()
-    Q= np.zeros((m,n))
-    R= np.zeros((n,n))
+    m, n = A.shape
+    A = A.copy()
+    Q = np.zeros((m, n))
+    R = np.zeros((n, n))
 
     for k in range(n):
-        R[k,k]= np.linalg.norm(A[:,k:k+1].reshape(-1),2)
-        Q[:,k:k+1]= A[:,k:k+1]/R[k,k]
-        R[k:k+1,k+1:n+1]= np.dot( Q[:,k:k+1].T, A[:,k+1:n+1] )
-        A[:,k+1:n+1]= A[:, k+1:n+1] - np.dot(Q[:,k:k+1], R[k:k+1,k+1:n+1])
+        R[k, k] = np.linalg.norm(A[:, k:k + 1].reshape(-1), 2)
+        Q[:, k:k + 1] = A[:, k:k + 1] / R[k, k]
+        R[k:k + 1, k + 1:n + 1] = np.dot(Q[:, k:k + 1].T, A[:, k + 1:n + 1])
+        A[:, k + 1:n + 1] = A[:, k + 1:n + 1] - np.dot(Q[:, k:k + 1], R[k:k + 1, k + 1:n + 1])
 
     return Q, R
 
+
 def plotBasis(G):
-    basis = np.loadtxt('dlp/mdlp_{}g'.format(G))
+    basis = np.loadtxt('{0}g/mdlp_{0}g'.format(G))
     vectors = np.zeros((3, G))
     for g in range(G):
         b = np.trim_zeros(basis[g], trim='f')
@@ -103,12 +110,13 @@ def plotBasis(G):
         vectors[:, g] = b
     plot(vectors)
 
+
 def plot(A):
     colors = ['b', 'g', 'm']
     plt.clf()
     G = A.shape[1]
 
-    bounds, diffs = getGroupBounds(G)
+    groupMask, counts = getGroupBounds(G)
     print bounds, diffs
 
     for i, a in enumerate(A):
@@ -128,9 +136,10 @@ def plot(A):
     plt.savefig('plots/{}_mdlp.png'.format(G))
     return
 
+
 def DLP(size):
     order = size
-    A = np.ones((size,order))
+    A = np.ones((size, order))
     if order > 1:
         for j in range(size):
             A[j, 1] = (size - 1 - (2.0 * j)) / (size - 1)
@@ -139,108 +148,64 @@ def DLP(size):
                 c0 = (i - 1) * (size - 1 + i)
                 c1 = (2 * i - 1) * (size - 1 - 2 * j)
                 c2 = i * (size - i)
-                A[j,i] = (c1 * A[j, i-1] - c0 * A[j, i-2]) / c2
+                A[j, i] = (c1 * A[j, i - 1] - c0 * A[j, i - 2]) / c2
     return modGramSchmidt(A)[0]
 
+
 def getGroupBounds(G):
-    if G == 2:
-        groupBounds = [1]
-    elif G == 3:
-        groupBounds = [1, 3]
-    elif G == 4:
-        groupBounds = [1, 3]
-    elif G == 7:
-        groupBounds = [1, 5]
-    elif G == 8:
-        groupBounds = [1, 6]
-    elif G == 9:
-        groupBounds = [1, 7]
-    elif G == 12:
-        groupBounds = [1, 4, 10]
-    elif G == 14:
-        groupBounds = [1, 4, 12]
-    elif G == 16:
-        groupBounds = [1, 3, 14]
-    elif G == 18:
-        groupBounds = [1, 16]
-    elif G == 23:
-        groupBounds = [1, 8, 21]
-    elif G == 25:
-        groupBounds = [1, 8, 23]
-    elif G == 30:
-        groupBounds = [1, 19]
-    elif G == 33:
-        groupBounds = [1, 32]
-    elif G == 40:
-        groupBounds = [1, 23, 38]
-    elif G == 43:
-        groupBounds = [1, 26, 40]
-    elif G == 44:
-        groupBounds = [1, 15, 38, 43]
-    elif G == 50:
-        groupBounds = [1, 17]
-    elif G == 69:
-        groupBounds = [1, 10, 57, 67]
-    elif G == 70:
-        groupBounds = [1, 10, 58, 68]
-    elif G == 100:
-        groupBounds = [1, 58]
-    elif G == 172:
-        groupBounds = [1, 40, 100, 160, 169]
-    elif G == 174:
-        groupBounds = [1, 52, 112, 172]
-    elif G == 175:
-        groupBounds = [1, 53, 113, 173]
+    if G == 44:
+        groupBounds = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2]
     elif G == 238:
-        groupBounds = [1, 15, 75, 135, 138, 157, 217, 226, 233, 238]
-    elif G == 240:
-        groupBounds = [1, 60, 120, 180]
-    elif G == 315:
-        groupBounds = [1, 4, 64, 124, 184, 244, 304, 312, 315]
-    elif G == 1968:
-        groupBounds = [1, 11, 71, 131, 191, 251, 311, 371, 431, 491, 551, 611, 671, 731, 791, 851, 911, 971, 1031, 1091, 1151, 1211, 1271, 1331, 1391, 1393, 1448, 1451, 1465, 1467, 1518, 1520, 1527, 1587, 1591, 1594, 1654, 1659, 1666, 1726, 1786, 1797, 1836, 1896, 1956, 1965]
+        groupBounds = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 3, 4, 3, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2, 3, 3, 3, 3, 3, 5, 3, 4, 2, 3, 4, 2, 4, 1, 2, 4, 2, 2, 3, 5, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 5, 5, 3, 1, 2, 1, 1, 1, 1, 2, 3, 4, 5, 3, 1, 1, 1, 1, 1, 1, 1, 3, 3, 1, 2, 3, 3, 4, 5, 7, 4, 3, 2, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7]
     else:
-        groupBounds = [0, G]
+        raise NotImplementedError, 'Group {} structure has not been created'.format(G)
 
-    groupBounds.append(G)
+    counts = dict(zip(*np.unique(groupBounds, return_counts=True)))
 
-    groupBounds = np.array(groupBounds)
-    groupBounds[-1] += 1
+    return groupBounds, counts
 
-    diffs = groupBounds[1:] - groupBounds[:-1]
-    groupBounds -= 1
-
-    return groupBounds, diffs
 
 def makeBasis(G, option='uo2'):
     # Get the coarse group bounds
-    groupBounds, diffs = getGroupBounds(G)
+    groupMask, counts = getGroupBounds(G)
 
     # Initialize the basis lists
-    P = []
-    basis = np.array([])
+    basis = np.zeros((G, G))
+
+    # Get the reference spectrum
     spectrum = getSpectrum(G, option)
 
     # Compute the basis for each coarse group
-    for i, order in enumerate(diffs):
-        A = DLP(order)
-        for j in range(A.shape[1] - 1):
-            A[:, j + 1] = A[:, j] * spectrum[groupBounds[i]: groupBounds[i + 1]]
+    for group, order in counts.items():
+        # Get the mask for the currect group
+        m = groupMask == group
 
+        # Get the standard DLP
+        A = DLP(order)
+
+        # Pointwise multiply the DLP with the spectrum
+        for j in range(A.shape[1] - 1):
+            A[:, j + 1] = A[:, j] * spectrum[m]
+
+        # Reorthogonalize the basis
         A, r = np.linalg.qr(A, mode='complete')
 
+        # Make the zeroth positive
         if np.sum(A[:, 0]) < 0:
             A *= -1
 
-        P.append(A)
-        basis = A if i == 0 else sp.linalg.block_diag(basis, A)
+        # Slice into the basis with the current group
+        basis[np.ix_(m, m)] = A
+
+    directory = '{}g'.format(G)
+    if not os.path.exists(directory):
+        os.makedirs(directory)
 
     # Save the basis to file
-    np.savetxt('{0}/m{0}_{1}g'.format('dlp', G), basis)
+    np.savetxt('{1}g/m{0}_{1}g'.format('dlp', G), basis)
 
 
 if __name__ == '__main__':
-    for G in [2, 3, 4, 7, 8, 9, 12, 14, 16, 18, 23, 25, 30, 33, 40, 43, 44, 50, 69, 70, 100, 172, 174, 175, 238, 240, 315, 1968]:
+    for G in [44, 238]:
         makeBasis(G)
-        plotBasis(G)
-
+        # plotBasis(G)
