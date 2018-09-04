@@ -52,60 +52,6 @@ def getXS(fname):
     return np.array(sig_t)
 
 
-def computeBounds(fname):
-    '''
-    Determine the coarse group bounds following the guidelines in Gibson's paper
-
-    inputs
-        fname: name of the file containing cross sections in proteus format
-    '''
-
-    def reset(xs):
-        '''Reset the min and max cutoffs to the input cross section'''
-        minXS = max(xs, minCutoff)
-        maxXS = xs
-        return minXS, maxXS
-
-    sig_t = getXS(fname)
-    nMat = len(sig_t)
-    nGroup = len(sig_t[0])
-    minCutoff = 1.0
-    ratioCutoff = 2.0
-    groupCutoff = 60
-    for m in range(nMat):
-
-        bounds = [nGroup]
-        # Initialize the cutoff bounds
-        minXS, maxXS = reset(sig_t[m, -1])
-        for i, xs in enumerate(sig_t[m, 1:][::-1]):
-            group = nGroup - i
-            # Check if the xs in below the min or above the max
-            minXS = min(xs, minXS)
-            maxXS = max(xs, maxXS)
-            ratio = maxXS / minXS
-            # Check for a ratio that is too large
-            if (ratio > ratioCutoff and maxXS > minCutoff) or bounds[-1] - group > groupCutoff:
-                bounds.append(group + 1)
-                # Reset the cutoff bounds
-                minXS, maxXS = reset(xs)
-        bounds.append(1)
-        bounds = bounds[::-1]
-        print nGroup, bounds[:-1]
-        break
-    B = [1] + bounds[1:-1] + [nGroup + 1]
-    print ['{}-{} &({})'.format(b, B[i + 1] - 1, B[i + 1] - b) for i, b in enumerate(B[:-1])]
-
-    plt.semilogy(range(1, nGroup + 1), sig_t[0], 'bo')
-    for b in bounds[1:-1]:
-        plt.axvline(b - 0.5)
-    plt.ylim([0, 50])
-    plt.xlim([0, nGroup])
-    plt.xlabel('Fine group number')
-    plt.ylabel('Total cross section [cm$^{-1}$]')
-    plt.grid(True)
-    plt.show()
-
-
 def findBounds(sig_t):
     '''
     Find the coarse group structure given a set of cross sections
@@ -158,7 +104,7 @@ def findBounds(sig_t):
     return bounds[:-1]
 
 
-def nonContigBounds(fname):
+def computeBounds(fname):
     '''
     This function determins which fine groups should belong to each coarse group
 
@@ -211,9 +157,7 @@ def nonContigBounds(fname):
 
 
 if __name__ == '__main__':
-    Gs = [2, 3, 4, 7, 8, 9, 12, 14, 16, 18, 23, 25, 30, 33, 40, 43, 44, 50, 69, 70, 100, 172, 174, 175, 238, 240, 315, 1968]
     Gs = [44, 238]
     for G in Gs:
         fname = 'makeXS/{0}g/{0}gXS.anlxs'.format(G)
-        nonContigBounds(fname)
-        # computeBounds(fname)
+        computeBounds(fname)
