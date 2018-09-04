@@ -8,7 +8,7 @@ import scipy as sp
 from scipy.io import FortranFile
 import matplotlib.pyplot as plt
 from matplotlib import rc
-rc('font', **{'family':'serif'})
+rc('font', **{'family': 'serif'})
 from matplotlib import rcParams
 rcParams['xtick.direction'] = 'out'
 rcParams['ytick.direction'] = 'out'
@@ -19,11 +19,13 @@ rcParams['axes.labelsize'] = 20
 rcParams.update({'figure.autolayout': True})
 np.set_printoptions(linewidth=132)
 
+
 def getEnergy(G):
     with open('../makeXS/{0}g/{0}gXS.anlxs'.format(G), 'r') as f:
         f.readline()
         s = f.readline()
     return np.array(s.split()).astype(float) * 1e6
+
 
 def makePlot(G):
     E = getEnergy(G)
@@ -58,6 +60,7 @@ def makePlot(G):
     plt.legend(loc=0)
     plt.savefig('plots/{}_snapshots.png'.format(G))
     plt.clf()
+
 
 def getSnapshots(G, geoOption):
     try:
@@ -200,7 +203,7 @@ def setGeometry(geoOption):
         pydgm.control.material_map = mMap
 
 
-def barchart(x, y) :
+def barchart(x, y):
     X = np.zeros(2 * len(y))
     Y = np.zeros(2 * len(y))
     for i in range(len(y)):
@@ -225,6 +228,7 @@ def modGramSchmidt(A):
 
     return Q, R
 
+
 def plotBasis(G, basisType):
     basis = np.loadtxt('{1}g/klt_{0}_{1}g'.format(basisType, G))
     vectors = np.zeros((3, G))
@@ -239,13 +243,13 @@ def plotBasis(G, basisType):
         vectors[:, g] = b
     plot(vectors, basisType)
 
+
 def plot(A, basisType):
     colors = ['b', 'g', 'm']
     plt.clf()
     G = A.shape[1]
 
-
-    bounds, diffs = getGroupBounds(G)
+    groupMask, counts = getGroupBounds(G)
     bounds -= 1
     print bounds
 
@@ -296,21 +300,15 @@ def KLT(Data, flat=False):
 
 def getGroupBounds(G):
     if G == 44:
-        groupBounds = [1, 15, 38, 43]
+        groupBounds = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2]
     elif G == 238:
-        groupBounds = [1, 18, 78, 79, 80, 82, 85, 86, 92, 93, 102, 108, 110, 119, 121, 135, 136, 137, 138, 139, 161, 221, 227, 233, 238]
-    elif G == 1968:
-        groupBounds = [1, 11, 71, 131, 191, 251, 311, 371, 431, 491, 551, 611, 671, 731, 791, 851, 911, 971, 1031, 1091, 1151, 1211, 1271, 1331, 1391, 1393, 1448, 1451, 1465, 1467, 1518, 1520, 1527, 1587, 1591, 1594, 1654, 1659, 1666, 1726, 1786, 1797, 1836, 1896, 1956, 1965]
+        groupBounds = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 1, 1, 2, 3, 4, 3, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 2, 3, 3, 2, 2, 3, 3, 3, 3, 3, 5, 3, 4, 2, 3, 4, 2, 4, 1, 2, 4, 2, 2, 3, 5, 1, 1, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 5, 5, 3, 1, 2, 1, 1, 1, 1, 2, 3, 4, 5, 3, 1, 1, 1, 1, 1, 1, 1, 3, 3, 1, 2, 3, 3, 4, 5, 7, 4, 3, 2, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 7]
     else:
-        groupBounds = [0, G]
+        raise NotImplementedError, 'Group {} structure has not been created'.format(G)
 
-    groupBounds.append(G)
+    counts = dict(zip(*np.unique(groupBounds, return_counts=True)))
 
-    groupBounds = np.array(groupBounds)
-    groupBounds[-1] += 1
-
-    diffs = groupBounds[1:] - groupBounds[:-1]
-    return groupBounds, diffs
+    return groupBounds, counts
 
 
 def makeBasis(G, basisType, flat=False):
@@ -351,21 +349,23 @@ def makeBasis(G, basisType, flat=False):
         raise NotImplementedError('The type: {} has not been implemented'.format(basisType))
 
     # Get the coarse group bounds
-    groupBounds, diffs = getGroupBounds(G)
-    groupBounds -= 1
-    print diffs
+    groupMask, counts = getGroupBounds(G)
+
     # Initialize the basis lists
-    P = []
-    basis = np.array([])
+    basis = np.zeros((G, G))
 
     # Compute the basis for each coarse group
-    for i, d in enumerate(groupBounds[:-1]):
-        A = KLT(data[groupBounds[i]:groupBounds[i + 1]], flat)
+    for group, order in counts.items():
+        # Get the mask for the currect group
+        m = groupMask == group
 
-        P.append(A)
-        basis = A if i == 0 else sp.linalg.block_diag(basis, A)
+        # Get the DLP basis for the given order
+        A = KLT(data[m], flat)
 
-    plt.plot(basis[:,:2])
+        # Slice into the basis with the current group
+        basis[np.ix_(m, m)] = A
+
+    plt.plot(basis[:, :2])
 
     directory = '{}g'.format(G)
     if not os.path.exists(directory):
@@ -383,6 +383,5 @@ if __name__ == '__main__':
         #makePlot(G)
         for basisType in ['core1', 'core2', 'core3', 'assay_12', 'assay_13', 'assay_14', 'assay_all', 'full', 'mox', 'uo2', 'combine']:
             task += 1
-            print G, basisType
             makeBasis(G, basisType, flat=True)
-            plotBasis(G, basisType)
+            #plotBasis(G, basisType)
