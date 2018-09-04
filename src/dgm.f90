@@ -108,6 +108,7 @@ module dgm
         array1 ! Temporary array
     integer :: &
         g,   & ! Fine group index
+        gp,  & ! Fine group prime index
         cg,  & ! Coarse group index
         i      ! Cell index
 
@@ -123,8 +124,15 @@ module dgm
       cg = energy_group_map(g)
       array1(:) = 0.0
       read(5,*) array1
-      do i = basismap(cg), basismap(cg) + order(cg)
-        basis(g, i - basismap(cg)) = array1(i)
+      i = 0
+      do gp = 1, number_fine_groups
+        if (energy_group_map(gp) == cg) then
+          basis(g, i) = array1(gp)
+          i = i + 1
+        end if
+        if (order(cg) < i) then
+          exit
+        end if
       end do
     end do
 
