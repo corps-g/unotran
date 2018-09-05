@@ -4,82 +4,56 @@ import os
 
 def makeFuel(fuelOption):
     fuel = '% ** fuel discretization\n'
-    if fuelOption == 'BWR1':
-        title = 'BWR1'
+    if fuelOption == 'UO2-1':
+        title = 'UO2-1'
         fuel += 'mat  fuel      sum    tmp 456\n'
+        fuel += '      1001.03c 2.73e-2\n'
+        fuel += '      8016.03c 2.87e-2\n'
+        fuel += '     40000.03c 4.79e-3\n'
         fuel += '     92234.03c 1.50e-6\n'
         fuel += '     92235.03c 1.68e-4\n'
         fuel += '     92238.03c 7.39e-3\n'
-        fuel += '      8016.03c 2.87e-2\n'
-        fuel += '      1001.03c 2.73e-2\n'
-        fuel += '     40000.03c 4.79e-3\n'
-    elif fuelOption == 'BWR2':
-        title = 'BWR2'
+    elif fuelOption == 'UO2-2':
+        title = 'UO2-2'
         fuel += 'mat  fuel      sum    tmp 456\n'
+        fuel += '      1001.03c 2.73e-2\n'
+        fuel += '      8016.03c 2.87e-2\n'
+        fuel += '     40000.03c 4.79e-3\n'
         fuel += '     92234.03c 2.52e-6\n'
         fuel += '     92235.03c 2.75e-4\n'
         fuel += '     92238.03c 7.28e-3\n'
-        fuel += '      8016.03c 2.87e-2\n'
-        fuel += '      1001.03c 2.73e-2\n'
-        fuel += '     40000.03c 4.79e-3\n'
-    elif fuelOption == 'BWR3':
-        title = 'BWR3'
+    elif fuelOption == 'UO2-Gd':
+        title = 'UO2-Gd'
         fuel += 'mat  fuel      sum    tmp 456\n'
+        fuel += '      1001.03c 2.73e-2\n'
+        fuel += '      8016.03c 2.86e-2\n'
+        fuel += '     40000.03c 4.79e-3\n'
         fuel += '     92234.03c 2.63e-6\n'
         fuel += '     92235.03c 2.87e-4\n'
         fuel += '     92238.03c 6.88e-3\n'
-        fuel += '      8016.03c 2.86e-2\n'
-        fuel += '      1001.03c 2.73e-2\n'
-        fuel += '     40000.03c 4.79e-3\n'
         fuel += '     64154.03c 9.68e-6\n'
         fuel += '     64155.03c 6.58e-5\n'
         fuel += '     64156.03c 9.10e-5\n'
         fuel += '     64157.03c 6.96e-5\n'
         fuel += '     64158.03c 1.10e-4\n'
         fuel += '     64160.03c 9.80e-5\n'
-    elif fuelOption == 'uo2':
-        title = 'UO2'
-        fuel += 'mat  fuel      -10.000    tmp 456\n'
-        fuel += '     92235.03c 8.85e-4\n'
-        fuel += '     92238.03c 2.225e-2\n'
-        fuel += '      8016.03c 4.622e-2\n'
-    elif fuelOption == 'moxlow':
-        title = 'MOX-4.7'
-        fuel += 'mat  fuel      -10.000    tmp 456\n'
-        fuel += '     92235.03c 5e-5\n'
-        fuel += '     92238.03c 2.21e-2\n'
-        fuel += '     16000.03c 4.622e-2\n'
-        fuel += '     94238.03c 1.5e-5\n'
-        fuel += '     94239.03c 5.8e-4\n'
-        fuel += '     94240.03c 2.4e-4\n'
-        fuel += '     94241.03c 9.8e-5\n'
-        fuel += '     94242.03c 5.4e-5\n'
-        fuel += '     95241.03c 1.3e-5\n'
-    elif fuelOption == 'moxmid':
-        title = 'MOX-7.0'
-        fuel += 'mat  fuel      -10.000    tmp 456\n'
-        fuel += '     92235.03c 5e-5\n'
-        fuel += '     92238.03c 2.21e-2\n'
-        fuel += '     16000.03c 4.622e-2\n'
-        fuel += '     94238.03c 2.4e-5\n'
-        fuel += '     94239.03c 9.3e-4\n'
-        fuel += '     94240.03c 3.9e-4\n'
-        fuel += '     94241.03c 1.52e-4\n'
-        fuel += '     94242.03c 8.4e-5\n'
-        fuel += '     95241.03c 2.0e-5\n'
-    elif fuelOption == 'moxhigh':
-        title = 'MOX-8.7'
-        fuel += 'mat  fuel      -10.000    tmp 456\n'
-        fuel += '     92235.03c 5e-5\n'
-        fuel += '     92238.03c 2.21e-2\n'
-        fuel += '     16000.03c 4.622e-2\n'
-        fuel += '     94238.03c 3.0e-5\n'
-        fuel += '     94239.03c 1.16e-3\n'
-        fuel += '     94240.03c 4.9e-4\n'
-        fuel += '     94241.03c 1.90e-4\n'
-        fuel += '     94242.03c 1.05e-4\n'
-        fuel += '     95241.03c 2.5e-5\n'
-
+    elif fuelOption == 'MOX':
+        title = 'MOX'
+        fuel += 'mat  fuel      sum    tmp 456\n'
+        fuel += '      1001.03c 2.73e-2\n'
+        fuel += '      8016.03c 2.86e-2\n'
+        fuel += '     40000.03c 4.79e-3\n'
+        fuel += '     92234.03c 2.32e-6\n'
+        fuel += '     92235.03c 2.53e-4\n'
+        fuel += '     92238.03c 6.70e-3\n'
+        fuel += '     93237.03c 3.23e-5\n'
+        fuel += '     94238.03c 1.59e-5\n'
+        fuel += '     94239.03c 2.93e-4\n'
+        fuel += '     94240.03c 1.32e-4\n'
+        fuel += '     94241.03c 6.38e-5\n'
+        fuel += '     94242.03c 3.76e-5\n'
+        fuel += '     95241.03c 2.04e-5\n'
+        fuel += '     95242.03c 1.05e-5\n'
     return title, fuel
 
 
@@ -193,8 +167,8 @@ def makeFile(fuelOption, numberGroups):
 
     s += '% **  Water\n'
     s += 'mat   water        sum moder lwtr 1001 % Considering the binding effects of\n'
-    s += '      8016.03c      2.02e-2\n'
     s += '      1001.03c      4.03e-2\n'
+    s += '      8016.03c      2.02e-2\n'
     s += '     40000.03c      7.86e-3\n'
 
     s += '% **thermal scattering data for light water\n'
@@ -225,7 +199,7 @@ def makeFile(fuelOption, numberGroups):
 
     s += '% ** Neutron population and criticality cycles: \n'
     s += '%*****************************************************************************\n'
-    s += 'set pop 100000 100 20 1.00  % according to the kcode 100000 1.000000 10 110\n'
+    s += 'set pop 1000000 100 20 1.00  % according to the kcode 100000 1.000000 10 110\n'
 
     s += '% ** Decay and fission yield libraries\n'
 
@@ -236,14 +210,14 @@ def makeFile(fuelOption, numberGroups):
 
 
 if __name__ == '__main__':
-    gs = [2, 44, 238, 1968]
+    gs = [44, 238, 1968]
     #gs = [1968]
     for g in gs:
         directory = '{}g'.format(g)
         if not os.path.exists(directory):
             os.makedirs(directory)
         s = '#!/bin/bash\n\n'
-        for op in ['uo2', 'moxlow', 'moxmid', 'moxhigh', 'BWR1', 'BWR2', 'BWR3']:
+        for op in ['UO2-1', 'UO2-2', 'UO2-Gd', 'MOX']:
             makeFile(op, g)
             s += 'sss2 -omp 28 {}-{}.inp\n'.format(op, g)
         with open('{}g/runSerpentFiles.sh'.format(g), 'w') as f:

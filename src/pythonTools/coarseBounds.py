@@ -116,7 +116,7 @@ def computeBounds(fname):
 
     # Get the XS for only material 0
     # TODO expand this to multiple materials
-    sig_t = getXS(fname)[:1]
+    sig_t = getXS(fname)[5:6]
 
     # Number the energy groups
     groups = np.arange(len(sig_t[0]))
@@ -129,7 +129,7 @@ def computeBounds(fname):
     # Sort the maximum XS and get the ordering indicies
     mask = np.argsort(maxXS)
     # Use this to not sort the cross sections
-    # mask = np.arange(len(sig_t[0]))
+    mask = np.arange(len(sig_t[0]))
 
     # Get the coarse group bounds given the total cross sections
     bounds = np.array(findBounds(maxXS[mask]) + [len(sig_t[0]) + 1]) - 1
