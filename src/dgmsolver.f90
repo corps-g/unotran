@@ -344,7 +344,7 @@ module dgmsolver
         r,   & ! Region index
         mat    ! Material index
 
-    ! temporary containters to study angle approximation
+    ! temporary containers to study angle approximation
     double precision :: tmp_psi(2 * number_angles), &                   ! temporary angular
                         tmp_psi_m_zero(2 * number_angles), &            ! flux arrays
                         d2m(0:delta_legendre_order, 2*number_angles), & ! discrete-to-moment
@@ -435,7 +435,6 @@ module dgmsolver
             d2m(l, a) = wt(a) * legendre_p(l, mu(a)) * (2_8*l + 1_8)*0.5_8
             d2m(l, aa)= wt(a) * legendre_p(l, -mu(a))* (2_8*l + 1_8)*0.5_8
             ! psi(mu) ~ (1/2) phi_0 * P_0(mu) + (3/2) phi_1 P_1(mu) + ...
-            !print *, "l=", l, "a=", a, " mu(a)=", mu(a), " legp(l, mu(a))=", legendre_p(l, mu(a))
             m2d(a, l) = legendre_p(l, mu(a))
             m2d(aa, l) = legendre_p(l, -mu(a))
           end do

@@ -53,7 +53,7 @@ module wg_solver
       ! Print output
       if (inner_print > 0) then
         write(*, 1001) inner_count, inner_error
-        1001 format ( "    Inner: ", i4, " Error: ", es12.5E2)
+        1001 format ( "      Inner: ", i4, " Error: ", es12.5E2)
         if (inner_print > 1) then
           print *, phi_g
         end if

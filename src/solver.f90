@@ -123,7 +123,7 @@ module solver
         if (.not. ignore_warnings) then
           ! Warning if more iterations are required
           write(*, 1002) eigen_count
-          1002 format ('eigen iteration did not converge in ', i4, ' iterations')
+          1002 format ('  eigen iteration did not converge in ', i4, ' iterations')
         end if
       end if
     end if

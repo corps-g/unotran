@@ -52,7 +52,7 @@ module mg_solver
       ! Print output
       if (outer_print > 0) then
         write(*, 1001) outer_count, outer_error
-        1001 format ( "  outer: ", i4, " Error: ", es12.5E2)
+        1001 format ( "    outer: ", i4, " Error: ", es12.5E2)
         if (outer_print > 1) then
           print *, mg_phi
         end if
