@@ -27,6 +27,14 @@ module sources
     ! Reset the sources
     mg_source = 0.0
 
+    ! Update the fission density if needed
+    if (allow_fission .or. solver_type == 'eigen') then
+      if (solver_type == 'fixed' .or. dgm_order > 0) then
+        call update_fission_density()
+      end if
+    end if
+
+    ! Compute the source
     do c = 1, number_cells
       do a = 1, number_angles * 2
         ! Add the external source
@@ -34,10 +42,6 @@ module sources
 
         ! Add the fission source
         if (allow_fission .or. solver_type == 'eigen') then
-          if (solver_type == 'fixed' .or. dgm_order > 0) then
-            call update_fission_density()
-          end if
-
           mg_source(c,a) = mg_source(c,a) + compute_fission(g, c)
         end if
 

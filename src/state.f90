@@ -337,21 +337,23 @@ module state
       ! Compute fission density using fine flux
       do g = 1, number_fine_groups
         do c = 1, number_cells
-          phi_g = phi(0,c,g)
-          mg_density(c) = mg_density(c) + nu_sig_f(g, mMap(c)) * phi_g
+          mg_density(c) = mg_density(c) + nu_sig_f(g, mMap(c)) * phi(0,c,g)
         end do
       end do
-    else
-      ! Compute the fission density using the mg_flux
+    else if (use_DGM .and. dgm_order > 0) then
+      ! Compute the fission density using the mg_flux for higher moments
       do g = 1, number_groups
         f = mg_nu_sig_f(:, g)
         do c = 1, number_cells
-          if (use_DGM .and. dgm_order > 0) then
-            phi_g = phi_m_zero(0,c,g)
-          else
-            phi_g = mg_phi(0,c,g)
-          end if
-          mg_density(c) = mg_density(c) + f(mg_mMap(c)) * phi_g
+          mg_density(c) = mg_density(c) + f(mg_mMap(c)) * phi_m_zero(0,c,g)
+        end do
+      end do
+    else
+      ! Compute the fission density using the mg_flux normally
+      do g = 1, number_groups
+        f = mg_nu_sig_f(:, g)
+        do c = 1, number_cells
+          mg_density(c) = mg_density(c) + f(mg_mMap(c)) * mg_phi(0,c,g)
         end do
       end do
     end if
