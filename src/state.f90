@@ -133,10 +133,10 @@ module state
         else
           ! default to isotropic distribution
           psi = 0.0
-          do a = 1, 2 * number_angles
-            do c = 1, number_cells
+          do c = 1, number_cells
+            do a = 1, 2 * number_angles
               do g = 1, number_fine_groups
-                psi(g, c, a) = phi(0, g, c) / 2
+                psi(g, a, c) = phi(0, g, c) / 2
               end do
             end do
           end do
@@ -167,14 +167,14 @@ module state
     call normalize_flux(phi, psi)
 
     ! Size the mg containers to be fine/coarse group for non/DGM problems
-    allocate(mg_source(number_groups, number_cells, 2 * number_angles))
+    allocate(mg_source(number_groups, 2 * number_angles, number_cells))
     allocate(mg_nu_sig_f(number_groups, number_regions))
     allocate(mg_sig_t(number_groups, number_regions))
     allocate(mg_phi(0:number_legendre, number_groups, number_cells))
     allocate(mg_chi(number_groups, number_regions))
     allocate(mg_sig_s(0:number_legendre, number_groups, number_groups, number_regions))
     if (store_psi) then
-      allocate(mg_psi(number_groups, number_cells, 2 * number_angles))
+      allocate(mg_psi(number_groups, 2 * number_angles, number_cells))
     end if
 
   end subroutine initialize_state

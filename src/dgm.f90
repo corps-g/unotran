@@ -91,7 +91,7 @@ module dgm
 
     ! Form the containers to hold the zeroth moments
     allocate(phi_m_zero(0:number_legendre, number_coarse_groups, number_cells))
-    allocate(psi_m_zero(number_coarse_groups, number_cells, 2 * number_angles))
+    allocate(psi_m_zero(number_coarse_groups, 2 * number_angles, number_cells))
 
   end subroutine initialize_moments
 

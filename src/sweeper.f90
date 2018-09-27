@@ -66,14 +66,13 @@ module sweeper
       ! set boundary conditions
       incident = boundary_type(o) * incident  ! Set albedo conditions
 
-      do a = amin, amax, astep  ! Sweep over angle
-        ! Get the correct angle index
-        an = merge(a, 2 * number_angles - a + 1, octant)
+      do c = cmin, cmax, cstep  ! Sweep over cells
+        do a = amin, amax, astep  ! Sweep over angle
+          ! Get the correct angle index
+          an = merge(a, 2 * number_angles - a + 1, octant)
 
-        ! legendre polynomial integration vector
-        M = wt(a) * p_leg(:, an)
-
-        do c = cmin, cmax, cstep  ! Sweep over cells
+          ! legendre polynomial integration vector
+          M = wt(a) * p_leg(:, an)
 
           ! Loop over the energy groups
           do g = 1, number_groups
@@ -87,7 +86,7 @@ module sweeper
             call computeEQ(source, incident(g, a), mg_sig_t(g, mat), dx(c), mu(a), psi_center)
 
             if (store_psi) then
-              psi(g, c, an) = psi_center
+              psi(g, an, c) = psi_center
             end if
 
             ! Increment the legendre expansions of the scalar flux

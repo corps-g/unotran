@@ -44,7 +44,7 @@ module solver
     if (store_psi) then
       mg_psi(:, :, :) = psi(:, :, :)
       ! Default the incoming flux to be equal to the outgoing if present
-      mg_incoming = psi(:, 1, (number_angles + 1):)
+      mg_incoming = psi(:, (number_angles + 1):, 1)
     else
       ! Assume isotropic scalar flux for incident flux
       do a = 1, number_angles

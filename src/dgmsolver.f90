@@ -55,7 +55,7 @@ module dgmsolver
         recon_error       ! Error between successive iterations
     double precision, dimension(0:number_legendre, number_fine_groups, number_cells) :: &
         old_phi           ! Scalar flux from previous iteration
-    double precision, dimension(number_fine_groups, number_cells, 2 * number_angles) :: &
+    double precision, dimension(number_fine_groups, 2 * number_angles, number_cells) :: &
         old_psi           ! Angular flux from previous iteration
 
     if (present(bypass_arg)) then
@@ -182,16 +182,16 @@ module dgmsolver
         val           ! Variable to hold a double value
 
     ! Recover the angular flux from moments
-    do a = 1, number_angles * 2
-      ! legendre polynomial integration vector
-      an = merge(a, 2 * number_angles - a + 1, a <= number_angles)
-      M = wt(an) * p_leg(:,a)
-      do c = 1, number_cells
+    do c = 1, number_cells
+      do a = 1, number_angles * 2
+        ! legendre polynomial integration vector
+        an = merge(a, 2 * number_angles - a + 1, a <= number_angles)
+        M = wt(an) * p_leg(:,a)
         do g = 1, number_fine_groups
           ! Unfold the moments
-          val = basis(g, order) * psi_moment(energy_group_map(g), c, a)
+          val = basis(g, order) * psi_moment(energy_group_map(g), a, c)
           if (store_psi) then
-            psi_new(g, c, a) = psi_new(g, c, a) + val
+            psi_new(g, a, c) = psi_new(g, a, c) + val
           end if
           phi_new(:, g, c) = phi_new(:, g, c) + M(:) * val
         end do
@@ -248,11 +248,11 @@ module dgmsolver
     psi_m_zero = 0.0
 
     ! Get moments for the Angular flux
-    do a = 1, number_angles * 2
-      do c = 1, number_cells
+    do c = 1, number_cells
+      do a = 1, number_angles * 2
         do g = 1, number_fine_groups
           cg = energy_group_map(g)
-          psi_m_zero(cg, c, a) = psi_m_zero(cg, c, a) +  basis(g, 0) * psi(g, c, a)
+          psi_m_zero(cg, a, c) = psi_m_zero(cg, a, c) +  basis(g, 0) * psi(g, a, c)
         end do
       end do
     end do
@@ -292,7 +292,7 @@ module dgmsolver
     do a = 1, number_angles
       do g = 1, number_fine_groups
         cg = energy_group_map(g)
-        mg_incoming(cg, a) = mg_incoming(cg, a) + basis(g, order) * psi(g, 1, a + number_angles)
+        mg_incoming(cg, a) = mg_incoming(cg, a) + basis(g, order) * psi(g, a + number_angles, 1)
       end do
     end do
 
@@ -361,7 +361,7 @@ module dgmsolver
       deallocate(sig_s_m)
     end if
 
-    allocate(delta_m(number_groups, number_regions, 2 * number_angles, 0:expansion_order))
+    allocate(delta_m(number_groups, 2 * number_angles, number_regions, 0:expansion_order))
     allocate(sig_s_m(0:number_legendre, number_groups, number_groups, number_regions, 0:expansion_order))
 
     ! initialize all moments and mg containers to zero
@@ -435,8 +435,8 @@ module dgmsolver
       end if
 
       ! Add angular total cross section moment (delta) to the external source
-      do a = 1, number_angles * 2
-        do c = 1, number_cells
+      do c = 1, number_cells
+        do a = 1, number_angles * 2
           do g = 1, number_fine_groups
             cg = energy_group_map(g)
             ! If we are truncating the delta term, then first truncate
@@ -464,9 +464,9 @@ module dgmsolver
             r = mg_mMap(c)
 
             ! Check if producing nan and not computing with a nan
-            if (psi_m_zero(cg, c, a) /= 0.0) then
-              delta_m(cg, r, a, o) = delta_m(cg, r, a, o) + dx(c) * basis(g, o) * (sig_t(g, mat) &
-                                  - mg_sig_t(cg, r)) * psi(g, c, a) / psi_m_zero(cg, c, a) &
+            if (psi_m_zero(cg, a, c) /= 0.0) then
+              delta_m(cg, a, r, o) = delta_m(cg, a, r, o) + dx(c) * basis(g, o) * (sig_t(g, mat) &
+                                  - mg_sig_t(cg, r)) * psi(g, a, c) / psi_m_zero(cg, a, c) &
                                   * phi_m_zero(0, cg, c) / homog_phi(0, cg, r)
             end if
           end do
@@ -499,15 +499,15 @@ module dgmsolver
         mat      ! Material index
 
     allocate(chi_m(number_groups, number_cells, 0:expansion_order))
-    allocate(source_m(number_groups, number_cells, number_angles * 2, 0:expansion_order))
+    allocate(source_m(number_groups, number_angles * 2, number_cells, 0:expansion_order))
 
     chi_m = 0.0
     source_m = 0.0
 
     do order = 0, expansion_order
-      do a = 1, number_angles * 2
-        do c = 1, number_cells
-          mat = mMap(c)
+      do c = 1, number_cells
+        mat = mMap(c)
+        do a = 1, number_angles * 2
           do g = 1, number_fine_groups
             cg = energy_group_map(g)
             ! chi moment
@@ -516,7 +516,7 @@ module dgmsolver
             end if
 
             ! Source moment
-            source_m(cg, c, a, order) = source_m(cg, c, a, order) + basis(g, order) * mg_constant_source
+            source_m(cg, a, c, order) = source_m(cg, a, c, order) + basis(g, order) * mg_constant_source
           end do
         end do
       end do

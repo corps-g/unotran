@@ -35,19 +35,19 @@ module sources
     end if
 
     ! Compute the source
-    do a = 1, number_angles * 2
-      do c = 1, number_cells
+    do c = 1, number_cells
+      do a = 1, number_angles * 2
         do g = 1, number_groups
           ! Add the external source
-          mg_source(g,c,a) = mg_source(g,c,a) + compute_external(g, c, a)
+          mg_source(g,a,c) = mg_source(g,a,c) + compute_external(g, c, a)
 
           ! Add the fission source
           if (allow_fission .or. solver_type == 'eigen') then
-            mg_source(g,c,a) = mg_source(g,c,a) + compute_fission(g, c)
+            mg_source(g,a,c) = mg_source(g,a,c) + compute_fission(g, c)
           end if
 
           ! Add the scatter source
-          mg_source(g,c,a) = mg_source(g,c,a) + compute_in_scatter(g, c, a)
+          mg_source(g,a,c) = mg_source(g,a,c) + compute_in_scatter(g, c, a)
         end do
       end do
     end do
@@ -72,7 +72,7 @@ module sources
       source ! source for group g, cell c, and angle a
 
     ! Get the sources into group g
-    source = mg_source(g,c,a)
+    source = mg_source(g,a,c)
 
     ! Add the scatter source
     source = source + compute_within_group_scatter(g, c, a)
@@ -103,7 +103,7 @@ module sources
       source ! Source for group g
 
     if (use_DGM) then
-      source = source_m(g,c,a,dgm_order)
+      source = source_m(g,a,c,dgm_order)
     else
       source = mg_constant_source
     end if
@@ -235,7 +235,7 @@ module sources
       source   ! Source for group g
 
 
-    source = -delta_m(g,mg_mMap(c),a,dgm_order) * psi_m_zero(g,c,a)
+    source = -delta_m(g,a,mg_mMap(c),dgm_order) * psi_m_zero(g,a,c)
 
   end function compute_delta
 
