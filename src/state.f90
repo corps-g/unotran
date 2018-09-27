@@ -118,7 +118,7 @@ module state
 
     ! Only allocate psi if the option is to store psi
     if (store_psi) then
-      allocate(psi(number_fine_groups, number_cells, 2 * number_angles))
+      allocate(psi(number_fine_groups, 2 * number_angles, number_cells))
 
       ! Initialize psi
       ! Attempt to read file or use default if file does not exist

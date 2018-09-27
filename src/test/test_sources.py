@@ -34,9 +34,9 @@ class TestSOURCES(unittest.TestCase):
         pydgm.solver.initialize_solver()
 
     def test_compute_external(self):
-        for g in range(3):
+        for c in range(pydgm.control.number_cells):
             for a in range(pydgm.control.number_angles * 2):
-                for c in range(pydgm.control.number_cells):
+                for g in range(3):
                     source = pydgm.sources.compute_external(g + 1, c + 1, a + 1)
                     np.testing.assert_array_almost_equal(source, 0.5, 12, 'Failed for g={} c={} a={}'.format(g + 1, c + 1, a + 1))
 
@@ -69,7 +69,7 @@ class TestSOURCES(unittest.TestCase):
 
         for g in range(3):
             source = pydgm.state.mg_source[g]
-            np.testing.assert_array_almost_equal(source, np.ones((1, 4)) * test[g], 12, 'Failed for g={}'.format(g + 1))
+            np.testing.assert_array_almost_equal(source, np.ones((4, 1)) * test[g], 12, 'Failed for g={}'.format(g + 1))
 
     def test_compute_within_group_source(self):
         test = [0.7902346527, 0.727303576229, 0.6419223436]
@@ -162,7 +162,7 @@ class TestSOURCESdgm(unittest.TestCase):
         pydgm.sources.compute_in_source()
         for g in range(2):
             source = pydgm.state.mg_source[g]
-            np.testing.assert_array_almost_equal(source, np.ones((1, 4)) * test[g], 12, 'Failed for g={}'.format(g + 1))
+            np.testing.assert_array_almost_equal(source, np.ones((4, 1)) * test[g], 12, 'Failed for g={}'.format(g + 1))
 
     def test_compute_within_group_source(self):
         test = [0.837139816124, 0.949152758925]

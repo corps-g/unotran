@@ -56,12 +56,12 @@ class TestDGM(unittest.TestCase):
 
         # Check that arrays were properly resized
         assert(pydgm.state.mg_phi.shape == (nL, nG, nC))
-        assert(pydgm.state.mg_source.shape == (nG, nC, nA))
+        assert(pydgm.state.mg_source.shape == (nG, nA, nC))
         assert(pydgm.state.mg_nu_sig_f.shape == (nG, nC))
         assert(pydgm.state.mg_sig_t.shape == (nG, nC))
         assert(pydgm.state.mg_chi.shape == (nG, nC))
         assert(pydgm.state.mg_sig_s.shape == (nL, nG, nG, nC))
-        assert(pydgm.state.mg_psi.shape == (nG, nC, nA))
+        assert(pydgm.state.mg_psi.shape == (nG, nA, nC))
         assert(pydgm.state.mg_incoming.shape == (nG, nA / 2))
 
     def test_dgm_test3(self):
@@ -118,12 +118,17 @@ class TestDGM(unittest.TestCase):
         pydgm.dgmsolver.compute_flux_moments()
 
         phi_m_test = np.array([[[2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
-                                [1.7320508075688776, 1.7320508075688776, 1.7320508075688776,
-                                 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776]]]).T
+                                [1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776]]]).T
         np.testing.assert_array_almost_equal(pydgm.dgm.phi_m_zero, phi_m_test, 12)
 
-        psi_m_test = 0.5 * np.array([[[2.0, 2.0, 2.0, 2.0]],
-                                     [[1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776]]])
+        psi_m_test = 0.5 * np.array([[[2.0],
+                                      [2.0],
+                                      [2.0],
+                                      [2.0]],
+                                     [[1.7320508075688776],
+                                      [1.7320508075688776],
+                                      [1.7320508075688776],
+                                      [1.7320508075688776]]])
 
         np.testing.assert_array_almost_equal(pydgm.dgm.psi_m_zero, psi_m_test, 12)
 
@@ -137,7 +142,7 @@ class TestDGM(unittest.TestCase):
 
         phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
         for a in range(4):
-            pydgm.state.psi[:, 0, a] = phi / 2
+            pydgm.state.psi[:, a, 0] = phi / 2
         basis = np.loadtxt('test/7gbasis').T
         test = basis.dot(phi) * 0.5
         test.resize(2, 4)
@@ -157,14 +162,14 @@ class TestDGM(unittest.TestCase):
 
         sig_t_m_test = np.array([[0.3760865],
                                  [1.0070863333333333]])
-        delta_m_test = np.array([[[[0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02],
-                                   [0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02],
-                                   [0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02],
-                                   [0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02]]],
-                                 [[[0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0],
-                                   [0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0],
-                                   [0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0],
-                                   [0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0]]]])
+        delta_m_test = np.array([[[[0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02]],
+                                  [[0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02]],
+                                  [[0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02]],
+                                  [[0.0, -0.12284241926631045, 0.00018900000000000167, 1.0668056713853770e-02]]],
+                                 [[[0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0]],
+                                  [[0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0]],
+                                  [[0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0]],
+                                  [[0.0, -4.8916473462696236e-01, 2.0934839066069319e-01, 0.0]]]])
 
         sig_s_m_test = np.array([[[[[0.35342781806, -0.12616159348403644, -0.04163098694, -0.004584591418129613]],
                                    [[0.0015106138853238885, 0.0018501166087033542, 0.0010681653220670792, 0.0]]],
@@ -222,14 +227,14 @@ class TestDGM(unittest.TestCase):
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
 
-        source_m_test = np.array([[[[2.0, 0.0, 0.0, 0.0],
-                                    [2.0, 0.0, 0.0, 0.0],
-                                    [2.0, 0.0, 0.0, 0.0],
-                                    [2.0, 0.0, 0.0, 0.0]]],
-                                  [[[1.7320508075688776, 0.0, 0.0, 0.0],
-                                    [1.7320508075688776, 0.0, 0.0, 0.0],
-                                    [1.7320508075688776, 0.0, 0.0, 0.0],
-                                    [1.7320508075688776, 0.0, 0.0, 0.0]]]])
+        source_m_test = np.array([[[[2.0, 0.0, 0.0, 0.0]],
+                                   [[2.0, 0.0, 0.0, 0.0]],
+                                   [[2.0, 0.0, 0.0, 0.0]],
+                                   [[2.0, 0.0, 0.0, 0.0]]],
+                                  [[[1.7320508075688776, 0.0, 0.0, 0.0]],
+                                   [[1.7320508075688776, 0.0, 0.0, 0.0]],
+                                   [[1.7320508075688776, 0.0, 0.0, 0.0]],
+                                   [[1.7320508075688776, 0.0, 0.0, 0.0]]]])
         chi_m_test = np.array([[[0.50000031545, 0.2595979010884317, -0.3848771845500001, -0.5216663031659152]],
                                [[0.0, 0.0, 0.0, 0.0]]])
 
@@ -285,7 +290,7 @@ class TestDGM2(unittest.TestCase):
 
         pydgm.state.phi = np.reshape(phi, (1, 7, 1), 'F')
         for a in range(4):
-            pydgm.state.psi[:, 0, a] = phi * 0.5
+            pydgm.state.psi[:, a, 0] = phi * 0.5
 
     def test_dgm_compute_flux_moments(self):
         ''' 
@@ -300,7 +305,7 @@ class TestDGM2(unittest.TestCase):
 
         psi_m_test = 0.5 * phi_m_test
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.dgm.psi_m_zero[:, 0, a].flatten(), psi_m_test, 12)
+            np.testing.assert_array_almost_equal(pydgm.dgm.psi_m_zero[:, a, 0].flatten(), psi_m_test, 12)
 
     def test_dgm_compute_xs_moments(self):
         '''
@@ -321,7 +326,7 @@ class TestDGM2(unittest.TestCase):
         for i in range(pydgm.dgm.expansion_order):
             pydgm.dgmsolver.slice_xs_moments(i)
             for a in range(4):
-                np.testing.assert_array_almost_equal(pydgm.dgm.delta_m[:, 0, a, i].flatten(), delta_m_test[:, i].flatten(), 12)
+                np.testing.assert_array_almost_equal(pydgm.dgm.delta_m[:, a, 0, i].flatten(), delta_m_test[:, i].flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.dgm.sig_s_m[:, :, :, :, i].flatten('F'), sig_s_m_test[:, :, i].flatten(), 12)
             np.testing.assert_array_almost_equal(pydgm.state.mg_sig_t.flatten(), sig_t_m_test)
             np.testing.assert_array_almost_equal(pydgm.state.mg_nu_sig_f.flatten(), nu_sig_f_m_test)
@@ -330,14 +335,14 @@ class TestDGM2(unittest.TestCase):
         '''
         Check that the source/chi moments are computed correctly
         '''
-        source_m_test = np.array([[[[2.0, 0.0, 0.0, 0.0],
-                                    [2.0, 0.0, 0.0, 0.0],
-                                    [2.0, 0.0, 0.0, 0.0],
-                                    [2.0, 0.0, 0.0, 0.0]]],
-                                  [[[1.7320508075688776, 0.0, 0.0, 0.0],
-                                    [1.7320508075688776, 0.0, 0.0, 0.0],
-                                    [1.7320508075688776, 0.0, 0.0, 0.0],
-                                    [1.7320508075688776, 0.0, 0.0, 0.0]]]])
+        source_m_test = np.array([[[[2.0, 0.0, 0.0, 0.0]],
+                                   [[2.0, 0.0, 0.0, 0.0]],
+                                   [[2.0, 0.0, 0.0, 0.0]],
+                                   [[2.0, 0.0, 0.0, 0.0]]],
+                                  [[[1.7320508075688776, 0.0, 0.0, 0.0]],
+                                   [[1.7320508075688776, 0.0, 0.0, 0.0]],
+                                   [[1.7320508075688776, 0.0, 0.0, 0.0]],
+                                   [[1.7320508075688776, 0.0, 0.0, 0.0]]]])
         chi_m_test = np.array([[[0.50000031545, 0.2595979010884317, -0.3848771845500001, -0.5216663031659152]],
                                [[0.0, 0.0, 0.0, 0.0]]])
 

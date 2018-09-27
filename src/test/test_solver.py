@@ -61,8 +61,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_inf_med_1g(self):
@@ -97,8 +97,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_inf_med_2g(self):
@@ -133,8 +133,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_inf_med_7g(self):
@@ -168,8 +168,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_2med_ref_1g(self):
@@ -203,8 +203,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_2med_ref_2g(self):
@@ -238,8 +238,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_2med_ref_7g(self):
@@ -276,8 +276,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenV1g(self):
@@ -318,8 +318,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenV2g(self):
@@ -359,8 +359,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenV7g(self):
@@ -399,8 +399,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR1g(self):
@@ -451,8 +451,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR2g(self):
@@ -503,8 +503,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR7g(self):
@@ -555,8 +555,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR1gPin(self):
@@ -598,8 +598,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR2gPin(self):
@@ -641,8 +641,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR7gPin(self):
@@ -683,8 +683,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, a]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, c, 2 * nAngles - a - 1]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_anisotropic_fixed_vacuum(self):
