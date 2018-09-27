@@ -33,22 +33,22 @@ module solver
     ! Fill multigroup arrays with the fine group data
     mg_mMap(:) = mMap(:)
     do r = 1, number_regions
-      mg_nu_sig_f(r,:) = nu_sig_f(:,r)
-      mg_chi(r,:) = chi(:,r)
+      mg_nu_sig_f(:,r) = nu_sig_f(:,r)
+      mg_chi(:,r) = chi(:,r)
       do l = 0, number_legendre
-        mg_sig_s(l,r,:,:) = sig_s(l,:,:,r)
+        mg_sig_s(l,:,:,r) = sig_s(l,:,:,r)
       end do
-      mg_sig_t(r,:) = sig_t(:,r)
+      mg_sig_t(:,r) = sig_t(:,r)
     end do
     mg_phi(:, :, :) = phi(:, :, :)
     if (store_psi) then
       mg_psi(:, :, :) = psi(:, :, :)
       ! Default the incoming flux to be equal to the outgoing if present
-      mg_incoming = psi(1, (number_angles + 1):, :)
+      mg_incoming = psi(:, 1, (number_angles + 1):)
     else
       ! Assume isotropic scalar flux for incident flux
       do a = 1, number_angles
-        mg_incoming(a, :) = phi(0, 1, :) / 2
+        mg_incoming(:, a) = phi(0, :, 1) / 2
       end do
     end if
 
@@ -76,7 +76,7 @@ module solver
         eigen_error     ! Error between successive iterations
     integer :: &
         eigen_count     ! Iteration counter
-    double precision, dimension(0:number_legendre, number_cells, number_groups) :: &
+    double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
         old_phi         ! Scalar flux from previous iteration
 
     ! Run eigen loop only if eigen problem
@@ -106,7 +106,7 @@ module solver
         ! Print output
         if (eigen_print > 0) then
           write(*, 1001) eigen_count, eigen_error, keff
-          1001 format ( "eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
           if (eigen_print > 1) then
             print *, mg_phi
           end if
@@ -123,7 +123,7 @@ module solver
         if (.not. ignore_warnings) then
           ! Warning if more iterations are required
           write(*, 1002) eigen_count
-          1002 format ('  eigen iteration did not converge in ', i4, ' iterations')
+          1002 format ('eigen iteration did not converge in ', i4, ' iterations')
         end if
       end if
     end if

@@ -53,9 +53,9 @@ module dgmsolver
         recon_count       ! Iteration counter
     double precision :: &
         recon_error       ! Error between successive iterations
-    double precision, dimension(0:number_legendre, number_cells, number_fine_groups) :: &
+    double precision, dimension(0:number_legendre, number_fine_groups, number_cells) :: &
         old_phi           ! Scalar flux from previous iteration
-    double precision, dimension(number_cells, 2 * number_angles, number_fine_groups) :: &
+    double precision, dimension(number_fine_groups, number_cells, 2 * number_angles) :: &
         old_psi           ! Angular flux from previous iteration
 
     if (present(bypass_arg)) then
@@ -139,7 +139,7 @@ module dgmsolver
     ! Do final normalization
     call normalize_flux(phi, psi)
 
-    ! Compute the fission density
+    ! Compute the fission density based on the fine-group flux
     call update_fission_density(.true.)
 
     if (recon_count == max_recon_iters) then
@@ -176,27 +176,24 @@ module dgmsolver
     integer :: &
         a,          & ! Angle index
         c,          & ! Cell index
-        cg,         & ! Coarse group index
         g,          & ! Fine group index
         an            ! Global angle index
     double precision :: &
         val           ! Variable to hold a double value
 
     ! Recover the angular flux from moments
-    do g = 1, number_fine_groups
-      ! Get the coarse group index
-      cg = energy_group_map(g)
-      do a = 1, number_angles * 2
-        ! legendre polynomial integration vector
-        an = merge(a, 2 * number_angles - a + 1, a <= number_angles)
-        M = wt(an) * p_leg(:,a)
-        do c = 1, number_cells
+    do a = 1, number_angles * 2
+      ! legendre polynomial integration vector
+      an = merge(a, 2 * number_angles - a + 1, a <= number_angles)
+      M = wt(an) * p_leg(:,a)
+      do c = 1, number_cells
+        do g = 1, number_fine_groups
           ! Unfold the moments
-          val = basis(g, order) * psi_moment(c, a, cg)
+          val = basis(g, order) * psi_moment(energy_group_map(g), c, a)
           if (store_psi) then
-            psi_new(c, a, g) = psi_new(c, a, g) + val
+            psi_new(g, c, a) = psi_new(g, c, a) + val
           end if
-          phi_new(:, c, g) = phi_new(:, c, g) + M(:) * val
+          phi_new(:, g, c) = phi_new(:, g, c) + M(:) * val
         end do
       end do
     end do
@@ -250,18 +247,23 @@ module dgmsolver
     phi_m_zero = 0.0
     psi_m_zero = 0.0
 
-    ! Get moments for the fluxes
-    do g = 1, number_fine_groups
-      cg = energy_group_map(g)
-      do a = 1, number_angles * 2
-        do c = 1, number_cells
-          ! Scalar flux
-          if (a == 1) then
-            phi_m_zero(:, c, cg) = phi_m_zero(:, c, cg) + basis(g, 0) * phi(:, c, g)
-          end if
-          ! Angular flux
-          psi_m_zero(c, a, cg) = psi_m_zero(c, a, cg) +  basis(g, 0) * psi(c, a, g)
+    ! Get moments for the Angular flux
+    do a = 1, number_angles * 2
+      do c = 1, number_cells
+        do g = 1, number_fine_groups
+          cg = energy_group_map(g)
+          psi_m_zero(cg, c, a) = psi_m_zero(cg, c, a) +  basis(g, 0) * psi(g, c, a)
         end do
+      end do
+    end do
+
+    !TODO: Integrate psi_m_zero over angle to get phi_m_zero
+
+    ! Get moments for the Scalar flux
+    do c = 1, number_cells
+      do g = 1, number_fine_groups
+        cg = energy_group_map(g)
+        phi_m_zero(:, cg, c) = phi_m_zero(:, cg, c) + basis(g, 0) * phi(:, g, c)
       end do
     end do
 
@@ -287,10 +289,10 @@ module dgmsolver
       cg       ! Coarse group index
 
     mg_incoming = 0.0
-    do g = 1, number_fine_groups
-      cg = energy_group_map(g)
-      do a = 1, number_angles
-        mg_incoming(a, cg) = mg_incoming(a, cg) + basis(g, order) * psi(1, a + number_angles, g)
+    do a = 1, number_angles
+      do g = 1, number_fine_groups
+        cg = energy_group_map(g)
+        mg_incoming(cg, a) = mg_incoming(cg, a) + basis(g, order) * psi(g, 1, a + number_angles)
       end do
     end do
 
@@ -350,7 +352,7 @@ module dgmsolver
                         d2m(0:delta_legendre_order, 2*number_angles), & ! discrete-to-moment
                         m2d(2*number_angles, 0:delta_legendre_order), & ! moment-to-discrete
                         moments(0:delta_legendre_order), &
-                        homog_phi(0:number_legendre, number_regions, number_groups) ! Homogenization container
+                        homog_phi(0:number_legendre, number_groups, number_regions) ! Homogenization container
 
     if (allocated(delta_m)) then
       deallocate(delta_m)
@@ -359,8 +361,8 @@ module dgmsolver
       deallocate(sig_s_m)
     end if
 
-    allocate(delta_m(number_regions, 2 * number_angles, number_groups, 0:expansion_order))
-    allocate(sig_s_m(0:number_legendre, number_regions, number_groups, number_groups, 0:expansion_order))
+    allocate(delta_m(number_groups, number_regions, 2 * number_angles, 0:expansion_order))
+    allocate(sig_s_m(0:number_legendre, number_groups, number_groups, number_regions, 0:expansion_order))
 
     ! initialize all moments and mg containers to zero
     sig_s_m = 0.0
@@ -372,51 +374,42 @@ module dgmsolver
     homog_phi = 0.0
     do c = 1, number_cells
       r = mg_mMap(c)
-      homog_phi(0:, r, :) = homog_phi(0:, r, :) + dx(c) * phi_m_zero(0:, c, :)
+      homog_phi(0:, :, r) = homog_phi(0:, :, r) + dx(c) * phi_m_zero(0:, :, c)
+    end do
+
+    ! Compute the total and fission moments
+    do c = 1, number_cells
+      do g = 1, number_fine_groups
+        cg = energy_group_map(g)
+        ! get the material for the current cell
+        mat = mMap(c)
+        r = mg_mMap(c)
+        ! Check if producing nan and not computing with a nan
+        if (phi_m_zero(0, cg, c) /= 0.0)  then
+          ! total cross section moment
+          mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(c) * basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / homog_phi(0, cg, r)
+          ! fission cross section moment
+          mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(c) * nu_sig_f(g, mat) * phi(0, g, c) / homog_phi(0, cg, r)
+        end if
+      end do
     end do
 
     do o = 0, expansion_order
-      do g = 1, number_fine_groups
-        cg = energy_group_map(g)
-        if (o == 0) then
-          do c = 1, number_cells
-            ! get the material for the current cell
-            mat = mMap(c)
-            r = mg_mMap(c)
-            ! Check if producing nan and not computing with a nan
-            if (phi_m_zero(0, c, cg) /= phi_m_zero(0, c, cg)) then
-              ! Detected NaN
-              if (.not. ignore_warnings) then
-                print *, "NaN detected, limiting"
-              end if
-              phi_m_zero(0, c, cg) = 1.0
-            else if (phi_m_zero(0, c, cg) /= 0.0)  then
-              ! total cross section moment
-              mg_sig_t(r, cg) = mg_sig_t(r, cg) + dx(c) * basis(g, 0) * sig_t(g, mat) * phi(0, c, g) / homog_phi(0, r, cg)
-              ! fission cross section moment
-              mg_nu_sig_f(r, cg) = mg_nu_sig_f(r, cg) + dx(c) * nu_sig_f(g, mat) * phi(0, c, g) / homog_phi(0, r, cg)
-            end if
-          end do
-        end if
+      do c = 1, number_cells
+        do g = 1, number_fine_groups
+          cg = energy_group_map(g)
 
-        ! Scattering cross section moment
-        do gp = 1, number_fine_groups
-          cgp = energy_group_map(gp)
-          do c = 1, number_cells
+          ! Scattering cross section moment
+          do gp = 1, number_fine_groups
+            cgp = energy_group_map(gp)
             ! get the material for the current cell
             mat = mMap(c)
             r = mg_mMap(c)
             do l = 0, number_legendre
               ! Check if producing nan
-              if (phi_m_zero(l, c, cgp) /= phi_m_zero(l, c, cgp)) then
-                ! Detected NaN
-                if (.not. ignore_warnings) then
-                  print *, "NaN detected, limiting"
-                end if
-                phi_m_zero(l, c, cgp) = 1.0
-              else if (phi_m_zero(l, c, cgp) /= 0.0) then
-                sig_s_m(l, r, cgp, cg, o) = sig_s_m(l, r, cgp, cg, o) &
-                                       + dx(c) * basis(g, o) * sig_s(l, gp, g, mat) * phi(l, c, gp) / homog_phi(l, r, cgp)
+              if (phi_m_zero(l, cgp, c) /= 0.0) then
+                sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
+                                       + dx(c) * basis(g, o) * sig_s(l, gp, g, mat) * phi(l, gp, c) / homog_phi(l, cgp, r)
               end if
             end do
           end do
@@ -428,9 +421,9 @@ module dgmsolver
         m2d = 0.0_8
 
         ! define discrete to moment, i.e., the integration
-        do l = 0, delta_legendre_order
-          do a = 1, number_angles
-            aa =  2 * number_angles - a + 1
+        do a = 1, number_angles
+          aa =  2 * number_angles - a + 1
+          do l = 0, delta_legendre_order
             ! int( P_l(mu) psi(mu), dmu)
             d2m(l, a) = wt(a) * legendre_p(l, mu(a)) * (2_8*l + 1_8)*0.5_8
             d2m(l, aa)= wt(a) * legendre_p(l, -mu(a))* (2_8*l + 1_8)*0.5_8
@@ -441,41 +434,40 @@ module dgmsolver
         end do
       end if
 
-      do g = 1, number_fine_groups
-        cg = energy_group_map(g)
-
-        ! Add angular total cross section moment (delta) to the external source
+      ! Add angular total cross section moment (delta) to the external source
+      do a = 1, number_angles * 2
         do c = 1, number_cells
-          ! If we are truncating the delta term, then first truncate
-          ! the angular flux (because the idea is that we would only store
-          ! the angular moments and then the discrete delta term would be
-          ! generated on the fly from the corresponding delta moments)
-          if (truncate_delta) then
+          do g = 1, number_fine_groups
+            cg = energy_group_map(g)
+            ! If we are truncating the delta term, then first truncate
+            ! the angular flux (because the idea is that we would only store
+            ! the angular moments and then the discrete delta term would be
+            ! generated on the fly from the corresponding delta moments)
 
-            moments = matmul(d2m, psi(c, :, g))
-            tmp_psi = matmul(m2d, moments)
+            !TODO Fix the delta approximation
+!            if (truncate_delta) then
+!
+!              moments = matmul(d2m, psi(g, c, :))
+!              tmp_psi = matmul(m2d, moments)
+!
+!              moments = matmul(d2m, psi_m_zero(cg, c, :))
+!              tmp_psi_m_zero = matmul(m2d, moments)
+!
+!            else
+!              tmp_psi(:) = psi(g, c, :)
+!              tmp_psi_m_zero(:) = psi_m_zero(cg, c, :)
+!            end if
+            ! get the material for the current cell
 
-            moments = matmul(d2m, psi_m_zero(c, :, cg))
-            tmp_psi_m_zero = matmul(m2d, moments)
 
-          else
-            tmp_psi(:) = psi(c, :, g)
-            tmp_psi_m_zero(:) = psi_m_zero(c, :, cg)
-          end if
-          ! get the material for the current cell
-          mat = mMap(c)
-          r = mg_mMap(c)
-          do a = 1, number_angles * 2
+            mat = mMap(c)
+            r = mg_mMap(c)
+
             ! Check if producing nan and not computing with a nan
-            if (tmp_psi_m_zero(a) /= tmp_psi_m_zero(a)) then
-              ! Detected NaN
-                if (.not. ignore_warnings) then
-                  print *, "NaN detected, limiting"
-                end if
-                psi_m_zero(c, a, cg) = 1.0
-            else if (psi_m_zero(c, a, cg) /= 0.0) then
-              delta_m(r, a, cg, o) = delta_m(r, a, cg, o) + dx(c) * basis(g, o) * (sig_t(g, mat) &
-                                  - mg_sig_t(r, cg)) * tmp_psi(a) / tmp_psi_m_zero(a) * phi_m_zero(0, c, cg) / homog_phi(0, r, cg)
+            if (psi_m_zero(cg, c, a) /= 0.0) then
+              delta_m(cg, r, a, o) = delta_m(cg, r, a, o) + dx(c) * basis(g, o) * (sig_t(g, mat) &
+                                  - mg_sig_t(cg, r)) * psi(g, c, a) / psi_m_zero(cg, c, a) &
+                                  * phi_m_zero(0, cg, c) / homog_phi(0, cg, r)
             end if
           end do
         end do
@@ -506,25 +498,25 @@ module dgmsolver
         cg,    & ! Coarse group index
         mat      ! Material index
 
-    allocate(chi_m(number_cells, number_groups, 0:expansion_order))
-    allocate(source_m(number_cells, number_angles * 2, number_groups, 0:expansion_order))
+    allocate(chi_m(number_groups, number_cells, 0:expansion_order))
+    allocate(source_m(number_groups, number_cells, number_angles * 2, 0:expansion_order))
 
     chi_m = 0.0
     source_m = 0.0
 
     do order = 0, expansion_order
-      do g = 1, number_fine_groups
-        cg = energy_group_map(g)
-        do a = 1, number_angles * 2
-          do c = 1, number_cells
-            mat = mMap(c)
+      do a = 1, number_angles * 2
+        do c = 1, number_cells
+          mat = mMap(c)
+          do g = 1, number_fine_groups
+            cg = energy_group_map(g)
+            ! chi moment
             if (a == 1) then
-              ! chi moment
-              chi_m(c, cg, order) = chi_m(c, cg, order) + basis(g, order) * chi(g, mat)
+              chi_m(cg, c, order) = chi_m(cg, c, order) + basis(g, order) * chi(g, mat)
             end if
 
             ! Source moment
-            source_m(c, a, cg, order) = source_m(c, a, cg, order) + basis(g, order) * mg_constant_source
+            source_m(cg, c, a, order) = source_m(cg, c, a, order) + basis(g, order) * mg_constant_source
           end do
         end do
       end do

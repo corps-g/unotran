@@ -13,12 +13,12 @@ module mg_solver
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
                         number_groups, number_cells, number_legendre, min_outer_iters, &
                         solver_type
-    use wg_solver, only : wg_solve
+    use sweeper, only : sweep
     use state, only : mg_phi, mg_psi, mg_incoming
     use dgm, only : dgm_order
 
     ! Variable definitions
-    double precision, dimension(0:number_legendre, number_cells, number_groups) :: &
+    double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
         phi_new              ! Save the previous scalar flux
     integer :: &
         outer_count,       & ! Counter for the outer loop
@@ -31,11 +31,8 @@ module mg_solver
 
     ! Begin loop to converge on the in-scattering source
     do outer_count = 1, max_outer_iters
-      ! Loop over the energy groups
-      do g = 1, number_groups
-        ! Solve the within group problem
-        call wg_solve(g, phi_new(:,:,g), mg_psi(:,:,g), mg_incoming(:,g))
-      end do
+      ! Sweep through the mesh
+      call sweep(phi_new, mg_psi, mg_incoming)
 
       ! Update the error
       outer_error = maxval(abs(phi_new - mg_phi))

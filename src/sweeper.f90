@@ -4,7 +4,7 @@ module sweeper
   
   contains
   
-  subroutine sweep(g, phi_g, psi_g, incident)
+  subroutine sweep(phi, psi, incident)
     ! ##########################################################################
     ! Sweep over each cell, angle, and octant
     ! ##########################################################################
@@ -13,19 +13,18 @@ module sweeper
     use angle, only : p_leg, wt, mu
     use mesh, only : dx
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
-                        number_legendre
+                        number_legendre, number_groups
     use state, only : mg_sig_t, sweep_count, mg_mMap
-    use sources, only : compute_within_group_source
+    use sources, only : compute_within_group_source, compute_in_source
 
     ! Variable definitions
-    integer, intent(in) :: &
-        g           ! Group index
+    double precision, intent(inout), dimension(:,:,:) :: &
+        phi,      & ! Scalar flux for current iteration and group g
+        psi         ! Angular flux for current iteration and group g
     double precision, intent(inout), dimension(:,:) :: &
-        phi_g,    & ! Scalar flux for current iteration and group g
-        psi_g       ! Angular flux for current iteration and group g
-    double precision, intent(inout), dimension(:) :: &
         incident    ! Angular flux incident on the cell in group g
     integer :: &
+        g,          & ! Group index
         o,          & ! Octant index
         c,          & ! Cell index
         mat,        & ! Material index
@@ -45,11 +44,14 @@ module sweeper
     logical :: &
         octant        ! Positive/Negative octant flag
 
+    ! Compute the into group sources for group g
+    call compute_in_source()
+
     ! Increment the sweep counter
     sweep_count = sweep_count + 1
 
     ! Reset phi
-    phi_g = 0.0
+    phi = 0.0
 
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction within the octant
@@ -60,7 +62,7 @@ module sweeper
       cmin = merge(1, number_cells, octant)
       cmax = merge(number_cells, 1, octant)
       cstep = merge(1, -1, octant)
-      
+
       ! set boundary conditions
       incident = boundary_type(o) * incident  ! Set albedo conditions
 
@@ -72,20 +74,25 @@ module sweeper
         M = wt(a) * p_leg(:, an)
 
         do c = cmin, cmax, cstep  ! Sweep over cells
-          mat = mg_mMap(c)
 
-          ! Get the source in this cell, group, and angle
-          source = compute_within_group_source(g, c, an)
+          ! Loop over the energy groups
+          do g = 1, number_groups
 
-          ! Use the specified equation.  Defaults to DD
-          call computeEQ(source, incident(a), mg_sig_t(mat, g), dx(c), mu(a), psi_center)
+            mat = mg_mMap(c)
 
-          if (store_psi) then
-            psi_g(c, an) = psi_center
-          end if
+            ! Get the source in this cell, group, and angle
+            source = compute_within_group_source(g, c, an)
 
-          ! Increment the legendre expansions of the scalar flux
-          phi_g(:, c) = phi_g(:, c) + M(:) * psi_center
+            ! Use the specified equation.  Defaults to DD
+            call computeEQ(source, incident(g, a), mg_sig_t(g, mat), dx(c), mu(a), psi_center)
+
+            if (store_psi) then
+              psi(g, c, an) = psi_center
+            end if
+
+            ! Increment the legendre expansions of the scalar flux
+            phi(:, g, c) = phi(:, g, c) + M(:) * psi_center
+          end do
         end do
       end do
     end do

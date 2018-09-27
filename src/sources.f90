@@ -7,20 +7,20 @@ module sources
 
   contains
 
-  subroutine compute_in_source(g)
+  subroutine compute_in_source
     ! ##########################################################################
     ! Compute the sources into group g from gp (excluding from g <- g)
     ! ##########################################################################
 
     ! Use Statements
     use state, only : mg_source, update_fission_density
-    use control, only : number_cells, number_angles, allow_fission, solver_type
+    use control, only : number_cells, number_angles, allow_fission, solver_type, &
+                        number_groups
     use dgm, only : dgm_order
 
     ! Variable definitions
-    integer, intent(in) :: &
-      g    ! Group index
     integer :: &
+      g, & ! Group index
       a, & ! Angle index
       c    ! Cell index
 
@@ -35,18 +35,20 @@ module sources
     end if
 
     ! Compute the source
-    do c = 1, number_cells
-      do a = 1, number_angles * 2
-        ! Add the external source
-        mg_source(c,a) = mg_source(c,a) + compute_external(g, c, a)
+    do a = 1, number_angles * 2
+      do c = 1, number_cells
+        do g = 1, number_groups
+          ! Add the external source
+          mg_source(g,c,a) = mg_source(g,c,a) + compute_external(g, c, a)
 
-        ! Add the fission source
-        if (allow_fission .or. solver_type == 'eigen') then
-          mg_source(c,a) = mg_source(c,a) + compute_fission(g, c)
-        end if
+          ! Add the fission source
+          if (allow_fission .or. solver_type == 'eigen') then
+            mg_source(g,c,a) = mg_source(g,c,a) + compute_fission(g, c)
+          end if
 
-        ! Add the scatter source
-        mg_source(c,a) = mg_source(c,a) + compute_in_scatter(g, c, a)
+          ! Add the scatter source
+          mg_source(g,c,a) = mg_source(g,c,a) + compute_in_scatter(g, c, a)
+        end do
       end do
     end do
 
@@ -70,7 +72,7 @@ module sources
       source ! source for group g, cell c, and angle a
 
     ! Get the sources into group g
-    source = mg_source(c,a)
+    source = mg_source(g,c,a)
 
     ! Add the scatter source
     source = source + compute_within_group_scatter(g, c, a)
@@ -101,7 +103,7 @@ module sources
       source ! Source for group g
 
     if (use_DGM) then
-      source = source_m(c,a,g,dgm_order)
+      source = source_m(g,c,a,dgm_order)
     else
       source = mg_constant_source
     end if
@@ -134,20 +136,22 @@ module sources
       source   ! Source for group g, cell c, and angle a
 
     source = 0.0
+
+    m = mg_mMap(c)
+
     do gp = 1, number_groups
       ! Ignore the within-group terms
       if (g == gp) then
         cycle
       end if
 
-      m = mg_mMap(c)
       do l = 0, number_legendre
         if (use_DGM .and. dgm_order > 0) then
-          phi = phi_m_zero(l,c,gp)
+          phi = phi_m_zero(l,gp,c)
         else
-          phi = mg_phi(l,c,gp)
+          phi = mg_phi(l,gp,c)
         end if
-        source = source + 0.5 * p_leg(l,a) * mg_sig_s(l,m,gp,g) * phi
+        source = source + 0.5 * p_leg(l,a) * mg_sig_s(l,gp,g,m) * phi
       end do
     end do
 
@@ -181,11 +185,11 @@ module sources
     m = mg_mMap(c)
     do l = 0, number_legendre
       if (use_DGM .and. dgm_order > 0) then
-        phi = phi_m_zero(l,c,g)
+        phi = phi_m_zero(l,g,c)
       else
-        phi = mg_phi(l,c,g)
+        phi = mg_phi(l,g,c)
       end if
-      source = source + 0.5 * p_leg(l,a) * mg_sig_s(l,m,g,g) * phi
+      source = source + 0.5 * p_leg(l,a) * mg_sig_s(l,g,g,m) * phi
     end do
 
   end function compute_within_group_scatter
@@ -209,7 +213,7 @@ module sources
     double precision :: &
       source   ! Source for group g
 
-    source = 0.5 * mg_chi(mg_mMap(c),g) * mg_density(c) / keff
+    source = 0.5 * mg_chi(g,mg_mMap(c)) * mg_density(c) / keff
 
   end function compute_fission
 
@@ -231,7 +235,7 @@ module sources
       source   ! Source for group g
 
 
-    source = -delta_m(mg_mMap(c),a,g,dgm_order) * psi_m_zero(c,a,g)
+    source = -delta_m(g,mg_mMap(c),a,dgm_order) * psi_m_zero(g,c,a)
 
   end function compute_delta
 

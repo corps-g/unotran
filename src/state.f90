@@ -10,13 +10,13 @@ module state
   double precision, allocatable, dimension(:,:,:) :: &
       psi,         & ! Angular flux
       phi,         & ! Scalar Flux
+      mg_source,   & ! External source mg container
       mg_phi,      & ! Scalar flux mg container
       mg_psi         ! Angular flux mg container
   double precision, allocatable, dimension(:,:) :: &
       mg_nu_sig_f, & ! Fission cross section mg container (times nu)
       mg_chi,      & ! Chi spectrum mg container
       mg_sig_t,    & ! Scalar total cross section mg container
-      mg_source,   & ! External source mg container
       mg_incoming    ! Angular flux incident on the current cell
   double precision, allocatable, dimension(:) :: &
       mg_density     ! Fission density
@@ -93,7 +93,7 @@ module state
     sweep_count = 0
 
     ! Allocate the scalar flux and source containers
-    allocate(phi(0:number_legendre, number_cells, number_fine_groups))
+    allocate(phi(0:number_legendre, number_fine_groups, number_cells))
     ! Initialize phi
     ! Attempt to read file or use default if file does not exist
     open(unit = 10, status='old', file=initial_phi, form='unformatted', iostat=ios)
@@ -105,9 +105,9 @@ module state
         phi = 1.0  ! default value
       else if (solver_type == 'eigen') then
         phi = 0.0
-        do g = 1, number_fine_groups
-          do c = 1, number_cells
-            phi(0, c, g) = nu_sig_f(g, mMap(c))
+        do c = 1, number_cells
+          do g = 1, number_fine_groups
+            phi(0, g, c) = nu_sig_f(g, mMap(c))
           end do
         end do
       end if
@@ -118,7 +118,7 @@ module state
 
     ! Only allocate psi if the option is to store psi
     if (store_psi) then
-      allocate(psi(number_cells, 2 * number_angles, number_fine_groups))
+      allocate(psi(number_fine_groups, number_cells, 2 * number_angles))
 
       ! Initialize psi
       ! Attempt to read file or use default if file does not exist
@@ -133,10 +133,10 @@ module state
         else
           ! default to isotropic distribution
           psi = 0.0
-          do g = 1, number_fine_groups
-            do a = 1, 2 * number_angles
-              do c = 1, number_cells
-                psi(c, a, g) = phi(0, c, g) / 2
+          do a = 1, 2 * number_angles
+            do c = 1, number_cells
+              do g = 1, number_fine_groups
+                psi(g, c, a) = phi(0, g, c) / 2
               end do
             end do
           end do
@@ -148,7 +148,7 @@ module state
     end if
 
     ! Initialize the angular flux incident on the boundary
-    allocate(mg_incoming(number_angles, number_groups))
+    allocate(mg_incoming(number_groups, number_angles))
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen
     if (solver_type == 'fixed') then
@@ -167,14 +167,14 @@ module state
     call normalize_flux(phi, psi)
 
     ! Size the mg containers to be fine/coarse group for non/DGM problems
-    allocate(mg_source(number_cells, 2 * number_angles))
-    allocate(mg_nu_sig_f(number_regions, number_groups))
-    allocate(mg_sig_t(number_regions, number_groups))
-    allocate(mg_phi(0:number_legendre, number_cells, number_groups))
-    allocate(mg_chi(number_regions, number_groups))
-    allocate(mg_sig_s(0:number_legendre, number_regions, number_groups, number_groups))
+    allocate(mg_source(number_groups, number_cells, 2 * number_angles))
+    allocate(mg_nu_sig_f(number_groups, number_regions))
+    allocate(mg_sig_t(number_groups, number_regions))
+    allocate(mg_phi(0:number_legendre, number_groups, number_cells))
+    allocate(mg_chi(number_groups, number_regions))
+    allocate(mg_sig_s(0:number_legendre, number_groups, number_groups, number_regions))
     if (store_psi) then
-      allocate(mg_psi(number_cells, 2 * number_angles, number_groups))
+      allocate(mg_psi(number_groups, number_cells, 2 * number_angles))
     end if
 
   end subroutine initialize_state
@@ -283,9 +283,10 @@ module state
         number_groups  ! Number of energy groups
 
     if (solver_type == 'eigen') then
-      number_groups = size(phi(1,1,:))
+      ! This Legendre order is 1 indexed instead of zero indexed
+      number_groups = size(phi(1,:,1))
 
-      norm_frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
+      norm_frac = sum(abs(phi(1,:,:))) / (number_groups * number_cells)
 
       ! normalize phi
       phi = phi / norm_frac
@@ -335,25 +336,23 @@ module state
     ! Sum the fission reaction rate over groups for each cell
     if (fine_flag_val) then
       ! Compute fission density using fine flux
-      do g = 1, number_fine_groups
-        do c = 1, number_cells
-          mg_density(c) = mg_density(c) + nu_sig_f(g, mMap(c)) * phi(0,c,g)
+      do c = 1, number_cells
+        do g = 1, number_fine_groups
+          mg_density(c) = mg_density(c) + nu_sig_f(g, mMap(c)) * phi(0,g,c)
         end do
       end do
     else if (use_DGM .and. dgm_order > 0) then
       ! Compute the fission density using the mg_flux for higher moments
-      do g = 1, number_groups
-        f = mg_nu_sig_f(:, g)
-        do c = 1, number_cells
-          mg_density(c) = mg_density(c) + f(mg_mMap(c)) * phi_m_zero(0,c,g)
+      do c = 1, number_cells
+        do g = 1, number_groups
+          mg_density(c) = mg_density(c) + mg_nu_sig_f(g, mg_mMap(c)) * phi_m_zero(0,g,c)
         end do
       end do
     else
       ! Compute the fission density using the mg_flux normally
-      do g = 1, number_groups
-        f = mg_nu_sig_f(:, g)
-        do c = 1, number_cells
-          mg_density(c) = mg_density(c) + f(mg_mMap(c)) * mg_phi(0,c,g)
+      do c = 1, number_cells
+        do g = 1, number_groups
+          mg_density(c) = mg_density(c) + mg_nu_sig_f(g, mg_mMap(c)) * mg_phi(0,g,c)
         end do
       end do
     end if

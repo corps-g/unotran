@@ -90,8 +90,8 @@ module dgm
     expansion_order = MAXVAL(order)
 
     ! Form the containers to hold the zeroth moments
-    allocate(phi_m_zero(0:number_legendre, number_cells, number_coarse_groups))
-    allocate(psi_m_zero(number_cells, 2 * number_angles, number_coarse_groups))
+    allocate(phi_m_zero(0:number_legendre, number_coarse_groups, number_cells))
+    allocate(psi_m_zero(number_coarse_groups, number_cells, 2 * number_angles))
 
   end subroutine initialize_moments
 
