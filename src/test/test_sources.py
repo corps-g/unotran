@@ -65,15 +65,16 @@ class TestSOURCES(unittest.TestCase):
 
     def test_compute_in_source(self):
         test = [0.652227008050471, 0.500632062529093, 0.5007291251]
+        pydgm.sources.compute_in_source()
+
         for g in range(3):
-            pydgm.sources.compute_in_source(g + 1)
-            source = pydgm.state.mg_source
+            source = pydgm.state.mg_source[g]
             np.testing.assert_array_almost_equal(source, np.ones((1, 4)) * test[g], 12, 'Failed for g={}'.format(g + 1))
 
     def test_compute_within_group_source(self):
         test = [0.7902346527, 0.727303576229, 0.6419223436]
+        pydgm.sources.compute_in_source()
         for g in range(3):
-            pydgm.sources.compute_in_source(g + 1)
             for a in range(pydgm.control.number_angles * 2):
                 for c in range(pydgm.control.number_cells):
                     source = pydgm.sources.compute_within_group_source(g + 1, c + 1, a + 1)
@@ -107,7 +108,7 @@ class TestSOURCESdgm(unittest.TestCase):
         pydgm.control.legendre_order = 0
         pydgm.control.use_dgm = True
         pydgm.control.xs_name = 'test/4gXS.anlxs'.ljust(256)
-        pydgm.control.energy_group_map = [2]
+        pydgm.control.energy_group_map = [1, 1, 2, 2]
         pydgm.control.dgm_basis_name = 'test/4gbasis'.ljust(256)
 
         # Initialize the dependancies
@@ -158,15 +159,15 @@ class TestSOURCESdgm(unittest.TestCase):
 
     def test_compute_in_source(self):
         test = [0.7308361050009999, 0.707343815354]
+        pydgm.sources.compute_in_source()
         for g in range(2):
-            pydgm.sources.compute_in_source(g + 1)
-            source = pydgm.state.mg_source
+            source = pydgm.state.mg_source[g]
             np.testing.assert_array_almost_equal(source, np.ones((1, 4)) * test[g], 12, 'Failed for g={}'.format(g + 1))
 
     def test_compute_within_group_source(self):
         test = [0.837139816124, 0.949152758925]
+        pydgm.sources.compute_in_source()
         for g in range(2):
-            pydgm.sources.compute_in_source(g + 1)
             for a in range(pydgm.control.number_angles * 2):
                 for c in range(pydgm.control.number_cells):
                     source = pydgm.sources.compute_within_group_source(g + 1, c + 1, a + 1)

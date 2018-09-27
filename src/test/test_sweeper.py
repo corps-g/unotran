@@ -76,52 +76,6 @@ class TestSWEEPER(unittest.TestCase):
         self.assertAlmostEqual(inc[0], 0.5373061574106336, 12)
         self.assertAlmostEqual(Ps, 0.5373061574106336, 12)
 
-    def test_sweeper_sweep_R(self):
-        '''
-        Test the sweep through cells and angles with reflecting conditions and DD
-        '''
-        g = 1
-        nA = pydgm.control.number_angles
-        for a in range(2 * nA):
-            for c in range(pydgm.control.number_cells):
-                pydgm.state.mg_source[c, a] = 0.5 * 1.2760152893
-                pydgm.state.mg_source[c, a] = 1.2760152893 - pydgm.sources.compute_within_group_source(g, c + 1, a + 1)
-
-        phi_g = np.array([1.0])
-        psi_g = np.ones((1, 4), order='F') * 0.5
-        incident = np.ones((2), order='F') * 0.5
-
-        pydgm.sweeper.sweep(g, phi_g, psi_g, incident)
-
-        np.testing.assert_array_almost_equal(phi_g, 2.4702649838962234, 12)
-        psi_test = np.array([0.74789724066688767, 1.0164427642376821, 1.7463807889213092, 1.1738899625537731])
-        np.testing.assert_array_almost_equal(psi_g.flatten(), psi_test, 12)
-        np.testing.assert_array_almost_equal(incident, [1.3519854437737708, 1.9598760493672542])
-
-    def test_sweeper_sweep_V(self):
-        '''
-        Test the sweep through cells and angles with vacuum conditions and DD
-        '''
-
-        pydgm.control.boundary_type = [0.0, 0.0]
-        g = 1
-        nA = pydgm.control.number_angles
-        for a in range(2 * nA):
-            for c in range(pydgm.control.number_cells):
-                pydgm.state.mg_source[c, a] = 0.5 * 1.2760152893
-                pydgm.state.mg_source[c, a] = 1.2760152893 - pydgm.sources.compute_within_group_source(g, c + 1, a + 1)
-
-        phi_g = np.array([1.0])
-        psi_g = np.ones((1, 4), order='F') * 0.5
-        incident = np.ones((2), order='F') * 0.5
-
-        pydgm.sweeper.sweep(g, phi_g, psi_g, incident)
-
-        np.testing.assert_array_almost_equal(phi_g, 1.0863050345964158, 12)
-        psi_test = np.array([0.31829108536954637, 0.6630938187058939, 0.6630938187058939, 0.31829108536954637])
-        np.testing.assert_array_almost_equal(psi_g.flatten(), psi_test, 12)
-        np.testing.assert_array_almost_equal(incident, [0.6365821707390927, 1.3261876374117878])
-
     def tearDown(self):
         pydgm.solver.finalize_solver()
         pydgm.control.finalize_control()
