@@ -35,7 +35,6 @@ module control
   integer :: &
       angle_order,                & ! Number of angles per octant
       angle_option,               & ! Quadrature option [gl=0, dgl=1]
-      legendre_order=-1,          & ! Anisotropic scattering order
       max_recon_iters=1000,       & ! Maximum iterations for recon loop
       max_eigen_iters=1000,       & ! Maximum iterations for eigen loop
       max_outer_iters=1000,       & ! Maximum iterations for outer loop
@@ -55,7 +54,8 @@ module control
       eigen_print=1,              & ! Enable/Disable eigen iteration printing
       outer_print=1,              & ! Enable/Disable outer iteration printing
       inner_print=0,              & ! Enable/Disable inner iteration printing
-      delta_legendre_order=1        ! Legendre order for truncated expansion of delta term
+      scatter_legendre_order=-1,  & ! Legendre order for anisotropic scattering
+      delta_legendre_order=-1       ! Legendre order for truncated expansion of delta term
   logical :: &
       allow_fission=.false.,      & ! Enable/Disable fission in the problem
       use_dgm=.false.,            & ! Enable/Disable DGM solver
@@ -184,8 +184,8 @@ module control
           solver_type=trim(adjustl(buffer))
         case ('source')
           read(buffer, *, iostat=ios) source_value
-        case ('legendre_order')
-          read(buffer, *, iostat=ios) legendre_order
+        case ('scatter_legendre_order')
+          read(buffer, *, iostat=ios) scatter_legendre_order
         case ('max_recon_iters')
           read(buffer, *, iostat=ios) max_recon_iters
         case ('max_eigen_iters')
@@ -251,10 +251,10 @@ module control
     print *, '  max_inner_iters    = ', max_inner_iters
     print *, '  lambda             = ', lamb
     print *, '  ignore_warnings    = ', ignore_warnings
-    if (legendre_order > -1) then
-      print *, '  legendre_order     = ', legendre_order
+    if (scatter_legendre_order > -1) then
+      print *, '  scatter_order      = ', scatter_legendre_order
     else
-      print *, '  legendre_order     = DEFAULT'
+      print *, '  scatter_order     = DEFAULT'
     end if
     if (use_DGM) then
       print *, 'DGM OPTIONS'

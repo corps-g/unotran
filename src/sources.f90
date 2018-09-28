@@ -118,7 +118,7 @@ module sources
     ! Use Statements
     use state, only : mg_mMap, mg_phi, mg_sig_s
     use angle, only : p_leg
-    use control, only : number_legendre, number_groups, use_DGM
+    use control, only : scatter_legendre_order, number_groups, use_DGM
     use dgm, only : dgm_order, phi_m_zero
 
     ! Variable definitions
@@ -145,7 +145,7 @@ module sources
         cycle
       end if
 
-      do l = 0, number_legendre
+      do l = 0, scatter_legendre_order
         if (use_DGM .and. dgm_order > 0) then
           phi = phi_m_zero(l,gp,c)
         else
@@ -165,7 +165,7 @@ module sources
     ! Use Statements
     use state, only : mg_mMap, mg_phi, mg_sig_s
     use angle, only : p_leg
-    use control, only : number_legendre, use_DGM
+    use control, only : scatter_legendre_order, use_DGM
     use dgm, only : dgm_order, phi_m_zero
 
     ! Variable definitions
@@ -183,7 +183,7 @@ module sources
 
     source = 0.0
     m = mg_mMap(c)
-    do l = 0, number_legendre
+    do l = 0, scatter_legendre_order
       if (use_DGM .and. dgm_order > 0) then
         phi = phi_m_zero(l,g,c)
       else

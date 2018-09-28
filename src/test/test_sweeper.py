@@ -25,7 +25,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.control.equation_type = 'DD'
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = True
-        pydgm.control.legendre_order = 0
+        pydgm.control.scatter_legendre_order = 0
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.legendre_order = 0

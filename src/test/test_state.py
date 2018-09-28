@@ -29,7 +29,7 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 0.0
         pydgm.control.equation_type = 'DD'
-        pydgm.control.legendre_order = 0
+        pydgm.control.scatter_legendre_order = 0
         pydgm.control.use_DGM = False
 
     def test_state_initialize(self):

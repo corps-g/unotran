@@ -26,7 +26,7 @@ class TestMATERIAL(unittest.TestCase):
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
-        pydgm.control.legendre_order = 8
+        pydgm.control.scatter_legendre_order = 7
         pydgm.control.use_DGM = False
 
         # Initialize the dependancies
@@ -45,7 +45,7 @@ class TestMATERIAL(unittest.TestCase):
         self.assertEqual(pydgm.control.number_coarse_groups, 7)
 
         # Test the number of legendre moments
-        self.assertEqual(pydgm.control.number_legendre, 8)
+        self.assertEqual(pydgm.control.number_legendre, 7)
 
         # Test the energy bounds
         ebounds_test = [1.0e+37, 4.0, 2.0e-01, 3.0e-03, 4.0e-05, 5.0e-07, 6.0e-09, 0.0]
@@ -82,4 +82,3 @@ class TestMATERIAL(unittest.TestCase):
 if __name__ == '__main__':
 
     unittest.main()
-

@@ -25,7 +25,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.use_dgm = True
         pydgm.control.store_psi = True
         pydgm.control.equation_type = 'DD'
-        pydgm.control.legendre_order = 0
+        pydgm.control.scatter_legendre_order = 0
         pydgm.control.ignore_warnings = True
         pydgm.control.max_recon_iters = 10000
         pydgm.control.max_eigen_iters = 1000

@@ -325,34 +325,31 @@ module dgmsolver
     use control, only : number_angles, number_fine_groups, number_cells, &
                         number_legendre, number_groups, ignore_warnings, &
                         delta_legendre_order, truncate_delta, number_regions, &
-                        energy_group_map
+                        energy_group_map, scatter_legendre_order
     use state, only : mg_sig_t, mg_nu_sig_f, phi, psi, mg_mMap
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap, dx
     use dgm, only : phi_m_zero, psi_m_zero, basis, sig_s_m, delta_m, expansion_order
-    use angle, only : mu, wt, legendre_p
+    use angle, only : mu, wt, p_leg
 
     ! Variable definitions
     integer :: &
-        o,   & ! Order index
-        a,   & ! Angle index
-        aa,  & ! Temporary angle index (negative half space)
-        c,   & ! Cell index
-        cg,  & ! Outer coarse group index
-        cgp, & ! Inner coarse group index
-        g,   & ! Outer fine group index
-        gp,  & ! Inner fine group index
-        l,   & ! Legendre moment index
-        r,   & ! Region index
-        mat    ! Material index
-
-    ! temporary containers to study angle approximation
-    double precision :: tmp_psi(2 * number_angles), &                   ! temporary angular
-                        tmp_psi_m_zero(2 * number_angles), &            ! flux arrays
-                        d2m(0:delta_legendre_order, 2*number_angles), & ! discrete-to-moment
-                        m2d(2*number_angles, 0:delta_legendre_order), & ! moment-to-discrete
-                        moments(0:delta_legendre_order), &
-                        homog_phi(0:number_legendre, number_groups, number_regions) ! Homogenization container
+        o,           & ! Order index
+        a,           & ! Angle index
+        c,           & ! Cell index
+        cg,          & ! Outer coarse group index
+        cgp,         & ! Inner coarse group index
+        g,           & ! Outer fine group index
+        gp,          & ! Inner fine group index
+        l,           & ! Legendre moment index
+        r,           & ! Region index
+        ord,         & ! Delta truncation order
+        mat            ! Material index
+    double precision :: &
+        tmp_psi,     & ! temporary angular
+        tmp_psi_m_zero ! flux arrays
+    double precision, dimension(0:number_legendre, number_groups, number_regions) :: &
+        homog_phi      ! Homogenization container
 
     if (allocated(delta_m)) then
       deallocate(delta_m)
@@ -362,7 +359,7 @@ module dgmsolver
     end if
 
     allocate(delta_m(number_groups, 2 * number_angles, number_regions, 0:expansion_order))
-    allocate(sig_s_m(0:number_legendre, number_groups, number_groups, number_regions, 0:expansion_order))
+    allocate(sig_s_m(0:scatter_legendre_order, number_groups, number_groups, number_regions, 0:expansion_order))
 
     ! initialize all moments and mg containers to zero
     sig_s_m = 0.0
@@ -405,7 +402,7 @@ module dgmsolver
             ! get the material for the current cell
             mat = mMap(c)
             r = mg_mMap(c)
-            do l = 0, number_legendre
+            do l = 0, scatter_legendre_order
               ! Check if producing nan
               if (phi_m_zero(l, cgp, c) /= 0.0) then
                 sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
@@ -416,57 +413,31 @@ module dgmsolver
         end do
       end do
 
-      ! set up angular approximation containers if warranted.
-      if (truncate_delta) then
-        m2d = 0.0_8
-
-        ! define discrete to moment, i.e., the integration
-        do a = 1, number_angles
-          aa =  2 * number_angles - a + 1
-          do l = 0, delta_legendre_order
-            ! int( P_l(mu) psi(mu), dmu)
-            d2m(l, a) = wt(a) * legendre_p(l, mu(a)) * (2_8*l + 1_8)*0.5_8
-            d2m(l, aa)= wt(a) * legendre_p(l, -mu(a))* (2_8*l + 1_8)*0.5_8
-            ! psi(mu) ~ (1/2) phi_0 * P_0(mu) + (3/2) phi_1 P_1(mu) + ...
-            m2d(a, l) = legendre_p(l, mu(a))
-            m2d(aa, l) = legendre_p(l, -mu(a))
-          end do
-        end do
-      end if
-
+      ord = delta_legendre_order
       ! Add angular total cross section moment (delta) to the external source
       do c = 1, number_cells
+        ! If we are truncating the delta term, then first truncate
+        ! the angular flux (because the idea is that we would only store
+        ! the angular moments and then the discrete delta term would be
+        ! generated on the fly from the corresponding delta moments)
+
         do a = 1, number_angles * 2
           do g = 1, number_fine_groups
             cg = energy_group_map(g)
-            ! If we are truncating the delta term, then first truncate
-            ! the angular flux (because the idea is that we would only store
-            ! the angular moments and then the discrete delta term would be
-            ! generated on the fly from the corresponding delta moments)
-
-            !TODO Fix the delta approximation
-!            if (truncate_delta) then
-!
-!              moments = matmul(d2m, psi(g, c, :))
-!              tmp_psi = matmul(m2d, moments)
-!
-!              moments = matmul(d2m, psi_m_zero(cg, c, :))
-!              tmp_psi_m_zero = matmul(m2d, moments)
-!
-!            else
-!              tmp_psi(:) = psi(g, c, :)
-!              tmp_psi_m_zero(:) = psi_m_zero(cg, c, :)
-!            end if
             ! get the material for the current cell
-
-
             mat = mMap(c)
             r = mg_mMap(c)
-
+            if (truncate_delta) then
+              tmp_psi = dot_product(p_leg(:ord, a), phi(:ord, g, c))
+              tmp_psi_m_zero = dot_product(p_leg(:ord, a), phi_m_zero(:ord, cg, c))
+            else
+              tmp_psi = psi(g, a, c)
+              tmp_psi_m_zero = psi_m_zero(cg, a, c)
+            end if
             ! Check if producing nan and not computing with a nan
-            if (psi_m_zero(cg, a, c) /= 0.0) then
+            if (tmp_psi_m_zero /= 0.0) then
               delta_m(cg, a, r, o) = delta_m(cg, a, r, o) + dx(c) * basis(g, o) * (sig_t(g, mat) &
-                                  - mg_sig_t(cg, r)) * psi(g, a, c) / psi_m_zero(cg, a, c) &
+                                  - mg_sig_t(cg, r)) * tmp_psi / tmp_psi_m_zero &
                                   * phi_m_zero(0, cg, c) / homog_phi(0, cg, r)
             end if
           end do

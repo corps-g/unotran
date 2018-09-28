@@ -27,7 +27,7 @@ class TestMG_SOLVER(unittest.TestCase):
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
-        pydgm.control.legendre_order = 0
+        pydgm.control.scatter_legendre_order = 0
         pydgm.control.max_inner_iters = 1
         pydgm.control.max_outer_iters = 20000
 

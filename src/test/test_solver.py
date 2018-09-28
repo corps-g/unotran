@@ -29,7 +29,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.equation_type = 'DD'
-        pydgm.control.legendre_order = 0
+        pydgm.control.scatter_legendre_order = 0
         pydgm.control.use_DGM = False
         pydgm.control.max_eigen_iters = 1000
         pydgm.control.max_outer_iters = 1000
@@ -693,7 +693,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [2, 1, 2]
         pydgm.control.xs_name = 'test/aniso.anlxs'.ljust(256)
         pydgm.control.angle_order = 4
-        pydgm.control.legendre_order = 1
+        pydgm.control.scatter_legendre_order = 1
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -729,7 +729,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/2g_symmetric.anlxs'.ljust(256)
         pydgm.control.angle_order = 4
-        pydgm.control.legendre_order = 1
+        pydgm.control.scatter_legendre_order = 1
         pydgm.control.boundary_type = [0.0, 0.0]
 
         # Initialize the dependancies
@@ -749,7 +749,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [2, 1, 2]
         pydgm.control.xs_name = 'test/aniso.anlxs'.ljust(256)
         pydgm.control.angle_order = 4
-        pydgm.control.legendre_order = 1
+        pydgm.control.scatter_legendre_order = 1
         pydgm.control.boundary_type = [1.0, 1.0]
 
         # Initialize the dependancies

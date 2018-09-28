@@ -40,7 +40,8 @@ module state
                         use_DGM, ignore_warnings, initial_keff, initial_phi, &
                         initial_psi, number_angles, number_cells, number_legendre, &
                         solver_type, source_value, store_psi, check_inputs, &
-                        verify_control, homogenization_map, number_regions
+                        verify_control, homogenization_map, number_regions, &
+                        scatter_legendre_order, delta_legendre_order
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials
@@ -56,6 +57,11 @@ module state
     ! Initialize the sub-modules
     ! read the material cross sections
     call create_material()
+    ! Determine the Legendre order of phi to store
+    if (delta_legendre_order /= -1) then
+      delta_legendre_order = scatter_legendre_order
+    end if
+    number_legendre = max(delta_legendre_order, scatter_legendre_order)
     ! Verify the inputs
     if (verify_control) then
       call check_inputs()
@@ -172,7 +178,7 @@ module state
     allocate(mg_sig_t(number_groups, number_regions))
     allocate(mg_phi(0:number_legendre, number_groups, number_cells))
     allocate(mg_chi(number_groups, number_regions))
-    allocate(mg_sig_s(0:number_legendre, number_groups, number_groups, number_regions))
+    allocate(mg_sig_s(0:scatter_legendre_order, number_groups, number_groups, number_regions))
     if (store_psi) then
       allocate(mg_psi(number_groups, 2 * number_angles, number_cells))
     end if
