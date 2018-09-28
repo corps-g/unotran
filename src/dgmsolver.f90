@@ -416,11 +416,6 @@ module dgmsolver
       ord = delta_legendre_order
       ! Add angular total cross section moment (delta) to the external source
       do c = 1, number_cells
-        ! If we are truncating the delta term, then first truncate
-        ! the angular flux (because the idea is that we would only store
-        ! the angular moments and then the discrete delta term would be
-        ! generated on the fly from the corresponding delta moments)
-
         do a = 1, number_angles * 2
           do g = 1, number_fine_groups
             cg = energy_group_map(g)
@@ -428,6 +423,10 @@ module dgmsolver
             mat = mMap(c)
             r = mg_mMap(c)
             if (truncate_delta) then
+              ! If we are truncating the delta term, then first truncate
+              ! the angular flux (because the idea is that we would only store
+              ! the angular moments and then the discrete delta term would be
+              ! generated on the fly from the corresponding delta moments)
               tmp_psi = dot_product(p_leg(:ord, a), phi(:ord, g, c))
               tmp_psi_m_zero = dot_product(p_leg(:ord, a), phi_m_zero(:ord, cg, c))
             else

@@ -41,7 +41,7 @@ module state
                         initial_psi, number_angles, number_cells, number_legendre, &
                         solver_type, source_value, store_psi, check_inputs, &
                         verify_control, homogenization_map, number_regions, &
-                        scatter_legendre_order, delta_legendre_order
+                        scatter_legendre_order, delta_legendre_order, truncate_delta
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials
@@ -72,7 +72,6 @@ module state
     call initialize_angle()
     ! get the basis vectors
     call initialize_polynomials()
-
     ! Initialize the constant source
     mg_constant_source = 0.5 * source_value
 
@@ -80,6 +79,9 @@ module state
     number_groups = number_fine_groups
     number_regions = number_materials
     if (use_DGM) then
+      if (.not. truncate_delta) then
+        store_psi = .true.
+      end if
       ! Initialize DGM moments
       call initialize_moments()
       call initialize_basis()

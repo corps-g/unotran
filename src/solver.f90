@@ -68,7 +68,7 @@ module solver
                       phi, psi, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
-                        use_DGM, min_eigen_iters
+                        use_DGM, min_eigen_iters, store_psi
     use dgm, only : dgm_order
 
     ! Variable definitions
@@ -130,7 +130,9 @@ module solver
 
     if (.not. use_dgm) then
       phi = mg_phi
-      psi = mg_psi
+      if (store_psi) then
+        psi = mg_psi
+      end if
 
       ! Compute the fission density
       call update_fission_density()
