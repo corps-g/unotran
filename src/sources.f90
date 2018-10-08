@@ -7,15 +7,15 @@ module sources
 
   contains
 
-  subroutine compute_in_source
+  subroutine compute_source
     ! ##########################################################################
-    ! Compute the sources into group g from gp (excluding from g <- g)
+    ! Compute the sources into group g from gp
     ! ##########################################################################
 
     ! Use Statements
     use state, only : mg_source, update_fission_density
     use control, only : number_cells, number_angles, allow_fission, solver_type, &
-                        number_groups
+                        number_groups, use_DGM
     use dgm, only : dgm_order
 
     ! Variable definitions
@@ -47,14 +47,19 @@ module sources
           end if
 
           ! Add the scatter source
-          mg_source(g,a,c) = mg_source(g,a,c) + compute_in_scatter(g, c, a)
+          mg_source(g,a,c) = mg_source(g,a,c) + compute_scatter(g, c, a)
+
+          ! Add the delta source if DGM
+          if (use_DGM) then
+            mg_source(g,a,c) = mg_source(g,a,c) + compute_delta(g, c, a)
+          end if
         end do
       end do
     end do
 
-  end subroutine compute_in_source
+  end subroutine compute_source
 
-  function compute_within_group_source(g, c, a) result(source)
+  function get_source(g, c, a) result(source)
     ! ##########################################################################
     ! Compute the sources into group g from g in cell c and angle a
     ! ##########################################################################
@@ -74,15 +79,7 @@ module sources
     ! Get the sources into group g
     source = mg_source(g,a,c)
 
-    ! Add the scatter source
-    source = source + compute_within_group_scatter(g, c, a)
-
-    ! Add the delta source if DGM and not higher moment
-    if (use_DGM) then
-      source = source + compute_delta(g, c, a)
-    end if
-
-  end function compute_within_group_source
+  end function get_source
 
   function compute_external(g, c, a) result(source)
     ! ##########################################################################
@@ -110,9 +107,9 @@ module sources
 
   end function compute_external
 
-  function compute_in_scatter(g, c, a) result(source)
+  function compute_scatter(g, c, a) result(source)
     ! ##########################################################################
-    ! Compute the scatter source into group g from gp (excluding from g <- g)
+    ! Compute the scatter source into group g from gp
     ! ##########################################################################
 
     ! Use Statements
@@ -129,70 +126,24 @@ module sources
       a,     & ! Angle index
       c,     & ! Cell index
       l,     & ! Legendre index
+      ord,   & ! short name for scatter_legendre_order
       m        ! Material index
-    double precision :: &
-      phi      ! Scalar flux container
+    double precision, dimension(0:scatter_legendre_order, number_groups) :: &
+      sigphi      ! Scalar flux container
     double precision :: &
       source   ! Source for group g, cell c, and angle a
 
-    source = 0.0
+    ord = scatter_legendre_order
 
-    m = mg_mMap(c)
+    if (use_DGM .and. dgm_order > 0) then
+      sigphi(:,:) = phi_m_zero(0:ord,:,c) * mg_sig_s(:,:,g,mg_mMap(c))
+    else
+      sigphi(:,:) = mg_phi(0:ord,:,c) * mg_sig_s(:,:,g,mg_mMap(c))
+    end if
 
-    do gp = 1, number_groups
-      ! Ignore the within-group terms
-      if (g == gp) then
-        cycle
-      end if
+    source = 0.5 * sum(matmul(p_leg(:ord,a), sigphi))
 
-      do l = 0, scatter_legendre_order
-        if (use_DGM .and. dgm_order > 0) then
-          phi = phi_m_zero(l,gp,c)
-        else
-          phi = mg_phi(l,gp,c)
-        end if
-        source = source + 0.5 * p_leg(l,a) * mg_sig_s(l,gp,g,m) * phi
-      end do
-    end do
-
-  end function compute_in_scatter
-
-  function compute_within_group_scatter(g, c, a) result(source)
-    ! ##########################################################################
-    ! Compute the scatter source into group g from g
-    ! ##########################################################################
-
-    ! Use Statements
-    use state, only : mg_mMap, mg_phi, mg_sig_s
-    use angle, only : p_leg
-    use control, only : scatter_legendre_order, use_DGM
-    use dgm, only : dgm_order, phi_m_zero
-
-    ! Variable definitions
-    integer, intent(in) :: &
-      g,     & ! Group index
-      a,     & ! Angle index
-      c        ! Cell index
-    integer :: &
-      l,     & ! Legendre index
-      m        ! Material index
-    double precision :: &
-      phi      ! Scalar flux container
-    double precision :: &
-      source   ! Source for group g, cell c, and angle a
-
-    source = 0.0
-    m = mg_mMap(c)
-    do l = 0, scatter_legendre_order
-      if (use_DGM .and. dgm_order > 0) then
-        phi = phi_m_zero(l,g,c)
-      else
-        phi = mg_phi(l,g,c)
-      end if
-      source = source + 0.5 * p_leg(l,a) * mg_sig_s(l,g,g,m) * phi
-    end do
-
-  end function compute_within_group_scatter
+  end function compute_scatter
 
   function compute_fission(g, c) result(source)
     ! ##########################################################################
@@ -233,7 +184,6 @@ module sources
       c        ! Cell index
     double precision :: &
       source   ! Source for group g
-
 
     source = -delta_m(g,a,mg_mMap(c),dgm_order) * psi_m_zero(g,a,c)
 

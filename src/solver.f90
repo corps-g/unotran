@@ -106,7 +106,7 @@ module solver
         ! Print output
         if (eigen_print > 0) then
           write(*, 1001) eigen_count, eigen_error, keff
-          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f14.10)
           if (eigen_print > 1) then
             print *, mg_phi
           end if

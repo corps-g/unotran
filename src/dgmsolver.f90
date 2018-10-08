@@ -232,16 +232,22 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_fine_groups, number_cells, energy_group_map
+    use control, only : number_angles, number_fine_groups, number_cells, &
+                        energy_group_map, delta_legendre_order, truncate_delta
     use state, only : phi, psi
     use dgm, only : phi_m_zero, psi_m_zero, basis
+    use angle, only : p_leg
 
     ! Variable definitions
     integer :: &
-        a,   & ! Angle index
-        c,   & ! Cell index
-        cg,  & ! Outer coarse group index
-        g      ! Outer fine group index
+        a,    & ! Angle index
+        c,    & ! Cell index
+        cg,   & ! Outer coarse group index
+        ord,  & ! Delta truncation order
+        g       ! Outer fine group index
+    double precision :: &
+        tmp_psi ! temporary angular
+
 
     ! initialize all moments to zero
     phi_m_zero = 0.0
@@ -252,7 +258,18 @@ module dgmsolver
       do a = 1, number_angles * 2
         do g = 1, number_fine_groups
           cg = energy_group_map(g)
-          psi_m_zero(cg, a, c) = psi_m_zero(cg, a, c) +  basis(g, 0) * psi(g, a, c)
+
+          if (truncate_delta) then
+            ! If we are truncating the delta term, then first truncate
+            ! the angular flux (because the idea is that we would only store
+            ! the angular moments and then the discrete delta term would be
+            ! generated on the fly from the corresponding delta moments)
+            tmp_psi = dot_product(p_leg(:ord, a), phi(:ord, g, c))
+          else
+            tmp_psi = psi(g, a, c)
+          end if
+
+          psi_m_zero(cg, a, c) = psi_m_zero(cg, a, c) + basis(g, 0) * tmp_psi
         end do
       end do
     end do

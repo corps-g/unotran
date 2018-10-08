@@ -15,7 +15,7 @@ module sweeper
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
                         number_legendre, number_groups
     use state, only : mg_sig_t, sweep_count, mg_mMap
-    use sources, only : compute_within_group_source, compute_in_source
+    use sources, only : get_source, compute_source
 
     ! Variable definitions
     double precision, intent(inout), dimension(:,:,:) :: &
@@ -45,7 +45,7 @@ module sweeper
         octant        ! Positive/Negative octant flag
 
     ! Compute the into group sources for group g
-    call compute_in_source()
+    call compute_source()
 
     ! Increment the sweep counter
     sweep_count = sweep_count + 1
@@ -80,7 +80,7 @@ module sweeper
             mat = mg_mMap(c)
 
             ! Get the source in this cell, group, and angle
-            source = compute_within_group_source(g, c, an)
+            source = get_source(g, c, an)
 
             ! Use the specified equation.  Defaults to DD
             call computeEQ(source, incident(g, a), mg_sig_t(g, mat), dx(c), mu(a), psi_center)
