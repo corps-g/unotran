@@ -293,7 +293,7 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups, energy_group_map
-    use state, only : mg_incoming
+    use state, only : mg_incident
     use dgm, only : basis
 
     ! Variable definitions
@@ -305,11 +305,11 @@ module dgmsolver
       g,     & ! Fine group index
       cg       ! Coarse group index
 
-    mg_incoming = 0.0
+    mg_incident = 0.0
     do a = 1, number_angles
       do g = 1, number_fine_groups
         cg = energy_group_map(g)
-        mg_incoming(cg, a) = mg_incoming(cg, a) + basis(g, order) * psi(g, a + number_angles, 1)
+        mg_incident(cg, a) = mg_incident(cg, a) + basis(g, order) * psi(g, a + number_angles, 1)
       end do
     end do
 
@@ -486,26 +486,27 @@ module dgmsolver
         mat      ! Material index
 
     allocate(chi_m(number_groups, number_cells, 0:expansion_order))
-    allocate(source_m(number_groups, number_angles * 2, number_cells, 0:expansion_order))
+    allocate(source_m(number_groups, 0:expansion_order))
 
     chi_m = 0.0
     source_m = 0.0
 
+    ! chi moment
     do order = 0, expansion_order
       do c = 1, number_cells
         mat = mMap(c)
-        do a = 1, number_angles * 2
-          do g = 1, number_fine_groups
-            cg = energy_group_map(g)
-            ! chi moment
-            if (a == 1) then
-              chi_m(cg, c, order) = chi_m(cg, c, order) + basis(g, order) * chi(g, mat)
-            end if
-
-            ! Source moment
-            source_m(cg, a, c, order) = source_m(cg, a, c, order) + basis(g, order) * mg_constant_source
-          end do
+        do g = 1, number_fine_groups
+          cg = energy_group_map(g)
+          chi_m(cg, c, order) = chi_m(cg, c, order) + basis(g, order) * chi(g, mat)
         end do
+      end do
+    end do
+
+    ! Source moment
+    do order = 0, expansion_order
+      do g = 1, number_fine_groups
+        cg = energy_group_map(g)
+        source_m(cg, order) = source_m(cg, order) + basis(g, order) * mg_constant_source
       end do
     end do
 

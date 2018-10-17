@@ -10,14 +10,14 @@ module state
   double precision, allocatable, dimension(:,:,:) :: &
       psi,         & ! Angular flux
       phi,         & ! Scalar Flux
-      mg_source,   & ! External source mg container
       mg_phi,      & ! Scalar flux mg container
       mg_psi         ! Angular flux mg container
   double precision, allocatable, dimension(:,:) :: &
       mg_nu_sig_f, & ! Fission cross section mg container (times nu)
       mg_chi,      & ! Chi spectrum mg container
+      mg_source,   & ! External source mg container
       mg_sig_t,    & ! Scalar total cross section mg container
-      mg_incoming    ! Angular flux incident on the current cell
+      mg_incident    ! Angular flux incident on the current cell
   double precision, allocatable, dimension(:) :: &
       mg_density     ! Fission density
   integer, allocatable, dimension(:) :: &
@@ -156,7 +156,7 @@ module state
     end if
 
     ! Initialize the angular flux incident on the boundary
-    allocate(mg_incoming(number_groups, number_angles))
+    allocate(mg_incident(number_groups, number_angles))
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen
     if (solver_type == 'fixed') then
@@ -175,7 +175,7 @@ module state
     call normalize_flux(phi, psi)
 
     ! Size the mg containers to be fine/coarse group for non/DGM problems
-    allocate(mg_source(number_groups, 2 * number_angles, number_cells))
+    allocate(mg_source(number_groups, number_cells))
     allocate(mg_nu_sig_f(number_groups, number_regions))
     allocate(mg_sig_t(number_groups, number_regions))
     allocate(mg_phi(0:number_legendre, number_groups, number_cells))
@@ -232,8 +232,8 @@ module state
     if (allocated(mg_sig_t)) then
       deallocate(mg_sig_t)
     end if
-    if (allocated(mg_incoming)) then
-      deallocate(mg_incoming)
+    if (allocated(mg_incident)) then
+      deallocate(mg_incident)
     end if
     if (allocated(mg_density)) then
       deallocate(mg_density)
@@ -395,7 +395,7 @@ module state
     end if
 
     ! incoming
-    print *, 'incident = ', mg_incoming
+    print *, 'incident = ', mg_incident
 
     ! k
     print *, 'k = ', keff

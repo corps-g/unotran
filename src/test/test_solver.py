@@ -20,10 +20,8 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.allow_fission = False
         pydgm.control.eigen_print = False
         pydgm.control.outer_print = False
-        pydgm.control.inner_print = False
         pydgm.control.eigen_tolerance = 1e-15
         pydgm.control.outer_tolerance = 1e-16
-        pydgm.control.inner_tolerance = 1e-16
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'fixed'.ljust(256)
@@ -31,15 +29,13 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.equation_type = 'DD'
         pydgm.control.scatter_legendre_order = 0
         pydgm.control.use_DGM = False
-        pydgm.control.max_eigen_iters = 1000
+        pydgm.control.max_eigen_iters = 10000
         pydgm.control.max_outer_iters = 1000
-        pydgm.control.max_inner_iters = 1
 
     def test_solver_vacuum1(self):
         ''' 
         Test fixed source problem with vacuum conditions
         '''
-
         # Activate fissioning
         pydgm.control.allow_fission = True
 

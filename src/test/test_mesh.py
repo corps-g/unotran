@@ -19,9 +19,7 @@ class TestMESH(unittest.TestCase):
         pydgm.control.boundary_type = [0.0, 0.0]
         pydgm.control.allow_fission = False
         pydgm.control.outer_print = False
-        pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
-        pydgm.control.inner_tolerance = 1e-14
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = False
         pydgm.control.solver_type = 'fixed'.ljust(256)

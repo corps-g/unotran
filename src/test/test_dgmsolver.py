@@ -16,11 +16,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.recon_print = False
         pydgm.control.eigen_print = False
         pydgm.control.outer_print = False
-        pydgm.control.inner_print = False
         pydgm.control.recon_tolerance = 1e-14
         pydgm.control.eigen_tolerance = 1e-14
         pydgm.control.outer_tolerance = 1e-15
-        pydgm.control.inner_tolerance = 1e-15
         pydgm.control.lamb = 1.0
         pydgm.control.use_dgm = True
         pydgm.control.store_psi = True
@@ -30,7 +28,6 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.max_recon_iters = 10000
         pydgm.control.max_eigen_iters = 1000
         pydgm.control.max_outer_iters = 100
-        pydgm.control.max_inner_iters = 1
 
     # Define methods to set various variables for the tests
 

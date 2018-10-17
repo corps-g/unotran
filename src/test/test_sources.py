@@ -19,9 +19,7 @@ class TestSOURCES(unittest.TestCase):
         pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.allow_fission = True
         pydgm.control.outer_print = False
-        pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
-        pydgm.control.inner_tolerance = 1e-14
         pydgm.control.equation_type = 'DD'
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = False
@@ -34,11 +32,9 @@ class TestSOURCES(unittest.TestCase):
         pydgm.solver.initialize_solver()
 
     def test_compute_external(self):
-        for c in range(pydgm.control.number_cells):
-            for a in range(pydgm.control.number_angles * 2):
-                for g in range(3):
-                    source = pydgm.sources.compute_external(g + 1, c + 1, a + 1)
-                    np.testing.assert_array_almost_equal(source, 0.5, 12, 'Failed for g={} c={} a={}'.format(g + 1, c + 1, a + 1))
+        for g in range(3):
+            source = pydgm.sources.compute_external(g + 1)
+            np.testing.assert_array_almost_equal(source, 0.5, 12, 'Failed for g={}'.format(g + 1))
 
     def test_compute_scatter(self):
         test = [0.13800764465, 0.22725192965, 0.1419223436]
@@ -56,20 +52,20 @@ class TestSOURCES(unittest.TestCase):
                 np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={} c={}'.format(g + 1, c + 1))
 
     def test_compute_source(self):
-        test = [0.790234652700471, 0.7273035762290929, 0.6419223436]
+        test = [0.652227008050471, 0.500051646579093, 0.5]
         pydgm.sources.compute_source()
 
         for g in range(3):
             source = pydgm.state.mg_source[g]
-            np.testing.assert_array_almost_equal(source, np.ones((4, 1)) * test[g], 12, 'Failed for g={}'.format(g + 1))
+            np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
 
-    def get_source(self):
+    def test_add_transport_sources(self):
         test = [0.7902346527, 0.727303576229, 0.6419223436]
         pydgm.sources.compute_source()
         for c in range(pydgm.control.number_cells):
             for a in range(pydgm.control.number_angles * 2):
                 for g in range(3):
-                    source = pydgm.sources.get_source(g + 1, c + 1, a + 1)
+                    source = pydgm.sources.add_transport_sources(g + 1, c + 1, a + 1)
                     np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
 
     def tearDown(self):
@@ -112,11 +108,9 @@ class TestSOURCESdgm(unittest.TestCase):
         pydgm.state.update_fission_density()
 
     def test_compute_external(self):
-        for c in range(pydgm.control.number_cells):
-            for a in range(pydgm.control.number_angles * 2):
-                for g in range(2):
-                    source = pydgm.sources.compute_external(g + 1, c + 1, a + 1)
-                    np.testing.assert_array_almost_equal(source, 0.707106781187, 12, 'Failed for g={} c={} a={}'.format(g + 1, c + 1, a + 1))
+        for g in range(2):
+            source = pydgm.sources.compute_external(g + 1)
+            np.testing.assert_array_almost_equal(source, 0.707106781187, 12, 'Failed for g={}'.format(g + 1))
 
     def test_compute_scatter(self):
         test = [0.109164720667, 0.24180894357]
@@ -142,19 +136,19 @@ class TestSOURCESdgm(unittest.TestCase):
                     np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={} c={}'.format(g + 1, c + 1))
 
     def test_compute_source(self):
-        test = [0.8371398161229999, 0.9491527589240001]
+        test = [0.727975095456, 0.707343815354]
         pydgm.sources.compute_source()
         for g in range(2):
             source = pydgm.state.mg_source[g]
-            np.testing.assert_array_almost_equal(source, np.ones((4, 1)) * test[g], 12, 'Failed for g={}'.format(g + 1))
+            np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
 
-    def test_get_source(self):
+    def test_add_transport_sources(self):
         test = [0.837139816124, 0.949152758925]
         pydgm.sources.compute_source()
         for c in range(pydgm.control.number_cells):
             for a in range(pydgm.control.number_angles * 2):
                 for g in range(2):
-                    source = pydgm.sources.get_source(g + 1, c + 1, a + 1)
+                    source = pydgm.sources.add_transport_sources(g + 1, c + 1, a + 1)
                     np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
 
     def tearDown(self):

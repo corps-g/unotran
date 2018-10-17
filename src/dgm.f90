@@ -6,14 +6,14 @@ module dgm
   implicit none
 
   double precision, allocatable, dimension(:,:) :: &
-      basis                   ! Basis for expansion in energy
+      basis,                & ! Basis for expansion in energy
+      source_m                ! Source moments
   double precision, allocatable, dimension(:,:,:) :: &
       chi_m,                & ! Chi spectrum moments
       phi_m_zero,           & ! Zeroth moment of scalar flux
       psi_m_zero              ! Zeroth moment of angular flux
   double precision, allocatable, dimension(:,:,:,:) :: &
-      delta_m,              & ! Angular total XS moments
-      source_m                ! Source moments
+      delta_m                 ! Angular total XS moments
   double precision, allocatable, dimension(:,:,:,:,:) :: &
       sig_s_m                 ! Scattering XS moments
   integer :: &

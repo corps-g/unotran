@@ -13,32 +13,29 @@ module mg_solver
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
                         number_groups, number_cells, number_legendre, min_outer_iters, &
                         solver_type
-    use sweeper, only : sweep
-    use state, only : mg_phi, mg_psi, mg_incoming
+    use sources, only : compute_source
+    use sweeper, only : apply_transport_operator
+    use state, only : mg_phi, mg_psi, mg_incident, mg_source
     use dgm, only : dgm_order
 
     ! Variable definitions
-    double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
-        phi_new              ! Save the previous scalar flux
     integer :: &
-        outer_count,       & ! Counter for the outer loop
-        g                    ! Group index
+        outer_count, & ! Counter for the outer loop
+        g              ! Group index
     double precision :: &
-        outer_error          ! Residual error between iterations
-
-    ! Save the scalar flux from previous iteration
-    phi_new = mg_phi
+        outer_error    ! Residual error between iterations
 
     ! Begin loop to converge on the in-scattering source
     do outer_count = 1, max_outer_iters
-      ! Sweep through the mesh
-      call sweep(phi_new, mg_psi, mg_incoming)
 
-      ! Update the error
-      outer_error = maxval(abs(phi_new - mg_phi))
+      ! Update the forcing function
+      call compute_source()
 
       ! Update the scalar flux
-      mg_phi = phi_new
+      call apply_transport_operator(mg_phi)
+
+      ! Update the error
+      outer_error = maxval(abs(mg_phi(0,:,:) - mg_source(:,:)))
 
       ! Check for NaN during convergence
       if (outer_error /= outer_error) then

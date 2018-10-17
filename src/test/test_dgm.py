@@ -23,9 +23,7 @@ class TestDGM(unittest.TestCase):
         pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.allow_fission = True
         pydgm.control.outer_print = False
-        pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
-        pydgm.control.inner_tolerance = 1e-14
         pydgm.control.energy_group_map = [1, 1, 1, 1, 2, 2, 2]
         pydgm.control.use_dgm = True
         pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
@@ -56,13 +54,13 @@ class TestDGM(unittest.TestCase):
 
         # Check that arrays were properly resized
         assert(pydgm.state.mg_phi.shape == (nL, nG, nC))
-        assert(pydgm.state.mg_source.shape == (nG, nA, nC))
+        assert(pydgm.state.mg_source.shape == (nG, nC))
         assert(pydgm.state.mg_nu_sig_f.shape == (nG, nC))
         assert(pydgm.state.mg_sig_t.shape == (nG, nC))
         assert(pydgm.state.mg_chi.shape == (nG, nC))
         assert(pydgm.state.mg_sig_s.shape == (nL, nG, nG, nC))
         assert(pydgm.state.mg_psi.shape == (nG, nA, nC))
-        assert(pydgm.state.mg_incoming.shape == (nG, nA / 2))
+        assert(pydgm.state.mg_incident.shape == (nG, nA / 2))
 
     def test_dgm_test3(self):
         '''
@@ -150,7 +148,7 @@ class TestDGM(unittest.TestCase):
         for i in range(4):
             pydgm.dgmsolver.compute_incoming_flux(i, pydgm.state.psi)
             for a in range(2):
-                np.testing.assert_array_almost_equal(pydgm.state.mg_incoming[:, a], test[:, i], 12)
+                np.testing.assert_array_almost_equal(pydgm.state.mg_incident[:, a], test[:, i], 12)
 
     def test_dgm_compute_xs_moments(self):
         '''
@@ -227,21 +225,15 @@ class TestDGM(unittest.TestCase):
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
 
-        source_m_test = np.array([[[[2.0, 0.0, 0.0, 0.0]],
-                                   [[2.0, 0.0, 0.0, 0.0]],
-                                   [[2.0, 0.0, 0.0, 0.0]],
-                                   [[2.0, 0.0, 0.0, 0.0]]],
-                                  [[[1.7320508075688776, 0.0, 0.0, 0.0]],
-                                   [[1.7320508075688776, 0.0, 0.0, 0.0]],
-                                   [[1.7320508075688776, 0.0, 0.0, 0.0]],
-                                   [[1.7320508075688776, 0.0, 0.0, 0.0]]]])
+        source_m_test = np.array([[2.0, 0.0, 0.0, 0.0],
+                                  [1.7320508075688776, 0.0, 0.0, 0.0]])
         chi_m_test = np.array([[[0.50000031545, 0.2595979010884317, -0.3848771845500001, -0.5216663031659152]],
                                [[0.0, 0.0, 0.0, 0.0]]])
 
         pydgm.dgmsolver.compute_flux_moments()
 
         for i in range(pydgm.dgm.expansion_order + 1):
-            np.testing.assert_array_almost_equal(pydgm.dgm.source_m[:, :, :, i], source_m_test[:, :, :, i], 12)
+            np.testing.assert_array_almost_equal(pydgm.dgm.source_m[:, i], source_m_test[:, i], 12)
             np.testing.assert_array_almost_equal(pydgm.dgm.chi_m[:, :, i], chi_m_test[:, :, i])
 
     def tearDown(self):
@@ -335,21 +327,15 @@ class TestDGM2(unittest.TestCase):
         '''
         Check that the source/chi moments are computed correctly
         '''
-        source_m_test = np.array([[[[2.0, 0.0, 0.0, 0.0]],
-                                   [[2.0, 0.0, 0.0, 0.0]],
-                                   [[2.0, 0.0, 0.0, 0.0]],
-                                   [[2.0, 0.0, 0.0, 0.0]]],
-                                  [[[1.7320508075688776, 0.0, 0.0, 0.0]],
-                                   [[1.7320508075688776, 0.0, 0.0, 0.0]],
-                                   [[1.7320508075688776, 0.0, 0.0, 0.0]],
-                                   [[1.7320508075688776, 0.0, 0.0, 0.0]]]])
+        source_m_test = np.array([[2.0, 0.0, 0.0, 0.0],
+                                  [1.7320508075688776, 0.0, 0.0, 0.0]])
         chi_m_test = np.array([[[0.50000031545, 0.2595979010884317, -0.3848771845500001, -0.5216663031659152]],
                                [[0.0, 0.0, 0.0, 0.0]]])
 
         pydgm.dgmsolver.compute_flux_moments()
 
         for i in range(pydgm.dgm.expansion_order + 1):
-            np.testing.assert_array_almost_equal(pydgm.dgm.source_m[:, :, :, i], source_m_test[:, :, :, i], 12)
+            np.testing.assert_array_almost_equal(pydgm.dgm.source_m[:, i], source_m_test[:, i], 12)
             np.testing.assert_array_almost_equal(pydgm.dgm.chi_m[:, :, i], chi_m_test[:, :, i])
 
     def tearDown(self):

@@ -15,7 +15,7 @@ module solver
 
     ! Use Statements
     use state, only : initialize_state, mg_nu_sig_f, mg_chi, mg_sig_s, mg_sig_t, &
-                      mg_phi, phi, mg_psi, psi, mg_incoming, mg_mMap, &
+                      mg_phi, phi, mg_psi, psi, mg_incident, mg_mMap, &
                       update_fission_density
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
@@ -44,11 +44,11 @@ module solver
     if (store_psi) then
       mg_psi(:, :, :) = psi(:, :, :)
       ! Default the incoming flux to be equal to the outgoing if present
-      mg_incoming = psi(:, (number_angles + 1):, 1)
+      mg_incident = psi(:, (number_angles + 1):, 1)
     else
       ! Assume isotropic scalar flux for incident flux
       do a = 1, number_angles
-        mg_incoming(:, a) = phi(0, :, 1) / 2
+        mg_incident(:, a) = phi(0, :, 1) / 2
       end do
     end if
 
@@ -78,6 +78,8 @@ module solver
         eigen_count     ! Iteration counter
     double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
         old_phi         ! Scalar flux from previous iteration
+    double precision, dimension(number_cells) :: &
+        density_old
 
     ! Run eigen loop only if eigen problem
     if (solver_type == 'fixed' .or. dgm_order > 0) then

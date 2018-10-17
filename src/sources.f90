@@ -7,7 +7,7 @@ module sources
 
   contains
 
-  subroutine compute_source
+  subroutine compute_source()
     ! ##########################################################################
     ! Compute the sources into group g from gp
     ! ##########################################################################
@@ -36,30 +36,20 @@ module sources
 
     ! Compute the source
     do c = 1, number_cells
-      do a = 1, number_angles * 2
-        do g = 1, number_groups
-          ! Add the external source
-          mg_source(g,a,c) = mg_source(g,a,c) + compute_external(g, c, a)
+      do g = 1, number_groups
+        ! Add the external source
+        mg_source(g,c) = mg_source(g,c) + compute_external(g)
 
-          ! Add the fission source
-          if (allow_fission .or. solver_type == 'eigen') then
-            mg_source(g,a,c) = mg_source(g,a,c) + compute_fission(g, c)
-          end if
-
-          ! Add the scatter source
-          mg_source(g,a,c) = mg_source(g,a,c) + compute_scatter(g, c, a)
-
-          ! Add the delta source if DGM
-          if (use_DGM) then
-            mg_source(g,a,c) = mg_source(g,a,c) + compute_delta(g, c, a)
-          end if
-        end do
+        ! Add the fission source
+        if (allow_fission .or. solver_type == 'eigen') then
+          mg_source(g,c) = mg_source(g,c) + compute_fission(g, c)
+        end if
       end do
     end do
 
   end subroutine compute_source
 
-  function get_source(g, c, a) result(source)
+  function add_transport_sources(g, c, a) result(source)
     ! ##########################################################################
     ! Compute the sources into group g from g in cell c and angle a
     ! ##########################################################################
@@ -77,11 +67,19 @@ module sources
       source ! source for group g, cell c, and angle a
 
     ! Get the sources into group g
-    source = mg_source(g,a,c)
+    source = mg_source(g, c)
 
-  end function get_source
+    ! Add the scatter source
+    source = source + compute_scatter(g, c, a)
 
-  function compute_external(g, c, a) result(source)
+    ! Add the delta source if DGM
+    if (use_DGM) then
+      source = source + compute_delta(g, c, a)
+    end if
+
+  end function add_transport_sources
+
+  function compute_external(g) result(source)
     ! ##########################################################################
     ! Compute the external and fixed sources into group g
     ! ##########################################################################
@@ -93,14 +91,12 @@ module sources
 
     ! Variable definitions
     integer, intent(in) :: &
-      g,   & ! Group index
-      a,   & ! Angle index
-      c      ! Cell index
+      g      ! Group index
     double precision :: &
       source ! Source for group g
 
     if (use_DGM) then
-      source = source_m(g,a,c,dgm_order)
+      source = source_m(g,dgm_order)
     else
       source = mg_constant_source
     end if

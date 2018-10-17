@@ -21,14 +21,12 @@ class TestMG_SOLVER(unittest.TestCase):
         pydgm.control.outer_print = 0
         pydgm.control.inner_print = 0
         pydgm.control.outer_tolerance = 1e-16
-        pydgm.control.inner_tolerance = 1e-16
         pydgm.control.equation_type = 'DD'
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = False
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.scatter_legendre_order = 0
-        pydgm.control.max_inner_iters = 1
         pydgm.control.max_outer_iters = 20000
 
         # Initialize the dependancies
@@ -47,7 +45,7 @@ class TestMG_SOLVER(unittest.TestCase):
                                   [3.4573080885032477, 3.4573080885032477]])
 
         phi = pydgm.state.mg_phi
-        incident = pydgm.state.mg_incoming
+        incident = pydgm.state.mg_incident
 
         np.testing.assert_array_almost_equal(phi, phi_test, 12)
         np.testing.assert_array_almost_equal(incident, incident_test, 12)
@@ -67,7 +65,7 @@ class TestMG_SOLVER(unittest.TestCase):
                                   [0.589237898650032, 1.1413804154385336]])
 
         phi = pydgm.state.mg_phi
-        incident = pydgm.state.mg_incoming
+        incident = pydgm.state.mg_incident
 
         np.testing.assert_array_almost_equal(phi, phi_test, 12)
         np.testing.assert_array_almost_equal(incident, incident_test, 12)

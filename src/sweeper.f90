@@ -4,7 +4,7 @@ module sweeper
   
   contains
   
-  subroutine sweep(phi, psi, incident)
+  subroutine apply_transport_operator(phi)
     ! ##########################################################################
     ! Sweep over each cell, angle, and octant
     ! ##########################################################################
@@ -14,15 +14,14 @@ module sweeper
     use mesh, only : dx
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
                         number_legendre, number_groups
-    use state, only : mg_sig_t, sweep_count, mg_mMap
-    use sources, only : get_source, compute_source
+    use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident, mg_psi
+    use sources, only : add_transport_sources
 
     ! Variable definitions
     double precision, intent(inout), dimension(:,:,:) :: &
-        phi,      & ! Scalar flux for current iteration and group g
-        psi         ! Angular flux for current iteration and group g
-    double precision, intent(inout), dimension(:,:) :: &
-        incident    ! Angular flux incident on the cell in group g
+        phi           ! Scalar flux for current iteration and group g
+    double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
+        phi_update    ! Container to hold the updated scalar flux
     integer :: &
         g,          & ! Group index
         o,          & ! Octant index
@@ -44,14 +43,11 @@ module sweeper
     logical :: &
         octant        ! Positive/Negative octant flag
 
-    ! Compute the into group sources for group g
-    call compute_source()
-
     ! Increment the sweep counter
     sweep_count = sweep_count + 1
 
     ! Reset phi
-    phi = 0.0
+    phi_update = 0.0
 
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction within the octant
@@ -64,7 +60,7 @@ module sweeper
       cstep = merge(1, -1, octant)
 
       ! set boundary conditions
-      incident = boundary_type(o) * incident  ! Set albedo conditions
+      mg_incident = boundary_type(o) * mg_incident  ! Set albedo conditions
 
       do c = cmin, cmax, cstep  ! Sweep over cells
         do a = amin, amax, astep  ! Sweep over angle
@@ -80,23 +76,25 @@ module sweeper
             mat = mg_mMap(c)
 
             ! Get the source in this cell, group, and angle
-            source = get_source(g, c, an)
+            source = add_transport_sources(g, c, an)
 
             ! Use the specified equation.  Defaults to DD
-            call computeEQ(source, incident(g, a), mg_sig_t(g, mat), dx(c), mu(a), psi_center)
+            call computeEQ(source, mg_incident(g, a), mg_sig_t(g, mat), dx(c), mu(a), psi_center)
 
             if (store_psi) then
-              psi(g, an, c) = psi_center
+              mg_psi(g, an, c) = psi_center
             end if
 
             ! Increment the legendre expansions of the scalar flux
-            phi(:, g, c) = phi(:, g, c) + M(:) * psi_center
+            phi_update(:, g, c) = phi_update(:, g, c) + M(:) * psi_center
           end do
         end do
       end do
     end do
 
-  end subroutine sweep
+    phi = phi_update
+
+  end subroutine apply_transport_operator
   
   subroutine computeEQ(S, incident, sig, dx, mua, cellPsi)
     ! ##########################################################################

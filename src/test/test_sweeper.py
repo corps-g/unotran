@@ -19,9 +19,7 @@ class TestSWEEPER(unittest.TestCase):
         pydgm.control.boundary_type = [1.0, 1.0]
         pydgm.control.allow_fission = True
         pydgm.control.outer_print = False
-        pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
-        pydgm.control.inner_tolerance = 1e-14
         pydgm.control.equation_type = 'DD'
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = False

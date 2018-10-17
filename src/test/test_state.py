@@ -20,10 +20,8 @@ class TestSTATE(unittest.TestCase):
         pydgm.control.allow_fission = True
         pydgm.control.eigen_print = False
         pydgm.control.outer_print = False
-        pydgm.control.inner_print = False
         pydgm.control.eigen_tolerance = 1e-15
         pydgm.control.outer_tolerance = 1e-14
-        pydgm.control.inner_tolerance = 1e-14
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = False
         pydgm.control.solver_type = 'fixed'.ljust(256)
