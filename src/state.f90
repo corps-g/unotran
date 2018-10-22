@@ -51,8 +51,7 @@ module state
     integer :: &
         ios = 0, & ! I/O error status
         c,       & ! Cell index
-        a,       & ! Angle index
-        g          ! Group index
+        a          ! Angle index
 
     ! Initialize the sub-modules
     ! read the material cross sections
@@ -114,9 +113,7 @@ module state
       else if (solver_type == 'eigen') then
         phi = 0.0
         do c = 1, number_cells
-          do g = 1, number_fine_groups
-            phi(0, g, c) = nu_sig_f(g, mMap(c))
-          end do
+          phi(0, :, c) = nu_sig_f(:, mMap(c))
         end do
       end if
     else
@@ -143,9 +140,7 @@ module state
           psi = 0.0
           do c = 1, number_cells
             do a = 1, 2 * number_angles
-              do g = 1, number_fine_groups
-                psi(g, a, c) = phi(0, g, c) / 2
-              end do
+              psi(:, a, c) = phi(0, :, c) / 2
             end do
           end do
         end if
@@ -312,20 +307,14 @@ module state
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_groups, use_DGM, number_regions, &
-                        number_fine_groups
+    use control, only : number_cells, use_DGM
     use mesh, only : mMap
-    use material, only : number_materials, nu_sig_f
+    use material, only : nu_sig_f
     use dgm, only : dgm_order, phi_m_zero
 
     ! Variable definitions
     integer :: &
-      c, &   ! Cell index
-      g      ! Group index
-    double precision, dimension(number_regions) :: &
-      f      ! Temporary array to hold the fission cross section
-    double precision :: &
-      phi_g  ! Scalar flux container
+      c      ! Cell index
     logical, intent(in), optional :: &
       fine_flag                      ! Controls computing density using fine flux
     logical :: &
@@ -345,23 +334,17 @@ module state
     if (fine_flag_val) then
       ! Compute fission density using fine flux
       do c = 1, number_cells
-        do g = 1, number_fine_groups
-          mg_density(c) = mg_density(c) + nu_sig_f(g, mMap(c)) * phi(0,g,c)
-        end do
+        mg_density(c) = sum(nu_sig_f(:, mMap(c)) * phi(0,:,c))
       end do
     else if (use_DGM .and. dgm_order > 0) then
       ! Compute the fission density using the mg_flux for higher moments
       do c = 1, number_cells
-        do g = 1, number_groups
-          mg_density(c) = mg_density(c) + mg_nu_sig_f(g, mg_mMap(c)) * phi_m_zero(0,g,c)
-        end do
+        mg_density(c) = sum(mg_nu_sig_f(:, mg_mMap(c)) * phi_m_zero(0,:,c))
       end do
     else
       ! Compute the fission density using the mg_flux normally
       do c = 1, number_cells
-        do g = 1, number_groups
-          mg_density(c) = mg_density(c) + mg_nu_sig_f(g, mg_mMap(c)) * mg_phi(0,g,c)
-        end do
+        mg_density(c) = sum(mg_nu_sig_f(:, mg_mMap(c)) * mg_phi(0,:,c))
       end do
     end if
 

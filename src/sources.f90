@@ -14,14 +14,12 @@ module sources
 
     ! Use Statements
     use state, only : mg_source, update_fission_density
-    use control, only : number_cells, number_angles, allow_fission, solver_type, &
-                        number_groups, use_DGM
+    use control, only : number_cells, allow_fission, solver_type, number_groups
     use dgm, only : dgm_order
 
     ! Variable definitions
     integer :: &
       g, & ! Group index
-      a, & ! Angle index
       c    ! Cell index
 
     ! Reset the sources
@@ -56,7 +54,7 @@ module sources
 
     ! Use Statements
     use state, only : mg_source
-    use control, only : use_DGM, allow_fission, solver_type
+    use control, only : use_DGM
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -118,12 +116,9 @@ module sources
     integer, intent(in) :: &
       g        ! Group index
     integer :: &
-      gp,    & ! Group prime index
       a,     & ! Angle index
       c,     & ! Cell index
-      l,     & ! Legendre index
-      ord,   & ! short name for scatter_legendre_order
-      m        ! Material index
+      ord      ! short name for scatter_legendre_order
     double precision, dimension(0:scatter_legendre_order, number_groups) :: &
       sigphi      ! Scalar flux container
     double precision :: &
@@ -148,15 +143,11 @@ module sources
 
     ! Use Statements
     use state, only : mg_mMap, keff, mg_chi, mg_density
-    use control, only : number_groups
 
     ! Variable definitions
     integer, intent(in) :: &
       g,     & ! Group index
       c        ! Cell index
-    integer :: &
-      gp,    & ! Group prime index
-      m        ! Material index
     double precision :: &
       source   ! Source for group g
 

@@ -5,7 +5,7 @@
 #===============================================================================
 
 F90 = gfortran
-F90FLAGS = -O3 -fcheck=all -fdefault-double-8 -fdefault-real-8 -pg
+F90FLAGS = -O3 -fcheck=all -fdefault-double-8 -fdefault-real-8 -pg -pedantic -std=f2008 -Wall
 LDFLAGS = 
 
 

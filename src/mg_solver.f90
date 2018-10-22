@@ -11,17 +11,14 @@ module mg_solver
 
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
-                        number_groups, number_cells, number_legendre, min_outer_iters, &
-                        solver_type
+                        min_outer_iters
     use sources, only : compute_source
     use sweeper, only : apply_transport_operator
-    use state, only : mg_phi, mg_psi, mg_incident, mg_source
-    use dgm, only : dgm_order
+    use state, only : mg_phi, mg_source
 
     ! Variable definitions
     integer :: &
-        outer_count, & ! Counter for the outer loop
-        g              ! Group index
+        outer_count    ! Counter for the outer loop
     double precision :: &
         outer_error    ! Residual error between iterations
 

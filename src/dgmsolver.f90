@@ -264,6 +264,7 @@ module dgmsolver
             ! the angular flux (because the idea is that we would only store
             ! the angular moments and then the discrete delta term would be
             ! generated on the fly from the corresponding delta moments)
+            ord = delta_legendre_order
             tmp_psi = dot_product(p_leg(:ord, a), phi(:ord, g, c))
           else
             tmp_psi = psi(g, a, c)
@@ -340,14 +341,14 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, &
-                        number_legendre, number_groups, ignore_warnings, &
+                        number_legendre, number_groups, &
                         delta_legendre_order, truncate_delta, number_regions, &
                         energy_group_map, scatter_legendre_order
     use state, only : mg_sig_t, mg_nu_sig_f, phi, psi, mg_mMap
     use material, only : sig_t, nu_sig_f, sig_s
     use mesh, only : mMap, dx
     use dgm, only : phi_m_zero, psi_m_zero, basis, sig_s_m, delta_m, expansion_order
-    use angle, only : mu, wt, p_leg
+    use angle, only : p_leg
 
     ! Variable definitions
     integer :: &
@@ -469,7 +470,7 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_fine_groups, number_angles, &
+    use control, only : number_cells, number_fine_groups, &
                         number_groups, energy_group_map
     use material, only : chi
     use state, only : mg_constant_source
@@ -480,7 +481,6 @@ module dgmsolver
     integer :: &
         order, & ! Expansion order index
         c,     & ! Cell index
-        a,     & ! Angle index
         g,     & ! Fine group index
         cg,    & ! Coarse group index
         mat      ! Material index

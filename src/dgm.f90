@@ -33,7 +33,7 @@ module dgm
     ! Use Statements
     use control, only : energy_group_map, truncation_map, number_angles, &
                         number_groups, number_coarse_groups, number_cells, &
-                        number_legendre, number_fine_groups, store_psi
+                        number_legendre, number_fine_groups
 
     ! Variable definitions
     integer :: &

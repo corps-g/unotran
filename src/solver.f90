@@ -19,13 +19,12 @@ module solver
                       update_fission_density
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
-    use control, only : store_psi, number_angles, number_legendre, number_regions
+    use control, only : store_psi, number_angles, number_regions,scatter_legendre_order
 
     ! Variable definitions
     integer :: &
         a,  & ! Angle index
-        r,  & ! Region index
-        l     ! Legendre moment index
+        r     ! Region index
 
     ! allocate the solutions variables
     call initialize_state()
@@ -35,9 +34,7 @@ module solver
     do r = 1, number_regions
       mg_nu_sig_f(:,r) = nu_sig_f(:,r)
       mg_chi(:,r) = chi(:,r)
-      do l = 0, number_legendre
-        mg_sig_s(l,:,:,r) = sig_s(l,:,:,r)
-      end do
+      mg_sig_s(:,:,:,r) = sig_s(:scatter_legendre_order,:,:,r)
       mg_sig_t(:,r) = sig_t(:,r)
     end do
     mg_phi(:, :, :) = phi(:, :, :)
@@ -78,8 +75,6 @@ module solver
         eigen_count     ! Iteration counter
     double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
         old_phi         ! Scalar flux from previous iteration
-    double precision, dimension(number_cells) :: &
-        density_old
 
     ! Run eigen loop only if eigen problem
     if (solver_type == 'fixed' .or. dgm_order > 0) then
