@@ -26,7 +26,7 @@ class TestDGM(unittest.TestCase):
         pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
         pydgm.control.inner_tolerance = 1e-14
-        pydgm.control.energy_group_map = [4]
+        pydgm.control.energy_group_map = [1, 1, 1, 1, 2, 2, 2]
         pydgm.control.use_dgm = True
         pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
         pydgm.control.Lambda = 1.0
@@ -46,7 +46,6 @@ class TestDGM(unittest.TestCase):
 
         # Test the basic definitions
         np.testing.assert_array_equal(pydgm.dgm.order, [3, 2])
-        np.testing.assert_array_equal(pydgm.dgm.energymesh, [1, 1, 1, 1, 2, 2, 2])
         self.assertEqual(pydgm.dgm.expansion_order, 3)
         self.assertEqual(pydgm.control.number_coarse_groups, 2)
 
@@ -74,7 +73,6 @@ class TestDGM(unittest.TestCase):
 
         # Test the basic definitions
         np.testing.assert_array_equal(pydgm.dgm.order, [2, 1])
-        np.testing.assert_array_equal(pydgm.dgm.energymesh, [1, 1, 1, 1, 2, 2, 2])
         self.assertEqual(pydgm.dgm.expansion_order, 2)
         self.assertEqual(pydgm.control.number_coarse_groups, 2)
 
@@ -223,7 +221,7 @@ class TestDGM2(unittest.TestCase):
         pydgm.control.inner_print = False
         pydgm.control.outer_tolerance = 1e-14
         pydgm.control.inner_tolerance = 1e-14
-        pydgm.control.energy_group_map = [4]
+        pydgm.control.energy_group_map = [1, 1, 1, 1, 2, 2, 2]
         pydgm.control.use_dgm = True
         pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
         pydgm.control.Lambda = 1.0

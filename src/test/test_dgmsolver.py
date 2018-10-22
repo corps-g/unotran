@@ -38,14 +38,15 @@ class TestDGMSOLVER(unittest.TestCase):
         if G == 2:
             pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
             pydgm.control.dgm_basis_name = 'test/2gbasis'.ljust(256)
+            pydgm.control.energy_group_map = [1, 1]
         elif G == 4:
             pydgm.control.xs_name = 'test/4gXS.anlxs'.ljust(256)
-            pydgm.control.energy_group_map = [2]
+            pydgm.control.energy_group_map = [1, 1, 2, 2]
             pydgm.control.dgm_basis_name = 'test/4gbasis'.ljust(256)
         elif G == 7:
             pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
             pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
-            pydgm.control.energy_group_map = [4]
+            pydgm.control.energy_group_map = [1, 1, 1, 1, 2, 2, 2]
 
     def setSolver(self, solver):
         if solver == 'fixed':
@@ -407,7 +408,6 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setBoundary('vacuum')
         pydgm.control.angle_order = 4
         pydgm.control.xs_name = 'test/alt_7gXS.anlxs'.ljust(256)
-        pydgm.control.energy_group_map = [4]
 
         pydgm.control.recon_print = 0
         pydgm.control.eigen_print = 0
@@ -1117,7 +1117,7 @@ class TestDGMSOLVER(unittest.TestCase):
         '''
         self.setGroups(2)
         pydgm.control.dgm_basis_name = 'test/2gdelta'.ljust(256)
-        pydgm.control.energy_group_map = [1]
+        pydgm.control.energy_group_map = [1, 2]
         self.setSolver('fixed')
         pydgm.control.allow_fission = True
         self.setBoundary('reflect')
@@ -1166,7 +1166,7 @@ class TestDGMSOLVER(unittest.TestCase):
         '''
         self.setGroups(2)
         pydgm.control.dgm_basis_name = 'test/2gdelta'.ljust(256)
-        pydgm.control.energy_group_map = [1]
+        pydgm.control.energy_group_map = [1, 2]
         self.setSolver('fixed')
         pydgm.control.allow_fission = True
         self.setBoundary('reflect')
@@ -1203,7 +1203,7 @@ class TestDGMSOLVER(unittest.TestCase):
         '''
         self.setGroups(2)
         pydgm.control.dgm_basis_name = 'test/2gdelta'.ljust(256)
-        pydgm.control.energy_group_map = [1]
+        pydgm.control.energy_group_map = [1, 2]
         self.setSolver('fixed')
         pydgm.control.allow_fission = True
         self.setBoundary('reflect')
@@ -1237,6 +1237,48 @@ class TestDGMSOLVER(unittest.TestCase):
                                [[0.4352941176470590, 0.5435294117647060],
                                 [0.0000000000000000, 0.4872483221476510]]])
         np.testing.assert_array_almost_equal(pydgm.dgm.sig_s_m[0, :, :, :, 0], sig_s_test, 12)
+
+    def test_dgmsolver_non_contiguous(self):
+        '''
+        Test the 7g->2G, eigenvalue problem on a pin cell of
+            water | fuel | water
+        with reflective conditions
+        '''
+        # Set the variables for the test
+        self.setGroups(7)
+        pydgm.control.energy_group_map = [1, 2, 1, 2, 1, 2, 1]
+        pydgm.control.dgm_basis_name = 'test/7g_non_contig'.ljust(256)
+        self.setSolver('eigen')
+        self.setMesh('coarse_pin')
+        self.setBoundary('reflect')
+        pydgm.control.material_map = [5, 1, 5]
+        pydgm.control.lamb = 0.25
+
+        # Initialize the dependancies
+        pydgm.dgmsolver.initialize_dgmsolver()
+
+        # set the test flux
+        keff_test = 1.0794314789325041
+        phi_test = [0.18617101855192203, 2.858915338372074, 1.4772041911943246, 1.0299947729491368, 0.7782291112252604, 0.6601323950057741, 0.0018780861364841711, 0.18615912584783736, 2.8586649211715436, 1.4771766639520822, 1.030040359498237, 0.7782969794725844, 0.6603312122972236, 0.0018857945539742516, 0.18613533094381535, 2.858163988201594, 1.4771216026067822, 1.0301315410919691, 0.7784327301908717, 0.6607289506819793, 0.001901260571677254, 0.1860688679764812, 2.856246121648244, 1.4768054633757053, 1.0308126366153867, 0.7795349485104974, 0.6645605858759833, 0.0020390343478796447, 0.18597801819761287, 2.8534095558345967, 1.4763058823653368, 1.0319062100766097, 0.7813236329806805, 0.6707834262470258, 0.002202198406120643, 0.18591115233580913, 2.851306298580461, 1.4759330573010532, 1.0327026586727457, 0.7826354049117061, 0.6752310599415209, 0.002251216654318464, 0.18586715682184884, 2.8499152893733255, 1.4756853599772022, 1.0332225362074143, 0.7834960048959739, 0.6780933062272468, 0.0022716374303459433, 0.1858453299832966, 2.8492230801887986, 1.475561761882258, 1.0334791905008067, 0.7839221795374745, 0.6794942839316992, 0.002280077669362046, 0.18584532998329656, 2.8492230801887986, 1.475561761882258, 1.0334791905008065, 0.7839221795374745, 0.6794942839316991, 0.0022800776693620455, 0.18586715682184884, 2.8499152893733255, 1.4756853599772024, 1.0332225362074146, 0.7834960048959738, 0.6780933062272467, 0.002271637430345943, 0.18591115233580915, 2.851306298580461, 1.4759330573010532, 1.0327026586727457, 0.7826354049117062, 0.6752310599415207, 0.0022512166543184635, 0.1859780181976129, 2.853409555834596, 1.476305882365337, 1.0319062100766097, 0.7813236329806805, 0.6707834262470258, 0.002202198406120643, 0.1860688679764812, 2.856246121648244, 1.4768054633757055, 1.0308126366153867, 0.7795349485104973, 0.6645605858759831, 0.002039034347879644, 0.18613533094381537, 2.858163988201594, 1.4771216026067824, 1.0301315410919691, 0.7784327301908716, 0.6607289506819792, 0.0019012605716772534, 0.1861591258478374, 2.858664921171543, 1.4771766639520822, 1.0300403594982372, 0.7782969794725842, 0.6603312122972235, 0.0018857945539742511, 0.18617101855192209, 2.8589153383720736, 1.477204191194325, 1.0299947729491368, 0.7782291112252603, 0.660132395005774, 0.0018780861364841707]
+
+        # Solve the problem
+        pydgm.dgmsolver.dgmsolve()
+
+        # Test the eigenvalue
+        self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
+
+        # Test the scalar flux
+        phi = pydgm.state.phi[0, :, :].flatten()
+        np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 11)
+
+        # Test the angular flux
+        nAngles = pydgm.control.number_angles
+        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_fine_groups))
+        for c in range(pydgm.control.number_cells):
+            for a in range(nAngles):
+                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
+                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+        np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def tearDown(self):
         pydgm.dgmsolver.finalize_dgmsolver()

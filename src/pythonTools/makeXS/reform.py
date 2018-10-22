@@ -1,42 +1,61 @@
 
-def formDataset(g):
-    names = ['uo2', 'moxlow', 'moxmid', 'moxhigh']
-    morenames = ['water', 'void']
+def readData(matID, g, f):
+    '''
+    Read the data for a given material from the file
+    '''
+    # Define the line indices in the file
+    begin = 3 + matID * (2 + G * 9)
+    end = begin + (1 + G * 9) + 1
 
-    header = '6 {} 0\n'.format(g)
+    return f[begin:end]
+
+def formDataset(g):
+    names = ['uo2', 'moxlow', 'moxmid', 'moxhigh', 'BWR1', 'BWR2', 'BWR3']
+    morenames = ['water']
+
+    # Write the header for the XS file
+    header = '{} {} 0\n'.format(len(names) + len(morenames), g)
+
     mats = []
+    moreMats = []
     for i, name in enumerate(names):
+        # Open and read the cross sections file for the current name
         f = open('{}g/{}-{}.inp.anlxs'.format(g, name, g), 'r').readlines()
+
+        # If this is the first material
         if i == 0:
+            # Write the velicity and energy bounds to the header
             header += f[1]
             header += f[2]
 
-        s = '{}\n'.format(name)
-        for l in f[4:5 + g * 9]:
-            s += l
+        # Read the fuel from the file
+        fuelData = readData(1, g, f)
 
-        mats.append(s)
+        # Replace the matID number with the name
+        fuelData[0] = '{}\n'.format(name)
 
+        # Write the cross section data to the string
+        mats.append(''.join(fuelData))
+
+        # If this is the first material
         if i == 0:
-            moreMats = []
-            for m in range(2):
-                s = morenames[m] + '\n'
-                jump = (m + 1) * (m * 1 + g * 9)
-                for l in f[jump + 6: jump + 7 + g * 9]:
-                    s += l
-                moreMats.append(s)
+            # Read the water from the file
+            waterdata = readData(2, g, f)
 
-    #print moreMats[0]
+            # Replace the matID number with the name
+            waterdata[0] = 'water\n'
 
+            # Write the cross section data to the string
+            moreMats.append(''.join(waterdata))
+
+    # Write the strings to the file
     with open('{}g/{}gXS.anlxs'.format(g, g), 'w') as f:
         f.write(header)
-        for s in mats:
-            f.write(s)
-        for s in moreMats:
+        for s in mats + moreMats:
             f.write(s)
 
 if __name__ == '__main__':
-    Gs = [1968]
+    Gs = [2, 44, 238]
     for G in Gs:
         formDataset(G)
 

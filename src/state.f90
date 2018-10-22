@@ -54,14 +54,14 @@ module state
         g          ! Group index
 
     ! Initialize the sub-modules
+    ! read the material cross sections
+    call create_material()
     ! Verify the inputs
     if (verify_control) then
       call check_inputs()
     end if
     ! initialize the mesh
     call create_mesh()
-    ! read the material cross sections
-    call create_material()
     ! initialize the angle quadrature
     call initialize_angle()
     ! get the basis vectors
@@ -297,41 +297,64 @@ module state
 
   end subroutine normalize_flux
 
-  subroutine update_fission_density()
+  subroutine update_fission_density(fine_flag)
     ! ##########################################################################
     ! Compute the fission density for each cell
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_groups, use_DGM, number_regions
+    use control, only : number_cells, number_groups, use_DGM, number_regions, &
+                        number_fine_groups
     use mesh, only : mMap
-    use material, only : number_materials
+    use material, only : number_materials, nu_sig_f
     use dgm, only : dgm_order, phi_m_zero
 
     ! Variable definitions
     integer :: &
-      c, & ! Cell index
-      g    ! Group index
+      c, &   ! Cell index
+      g      ! Group index
     double precision, dimension(number_regions) :: &
-      f    ! Temporary array to hold the fission cross section
+      f      ! Temporary array to hold the fission cross section
     double precision :: &
-      phi  ! Scalar flux container
+      phi_g  ! Scalar flux container
+    logical, intent(in), optional :: &
+      fine_flag                      ! Controls computing density using fine flux
+    logical :: &
+      fine_flag_default = .false., & ! Controls computing density using fine flux
+      fine_flag_val                  ! Holds actual value of fine_flag
+
+    if (present(fine_flag)) then
+      fine_flag_val = fine_flag
+    else
+      fine_flag_val = fine_flag_default
+    end if
 
     ! Reset the fission density
     mg_density = 0.0
 
     ! Sum the fission reaction rate over groups for each cell
-    do g = 1, number_groups
-      f = mg_nu_sig_f(:, g)
-      do c = 1, number_cells
-        if (use_DGM .and. dgm_order > 0) then
-          phi = phi_m_zero(0,c,g)
-        else
-          phi = mg_phi(0,c,g)
-        end if
-        mg_density(c) = mg_density(c) + f(mg_mMap(c)) * phi
+    if (fine_flag_val) then
+      ! Compute fission density using fine flux
+      do g = 1, number_fine_groups
+        do c = 1, number_cells
+          phi_g = phi(0,c,g)
+          mg_density(c) = mg_density(c) + nu_sig_f(g, mMap(c)) * phi_g
+        end do
       end do
-    end do
+    else
+      ! Compute the fission density using the mg_flux
+      do g = 1, number_groups
+        f = mg_nu_sig_f(:, g)
+        do c = 1, number_cells
+          if (use_DGM .and. dgm_order > 0) then
+            phi_g = phi_m_zero(0,c,g)
+          else
+            phi_g = mg_phi(0,c,g)
+          end if
+          mg_density(c) = mg_density(c) + f(mg_mMap(c)) * phi_g
+        end do
+      end do
+    end if
 
   end subroutine update_fission_density
 
