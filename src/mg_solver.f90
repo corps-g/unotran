@@ -6,12 +6,12 @@ module mg_solver
   
   subroutine mg_solve()
     ! ##########################################################################
-    ! Solve the within group equation
+    ! Solve the multigroup group equation
     ! ##########################################################################
 
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
-                        min_outer_iters
+                        min_outer_iters, number_cells, number_groups
     use sources, only : compute_source
     use sweeper, only : apply_transport_operator
     use state, only : mg_phi, mg_source
@@ -21,6 +21,8 @@ module mg_solver
         outer_count    ! Counter for the outer loop
     double precision :: &
         outer_error    ! Residual error between iterations
+    double precision, dimension(number_groups, number_cells) :: &
+        old_phi
 
     ! Begin loop to converge on the in-scattering source
     do outer_count = 1, max_outer_iters
@@ -28,11 +30,14 @@ module mg_solver
       ! Update the forcing function
       call compute_source()
 
+      ! Save the old flux
+      old_phi = mg_phi(0,:,:)
+
       ! Update the scalar flux
       call apply_transport_operator(mg_phi)
 
       ! Update the error
-      outer_error = maxval(abs(mg_phi(0,:,:) - mg_source(:,:)))
+      outer_error = maxval(abs(mg_phi(0,:,:) - old_phi(:,:)))
 
       ! Check for NaN during convergence
       if (outer_error /= outer_error) then
