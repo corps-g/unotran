@@ -20,26 +20,22 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.allow_fission = False
         pydgm.control.eigen_print = False
         pydgm.control.outer_print = False
-        pydgm.control.inner_print = False
         pydgm.control.eigen_tolerance = 1e-15
         pydgm.control.outer_tolerance = 1e-16
-        pydgm.control.inner_tolerance = 1e-16
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.equation_type = 'DD'
-        pydgm.control.legendre_order = 0
+        pydgm.control.scatter_legendre_order = 0
         pydgm.control.use_DGM = False
-        pydgm.control.max_eigen_iters = 1000
+        pydgm.control.max_eigen_iters = 10000
         pydgm.control.max_outer_iters = 1000
-        pydgm.control.max_inner_iters = 1
 
     def test_solver_vacuum1(self):
         ''' 
         Test fixed source problem with vacuum conditions
         '''
-
         # Activate fissioning
         pydgm.control.allow_fission = True
 
@@ -54,15 +50,15 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         # Test the scalar flux
-        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten(), phi_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten('F'), phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_inf_med_1g(self):
@@ -94,11 +90,11 @@ class TestSOLVER(unittest.TestCase):
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_inf_med_2g(self):
@@ -126,15 +122,15 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         # Test the scalar flux
-        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten(), phi_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten('F'), phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_inf_med_7g(self):
@@ -161,17 +157,15 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
-
-        np.testing.assert_array_almost_equal(phi / phi_test, np.ones(28 * 7), 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten('F'), phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_2med_ref_1g(self):
@@ -198,15 +192,15 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         # Test the scalar flux
-        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten(), phi_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten('F'), phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_2med_ref_2g(self):
@@ -233,15 +227,15 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         # Test the scalar flux
-        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten(), phi_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten('F'), phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_2med_ref_7g(self):
@@ -271,16 +265,15 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
-        np.testing.assert_array_almost_equal(phi / phi_test, np.ones(70), 12)
+        np.testing.assert_array_almost_equal(pydgm.state.mg_phi[0, :, :].flatten('F'), phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenV1g(self):
@@ -318,11 +311,11 @@ class TestSOLVER(unittest.TestCase):
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenV2g(self):
@@ -354,16 +347,16 @@ class TestSOLVER(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, 0.8099523232983425, 12)
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
+        phi = pydgm.state.mg_phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenV7g(self):
@@ -394,16 +387,16 @@ class TestSOLVER(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, 0.30413628310914226, 12)
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
+        phi = pydgm.state.mg_phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR1g(self):
@@ -446,16 +439,16 @@ class TestSOLVER(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
+        phi = pydgm.state.mg_phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR2g(self):
@@ -498,16 +491,16 @@ class TestSOLVER(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
+        phi = pydgm.state.mg_phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR7g(self):
@@ -550,16 +543,16 @@ class TestSOLVER(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
+        phi = pydgm.state.mg_phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR1gPin(self):
@@ -593,16 +586,16 @@ class TestSOLVER(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
+        phi = pydgm.state.mg_phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR2gPin(self):
@@ -636,16 +629,16 @@ class TestSOLVER(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
+        phi = pydgm.state.mg_phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_eigenR7gPin(self):
@@ -678,16 +671,16 @@ class TestSOLVER(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
 
         # Test the scalar flux
-        phi = pydgm.state.mg_phi[0, :, :].flatten()
+        phi = pydgm.state.mg_phi[0, :, :].flatten('F')
         np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
 
         # Test the angular flux
         nAngles = pydgm.control.number_angles
-        phi_test = np.zeros((pydgm.control.number_cells, pydgm.control.number_groups))
+        phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, a, :]
-                phi_test[c] += pydgm.angle.wt[a] * pydgm.state.psi[c, 2 * nAngles - a - 1, :]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_anisotropic_fixed_vacuum(self):
@@ -696,7 +689,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [2, 1, 2]
         pydgm.control.xs_name = 'test/aniso.anlxs'.ljust(256)
         pydgm.control.angle_order = 4
-        pydgm.control.legendre_order = 1
+        pydgm.control.scatter_legendre_order = 1
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -732,7 +725,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/2g_symmetric.anlxs'.ljust(256)
         pydgm.control.angle_order = 4
-        pydgm.control.legendre_order = 1
+        pydgm.control.scatter_legendre_order = 1
         pydgm.control.boundary_type = [0.0, 0.0]
 
         # Initialize the dependancies
@@ -742,8 +735,8 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         # Test that the scalar flux is symmetric
-        phi0 = pydgm.state.mg_phi[0, :, 0].flatten()
-        phi1 = pydgm.state.mg_phi[0, :, 1].flatten()
+        phi0 = pydgm.state.mg_phi[0, 0, :].flatten()
+        phi1 = pydgm.state.mg_phi[0, 1, :].flatten()
         np.testing.assert_array_almost_equal(phi0, phi1, 12)
 
     def test_solver_anisotropic_fixed_reflect(self):
@@ -752,7 +745,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [2, 1, 2]
         pydgm.control.xs_name = 'test/aniso.anlxs'.ljust(256)
         pydgm.control.angle_order = 4
-        pydgm.control.legendre_order = 1
+        pydgm.control.scatter_legendre_order = 1
         pydgm.control.boundary_type = [1.0, 1.0]
 
         # Initialize the dependancies

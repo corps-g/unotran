@@ -27,9 +27,9 @@ module material
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : allow_fission, legendre_order, number_fine_groups, &
-                        number_legendre, xs_name, number_coarse_groups
-
+    use control, only : allow_fission, number_fine_groups, &
+                        number_legendre, xs_name, number_coarse_groups, &
+                        scatter_legendre_order
     ! Variable definitions
     character(256) :: &
         materialName     ! Name of each material
@@ -63,6 +63,14 @@ module material
     read(1,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
     ! Count the highest order + zeroth order
     number_legendre = number_legendre - 1
+    if (scatter_legendre_order > number_legendre) then
+      print *, 'Requesting higher scattering order than the cross sections provided'
+      print *, 'Reducing the scattering order to ', number_legendre
+      scatter_legendre_order = number_legendre
+    else if (scatter_legendre_order == -1) then
+      print *, 'No scattering order defined.  Defaulting to order ', number_legendre
+      scatter_legendre_order = number_legendre
+    end if
 
     ! Make space for cross sections
     allocate(sig_t(number_groups, number_materials))
@@ -114,11 +122,6 @@ module material
     if (.not. allow_fission) then
       sig_f = 0.0
       nu_sig_f = 0.0
-    end if
-
-    ! Adjust the legendre order if given in control
-    if (legendre_order /= -1) then
-      number_legendre = legendre_order
     end if
 
   end subroutine create_material

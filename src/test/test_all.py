@@ -20,7 +20,6 @@ def AllSuite():
     suite.addTests(unittest.makeSuite(TestSTATE))
     suite.addTests(unittest.makeSuite(TestSOURCES))
     suite.addTests(unittest.makeSuite(TestSWEEPER))
-    suite.addTests(unittest.makeSuite(TestWG_SOLVER))
     suite.addTests(unittest.makeSuite(TestMG_SOLVER))
     suite.addTests(unittest.makeSuite(TestSOLVER))
     suite.addTests(unittest.makeSuite(TestDGM))

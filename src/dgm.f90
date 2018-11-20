@@ -6,14 +6,14 @@ module dgm
   implicit none
 
   double precision, allocatable, dimension(:,:) :: &
-      basis                   ! Basis for expansion in energy
+      basis,                & ! Basis for expansion in energy
+      source_m                ! Source moments
   double precision, allocatable, dimension(:,:,:) :: &
       chi_m,                & ! Chi spectrum moments
       phi_m_zero,           & ! Zeroth moment of scalar flux
       psi_m_zero              ! Zeroth moment of angular flux
   double precision, allocatable, dimension(:,:,:,:) :: &
-      delta_m,              & ! Angular total XS moments
-      source_m                ! Source moments
+      delta_m                 ! Angular total XS moments
   double precision, allocatable, dimension(:,:,:,:,:) :: &
       sig_s_m                 ! Scattering XS moments
   integer :: &
@@ -90,8 +90,8 @@ module dgm
     expansion_order = MAXVAL(order)
 
     ! Form the containers to hold the zeroth moments
-    allocate(phi_m_zero(0:number_legendre, number_cells, number_coarse_groups))
-    allocate(psi_m_zero(number_cells, 2 * number_angles, number_coarse_groups))
+    allocate(phi_m_zero(0:number_legendre, number_coarse_groups, number_cells))
+    allocate(psi_m_zero(number_coarse_groups, 2 * number_angles, number_cells))
 
   end subroutine initialize_moments
 

@@ -29,12 +29,12 @@ program main
   if (use_DGM) then
     call initialize_dgmsolver()
     call dgmsolve()
-    call dgmoutput()
+    !call dgmoutput()
     call finalize_dgmsolver()
   else
     call initialize_solver()
     call solve()
-    call output()
+    !call output()
     call finalize_solver()
   end if
 

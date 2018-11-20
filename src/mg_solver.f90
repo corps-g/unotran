@@ -6,42 +6,38 @@ module mg_solver
   
   subroutine mg_solve()
     ! ##########################################################################
-    ! Solve the within group equation
+    ! Solve the multigroup group equation
     ! ##########################################################################
 
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
-                        number_groups, number_cells, number_legendre, min_outer_iters, &
-                        solver_type
-    use wg_solver, only : wg_solve
-    use state, only : mg_phi, mg_psi, mg_incoming
-    use dgm, only : dgm_order
+                        min_outer_iters, number_cells, number_groups
+    use sources, only : compute_source
+    use sweeper, only : apply_transport_operator
+    use state, only : mg_phi, mg_source
 
     ! Variable definitions
-    double precision, dimension(0:number_legendre, number_cells, number_groups) :: &
-        phi_new              ! Save the previous scalar flux
     integer :: &
-        outer_count,       & ! Counter for the outer loop
-        g                    ! Group index
+        outer_count    ! Counter for the outer loop
     double precision :: &
-        outer_error          ! Residual error between iterations
-
-    ! Save the scalar flux from previous iteration
-    phi_new = mg_phi
+        outer_error    ! Residual error between iterations
+    double precision, dimension(number_groups, number_cells) :: &
+        old_phi
 
     ! Begin loop to converge on the in-scattering source
     do outer_count = 1, max_outer_iters
-      ! Loop over the energy groups
-      do g = 1, number_groups
-        ! Solve the within group problem
-        call wg_solve(g, phi_new(:,:,g), mg_psi(:,:,g), mg_incoming(:,g))
-      end do
 
-      ! Update the error
-      outer_error = maxval(abs(phi_new - mg_phi))
+      ! Update the forcing function
+      call compute_source()
+
+      ! Save the old flux
+      old_phi = mg_phi(0,:,:)
 
       ! Update the scalar flux
-      mg_phi = phi_new
+      call apply_transport_operator(mg_phi)
+
+      ! Update the error
+      outer_error = maxval(abs(mg_phi(0,:,:) - old_phi(:,:)))
 
       ! Check for NaN during convergence
       if (outer_error /= outer_error) then
@@ -52,7 +48,7 @@ module mg_solver
       ! Print output
       if (outer_print > 0) then
         write(*, 1001) outer_count, outer_error
-        1001 format ( "  outer: ", i4, " Error: ", es12.5E2)
+        1001 format ( "    outer: ", i4, " Error: ", es12.5E2)
         if (outer_print > 1) then
           print *, mg_phi
         end if

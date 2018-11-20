@@ -15,17 +15,16 @@ module solver
 
     ! Use Statements
     use state, only : initialize_state, mg_nu_sig_f, mg_chi, mg_sig_s, mg_sig_t, &
-                      mg_phi, phi, mg_psi, psi, mg_incoming, mg_mMap, &
+                      mg_phi, phi, mg_psi, psi, mg_incident, mg_mMap, &
                       update_fission_density
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
-    use control, only : store_psi, number_angles, number_legendre, number_regions
+    use control, only : store_psi, number_angles, number_regions,scatter_legendre_order
 
     ! Variable definitions
     integer :: &
         a,  & ! Angle index
-        r,  & ! Region index
-        l     ! Legendre moment index
+        r     ! Region index
 
     ! allocate the solutions variables
     call initialize_state()
@@ -33,22 +32,20 @@ module solver
     ! Fill multigroup arrays with the fine group data
     mg_mMap(:) = mMap(:)
     do r = 1, number_regions
-      mg_nu_sig_f(r,:) = nu_sig_f(:,r)
-      mg_chi(r,:) = chi(:,r)
-      do l = 0, number_legendre
-        mg_sig_s(l,r,:,:) = sig_s(l,:,:,r)
-      end do
-      mg_sig_t(r,:) = sig_t(:,r)
+      mg_nu_sig_f(:,r) = nu_sig_f(:,r)
+      mg_chi(:,r) = chi(:,r)
+      mg_sig_s(:,:,:,r) = sig_s(:scatter_legendre_order,:,:,r)
+      mg_sig_t(:,r) = sig_t(:,r)
     end do
     mg_phi(:, :, :) = phi(:, :, :)
     if (store_psi) then
       mg_psi(:, :, :) = psi(:, :, :)
       ! Default the incoming flux to be equal to the outgoing if present
-      mg_incoming = psi(1, (number_angles + 1):, :)
+      mg_incident = psi(:, (number_angles + 1):, 1)
     else
       ! Assume isotropic scalar flux for incident flux
       do a = 1, number_angles
-        mg_incoming(a, :) = phi(0, 1, :) / 2
+        mg_incident(:, a) = phi(0, :, 1) / 2
       end do
     end if
 
@@ -68,7 +65,7 @@ module solver
                       phi, psi, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
-                        use_DGM, min_eigen_iters
+                        use_DGM, min_eigen_iters, store_psi
     use dgm, only : dgm_order
 
     ! Variable definitions
@@ -76,7 +73,7 @@ module solver
         eigen_error     ! Error between successive iterations
     integer :: &
         eigen_count     ! Iteration counter
-    double precision, dimension(0:number_legendre, number_cells, number_groups) :: &
+    double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
         old_phi         ! Scalar flux from previous iteration
 
     ! Run eigen loop only if eigen problem
@@ -106,7 +103,7 @@ module solver
         ! Print output
         if (eigen_print > 0) then
           write(*, 1001) eigen_count, eigen_error, keff
-          1001 format ( "eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f14.10)
           if (eigen_print > 1) then
             print *, mg_phi
           end if
@@ -130,7 +127,9 @@ module solver
 
     if (.not. use_dgm) then
       phi = mg_phi
-      psi = mg_psi
+      if (store_psi) then
+        psi = mg_psi
+      end if
 
       ! Compute the fission density
       call update_fission_density()

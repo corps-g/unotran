@@ -19,7 +19,6 @@ module control
       recon_tolerance=1e-8,       & ! Convergance criteria for recon iteration
       eigen_tolerance=1e-8,       & ! Convergance criteria for eigen iteration
       outer_tolerance=1e-8,       & ! Convergance criteria for outer iteration
-      inner_tolerance=1e-8,       & ! Convergance criteria for inner iteration
       lamb=1.0,                   & ! Parameter (0 < lamb <= 1.0) for krasnoselskii iteration
       source_value=0.0,           & ! Value of external source for the problem
       initial_keff=1.0              ! Initial value for the eigenvalue
@@ -35,15 +34,12 @@ module control
   integer :: &
       angle_order,                & ! Number of angles per octant
       angle_option,               & ! Quadrature option [gl=0, dgl=1]
-      legendre_order=-1,          & ! Anisotropic scattering order
       max_recon_iters=1000,       & ! Maximum iterations for recon loop
       max_eigen_iters=1000,       & ! Maximum iterations for eigen loop
       max_outer_iters=1000,       & ! Maximum iterations for outer loop
-      max_inner_iters=1000,       & ! Maximum iterations for inner loop
       min_recon_iters=1,          & ! Minimum iterations for recon loop
       min_eigen_iters=1,          & ! Minimum iterations for eigen loop
       min_outer_iters=1,          & ! Minimum iterations for outer loop
-      min_inner_iters=1,          & ! Minimum iterations for inner loop
       number_cells,               & ! Total number of cells in the mesh
       number_regions,             & ! Number of unique material regions
       number_angles,              & ! Number angles per *half space*
@@ -54,8 +50,8 @@ module control
       recon_print=1,              & ! Enable/Disable recon iteration printing
       eigen_print=1,              & ! Enable/Disable eigen iteration printing
       outer_print=1,              & ! Enable/Disable outer iteration printing
-      inner_print=0,              & ! Enable/Disable inner iteration printing
-      delta_legendre_order=1        ! Legendre order for truncated expansion of delta term
+      scatter_legendre_order=-1,  & ! Legendre order for anisotropic scattering
+      delta_legendre_order=-1       ! Legendre order for truncated expansion of delta term
   logical :: &
       allow_fission=.false.,      & ! Enable/Disable fission in the problem
       use_dgm=.false.,            & ! Enable/Disable DGM solver
@@ -72,7 +68,7 @@ module control
     ! ##########################################################################
 
     ! Input variables
-    character(len=256) :: &
+    character(len=32768) :: &
         buffer, & ! Buffer to hold read-in strings
         label     ! Contains the read-variable name
     character(len=*), intent(in) :: &
@@ -160,16 +156,12 @@ module control
           read(buffer, *, iostat=ios) eigen_print
         case ('outer_print')
           read(buffer, *, iostat=ios) outer_print
-        case ('inner_print')
-          read(buffer, *, iostat=ios) inner_print
         case ('recon_tolerance')
           read(buffer, *, iostat=ios) recon_tolerance
         case ('eigen_tolerance')
           read(buffer, *, iostat=ios) eigen_tolerance
         case ('outer_tolerance')
           read(buffer, *, iostat=ios) outer_tolerance
-        case ('inner_tolerance')
-          read(buffer, *, iostat=ios) inner_tolerance
         case ('lambda')
           read(buffer, *, iostat=ios) lamb
         case ('use_DGM')
@@ -184,16 +176,14 @@ module control
           solver_type=trim(adjustl(buffer))
         case ('source')
           read(buffer, *, iostat=ios) source_value
-        case ('legendre_order')
-          read(buffer, *, iostat=ios) legendre_order
+        case ('scatter_legendre_order')
+          read(buffer, *, iostat=ios) scatter_legendre_order
         case ('max_recon_iters')
           read(buffer, *, iostat=ios) max_recon_iters
         case ('max_eigen_iters')
           read(buffer, *, iostat=ios) max_eigen_iters
         case ('max_outer_iters')
           read(buffer, *, iostat=ios) max_outer_iters
-        case ('max_inner_iters')
-          read(buffer, *, iostat=ios) max_inner_iters
         case default
           print *, 'Skipping invalid label at line', line
         end select
@@ -246,15 +236,12 @@ module control
     print *, '  outer_print        = ', outer_print
     print *, '  outer_tolerance    = ', outer_tolerance
     print *, '  max_outer_iters    = ', max_outer_iters
-    print *, '  inner_print        = ', inner_print
-    print *, '  inner_tolerance    = ', inner_tolerance
-    print *, '  max_inner_iters    = ', max_inner_iters
     print *, '  lambda             = ', lamb
     print *, '  ignore_warnings    = ', ignore_warnings
-    if (legendre_order > -1) then
-      print *, '  legendre_order     = ', legendre_order
+    if (scatter_legendre_order > -1) then
+      print *, '  scatter_order      = ', scatter_legendre_order
     else
-      print *, '  legendre_order     = DEFAULT'
+      print *, '  scatter_order     = DEFAULT'
     end if
     if (use_DGM) then
       print *, 'DGM OPTIONS'

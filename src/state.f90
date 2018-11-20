@@ -15,9 +15,9 @@ module state
   double precision, allocatable, dimension(:,:) :: &
       mg_nu_sig_f, & ! Fission cross section mg container (times nu)
       mg_chi,      & ! Chi spectrum mg container
-      mg_sig_t,    & ! Scalar total cross section mg container
       mg_source,   & ! External source mg container
-      mg_incoming    ! Angular flux incident on the current cell
+      mg_sig_t,    & ! Scalar total cross section mg container
+      mg_incident    ! Angular flux incident on the current cell
   double precision, allocatable, dimension(:) :: &
       mg_density     ! Fission density
   integer, allocatable, dimension(:) :: &
@@ -40,7 +40,8 @@ module state
                         use_DGM, ignore_warnings, initial_keff, initial_phi, &
                         initial_psi, number_angles, number_cells, number_legendre, &
                         solver_type, source_value, store_psi, check_inputs, &
-                        verify_control, homogenization_map, number_regions
+                        verify_control, homogenization_map, number_regions, &
+                        scatter_legendre_order, delta_legendre_order, truncate_delta
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials
@@ -50,12 +51,16 @@ module state
     integer :: &
         ios = 0, & ! I/O error status
         c,       & ! Cell index
-        a,       & ! Angle index
-        g          ! Group index
+        a          ! Angle index
 
     ! Initialize the sub-modules
     ! read the material cross sections
     call create_material()
+    ! Determine the Legendre order of phi to store
+    if (delta_legendre_order /= -1) then
+      delta_legendre_order = scatter_legendre_order
+    end if
+    number_legendre = max(delta_legendre_order, scatter_legendre_order)
     ! Verify the inputs
     if (verify_control) then
       call check_inputs()
@@ -66,7 +71,6 @@ module state
     call initialize_angle()
     ! get the basis vectors
     call initialize_polynomials()
-
     ! Initialize the constant source
     mg_constant_source = 0.5 * source_value
 
@@ -74,6 +78,9 @@ module state
     number_groups = number_fine_groups
     number_regions = number_materials
     if (use_DGM) then
+      if (.not. truncate_delta) then
+        store_psi = .true.
+      end if
       ! Initialize DGM moments
       call initialize_moments()
       call initialize_basis()
@@ -93,7 +100,7 @@ module state
     sweep_count = 0
 
     ! Allocate the scalar flux and source containers
-    allocate(phi(0:number_legendre, number_cells, number_fine_groups))
+    allocate(phi(0:number_legendre, number_fine_groups, number_cells))
     ! Initialize phi
     ! Attempt to read file or use default if file does not exist
     open(unit = 10, status='old', file=initial_phi, form='unformatted', iostat=ios)
@@ -105,10 +112,8 @@ module state
         phi = 1.0  ! default value
       else if (solver_type == 'eigen') then
         phi = 0.0
-        do g = 1, number_fine_groups
-          do c = 1, number_cells
-            phi(0, c, g) = nu_sig_f(g, mMap(c))
-          end do
+        do c = 1, number_cells
+          phi(0, :, c) = nu_sig_f(:, mMap(c))
         end do
       end if
     else
@@ -118,7 +123,7 @@ module state
 
     ! Only allocate psi if the option is to store psi
     if (store_psi) then
-      allocate(psi(number_cells, 2 * number_angles, number_fine_groups))
+      allocate(psi(number_fine_groups, 2 * number_angles, number_cells))
 
       ! Initialize psi
       ! Attempt to read file or use default if file does not exist
@@ -133,11 +138,9 @@ module state
         else
           ! default to isotropic distribution
           psi = 0.0
-          do g = 1, number_fine_groups
+          do c = 1, number_cells
             do a = 1, 2 * number_angles
-              do c = 1, number_cells
-                psi(c, a, g) = phi(0, c, g) / 2
-              end do
+              psi(:, a, c) = phi(0, :, c) / 2
             end do
           end do
         end if
@@ -148,7 +151,7 @@ module state
     end if
 
     ! Initialize the angular flux incident on the boundary
-    allocate(mg_incoming(number_angles, number_groups))
+    allocate(mg_incident(number_groups, number_angles))
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen
     if (solver_type == 'fixed') then
@@ -167,14 +170,14 @@ module state
     call normalize_flux(phi, psi)
 
     ! Size the mg containers to be fine/coarse group for non/DGM problems
-    allocate(mg_source(number_cells, 2 * number_angles))
-    allocate(mg_nu_sig_f(number_regions, number_groups))
-    allocate(mg_sig_t(number_regions, number_groups))
-    allocate(mg_phi(0:number_legendre, number_cells, number_groups))
-    allocate(mg_chi(number_regions, number_groups))
-    allocate(mg_sig_s(0:number_legendre, number_regions, number_groups, number_groups))
+    allocate(mg_source(number_groups, number_cells))
+    allocate(mg_nu_sig_f(number_groups, number_regions))
+    allocate(mg_sig_t(number_groups, number_regions))
+    allocate(mg_phi(0:number_legendre, number_groups, number_cells))
+    allocate(mg_chi(number_groups, number_regions))
+    allocate(mg_sig_s(0:scatter_legendre_order, number_groups, number_groups, number_regions))
     if (store_psi) then
-      allocate(mg_psi(number_cells, 2 * number_angles, number_groups))
+      allocate(mg_psi(number_groups, 2 * number_angles, number_cells))
     end if
 
   end subroutine initialize_state
@@ -224,8 +227,8 @@ module state
     if (allocated(mg_sig_t)) then
       deallocate(mg_sig_t)
     end if
-    if (allocated(mg_incoming)) then
-      deallocate(mg_incoming)
+    if (allocated(mg_incident)) then
+      deallocate(mg_incident)
     end if
     if (allocated(mg_density)) then
       deallocate(mg_density)
@@ -283,9 +286,10 @@ module state
         number_groups  ! Number of energy groups
 
     if (solver_type == 'eigen') then
-      number_groups = size(phi(1,1,:))
+      ! This Legendre order is 1 indexed instead of zero indexed
+      number_groups = size(phi(1,:,1))
 
-      norm_frac = sum(abs(phi(1,:,:))) / (number_cells * number_groups)
+      norm_frac = sum(abs(phi(1,:,:))) / (number_groups * number_cells)
 
       ! normalize phi
       phi = phi / norm_frac
@@ -303,20 +307,14 @@ module state
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_groups, use_DGM, number_regions, &
-                        number_fine_groups
+    use control, only : number_cells, use_DGM
     use mesh, only : mMap
-    use material, only : number_materials, nu_sig_f
+    use material, only : nu_sig_f
     use dgm, only : dgm_order, phi_m_zero
 
     ! Variable definitions
     integer :: &
-      c, &   ! Cell index
-      g      ! Group index
-    double precision, dimension(number_regions) :: &
-      f      ! Temporary array to hold the fission cross section
-    double precision :: &
-      phi_g  ! Scalar flux container
+      c      ! Cell index
     logical, intent(in), optional :: &
       fine_flag                      ! Controls computing density using fine flux
     logical :: &
@@ -335,24 +333,18 @@ module state
     ! Sum the fission reaction rate over groups for each cell
     if (fine_flag_val) then
       ! Compute fission density using fine flux
-      do g = 1, number_fine_groups
-        do c = 1, number_cells
-          phi_g = phi(0,c,g)
-          mg_density(c) = mg_density(c) + nu_sig_f(g, mMap(c)) * phi_g
-        end do
+      do c = 1, number_cells
+        mg_density(c) = sum(nu_sig_f(:, mMap(c)) * phi(0,:,c))
+      end do
+    else if (use_DGM .and. dgm_order > 0) then
+      ! Compute the fission density using the mg_flux for higher moments
+      do c = 1, number_cells
+        mg_density(c) = sum(mg_nu_sig_f(:, mg_mMap(c)) * phi_m_zero(0,:,c))
       end do
     else
-      ! Compute the fission density using the mg_flux
-      do g = 1, number_groups
-        f = mg_nu_sig_f(:, g)
-        do c = 1, number_cells
-          if (use_DGM .and. dgm_order > 0) then
-            phi_g = phi_m_zero(0,c,g)
-          else
-            phi_g = mg_phi(0,c,g)
-          end if
-          mg_density(c) = mg_density(c) + f(mg_mMap(c)) * phi_g
-        end do
+      ! Compute the fission density using the mg_flux normally
+      do c = 1, number_cells
+        mg_density(c) = sum(mg_nu_sig_f(:, mg_mMap(c)) * mg_phi(0,:,c))
       end do
     end if
 
@@ -386,7 +378,7 @@ module state
     end if
 
     ! incoming
-    print *, 'incident = ', mg_incoming
+    print *, 'incident = ', mg_incident
 
     ! k
     print *, 'k = ', keff
