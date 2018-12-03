@@ -346,7 +346,7 @@ module dgmsolver
                         delta_legendre_order, truncate_delta, number_regions, &
                         energy_group_map, scatter_legendre_order, number_coarse_groups
     use state, only : mg_sig_t, mg_nu_sig_f, phi, psi, mg_mMap
-    use material, only : sig_t, nu_sig_f, sig_s
+    use material, only : sig_t, sig_s
     use mesh, only : mMap, dx
     use dgm, only : phi_m, psi_m, basis, sig_s_m, delta_m, expansion_order, &
                     expanded_sig_t, expanded_nu_sig_f, expanded_sig_s
@@ -396,71 +396,45 @@ module dgmsolver
       homog_phi(0:, :, r) = homog_phi(0:, :, r) + dx(c) * phi_m(0, 0:, :, c)
     end do
 
-    ! Compute the total and fission moments
-    do c = 1, number_cells
-      do g = 1, number_fine_groups
-        cg = energy_group_map(g)
-        ! get the material for the current cell
-        mat = mMap(c)
-        r = mg_mMap(c)
-        ! Check if producing nan and not computing with a nan
-        if (homog_phi(0, cg, r) /= 0.0)  then
-          ! total cross section moment
-          mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(c) * basis(g, 0) * sig_t(g, mat) * phi(0, g, c) / homog_phi(0, cg, r)
-          ! fission cross section moment
-          mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(c) * nu_sig_f(g, mat) * phi(0, g, c) / homog_phi(0, cg, r)
-        end if
-      end do
-    end do
-!    print *, mg_nu_sig_f
-
-    ! Compute the total cross section moment
+    ! Compute the total cross section moments
     mg_sig_t = 0.0
     do c = 1, number_cells
       mat = mMap(c)
       r = mg_mMap(c)
       do cg = 1, number_coarse_groups
-        do j = 0, expansion_order
-          if (homog_phi(0, cg, r) /= 0.0)  then
-            mg_sig_t(cg, r) = mg_sig_t(cg, r) &
-                            + dx(c) * phi_m(j, 0, cg, c) * expanded_sig_t(j, cg, mat, 0) / homog_phi(0, cg, r)
-          end if
-        end do
+        float = dot_product(phi_m(:, 0, cg, c), expanded_sig_t(:, cg, mat, 0))
+        if (homog_phi(0, cg, r) /= 0.0)  then
+          mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(c) * float / homog_phi(0, cg, r)
+        end if
       end do
     end do
 
-    ! Compute the fission cross section moment
-!    mg_nu_sig_f = 0.0
-!    do c = 1, number_cells
-!      mat = mMap(c)
-!      r = mg_mMap(c)
-!      do cg = 1, number_coarse_groups
-!        do j = 0, expansion_order
-!          if (homog_phi(0, cg, r) /= 0.0)  then
-!            mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) &
-!                               + dx(c) * phi_m(j, 0, cg, c) * expanded_nu_sig_f(j, cg, mat) / homog_phi(0, cg, r)
-!          end if
-!        end do
-!      end do
-!    end do
-!
-!    print *, mg_nu_sig_f
-!    stop
+    ! Compute the fission cross section moments
+    mg_nu_sig_f = 0.0
+    do c = 1, number_cells
+      mat = mMap(c)
+      r = mg_mMap(c)
+      do cg = 1, number_coarse_groups
+        float = dot_product(phi_m(:, 0, cg, c), expanded_nu_sig_f(:, cg, mat))
+        if (homog_phi(0, cg, r) /= 0.0)  then
+          mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(c) * float / homog_phi(0, cg, r)
+        end if
+      end do
+    end do
 
     do o = 0, expansion_order
+      ! Scattering cross section moment
       do c = 1, number_cells
+        ! get the material for the current cell
+        mat = mMap(c)
+        r = mg_mMap(c)
         do g = 1, number_fine_groups
           cg = energy_group_map(g)
-
-          ! Scattering cross section moment
           do gp = 1, number_fine_groups
             cgp = energy_group_map(gp)
-            ! get the material for the current cell
-            mat = mMap(c)
-            r = mg_mMap(c)
             do l = 0, scatter_legendre_order
               ! Check if producing nan
-              if (phi_m(0, l, cgp, c) /= 0.0) then
+              if (homog_phi(l, cgp, r) /= 0.0) then
                 sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
                                        + dx(c) * basis(g, o) * sig_s(l, gp, g, mat) * phi(l, gp, c) / homog_phi(l, cgp, r)
               end if
@@ -468,7 +442,36 @@ module dgmsolver
           end do
         end do
       end do
+    end do
 
+!    print *, sig_s_m(0,:,:,:,0)
+!
+!    sig_s_m = 0.0
+!    ! Compute the scattering cross section moments
+!    do o = 0, expansion_order
+!      do c = 1, number_cells
+!        ! get the material for the current cell
+!        mat = mMap(c)
+!        r = mg_mMap(c)
+!        do cg = 1, number_coarse_groups
+!          do cgp = 1, number_coarse_groups
+!            do l = 0, scatter_legendre_order
+!              float = dot_product(phi_m(:, l, cgp, c), expanded_sig_s(:, l, cgp, cg, mat, o))
+!              if (homog_phi(0, cgp, r) /= 0.0)  then
+!                  sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
+!                                            + dx(c) * float / homog_phi(l, cgp, r)
+!              end if
+!            end do
+!          end do
+!        end do
+!      end do
+!    end do
+!
+!    print *, sig_s_m(0,:,:,:,0)
+!    print *, expansion_order, scatter_legendre_order, number_coarse_groups, number_coarse_groups
+!    stop
+
+    do o = 0, expansion_order
       ord = delta_legendre_order
       ! Add angular total cross section moment (delta) to the external source
       do c = 1, number_cells

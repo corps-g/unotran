@@ -1248,7 +1248,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('coarse_pin')
         self.setBoundary('reflect')
         pydgm.control.material_map = [5, 1, 5]
-        pydgm.control.lamb = 0.27
+        pydgm.control.lamb = 0.25
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -1261,7 +1261,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgmsolver.dgmsolve()
 
         # Test the eigenvalue
-        self.assertAlmostEqual(pydgm.state.keff, keff_test, 12)
+        self.assertAlmostEqual(pydgm.state.keff, keff_test, 10)
 
         # Test the scalar flux
         phi = pydgm.state.phi[0, :, :].flatten('F')

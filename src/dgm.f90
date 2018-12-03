@@ -194,7 +194,7 @@ module dgm
         cg = energy_group_map(g)
         do j = 0, expansion_order
           expanded_nu_sig_f(j, cg, m) = expanded_nu_sig_f(j, cg, m) &
-                                      + basis(g, 0) * nu_sig_f(g, m) * basis(g, j)
+                                      + nu_sig_f(g, m) * basis(g, j)
         end do
       end do
     end do
@@ -209,7 +209,7 @@ module dgm
             do l = 0, scatter_legendre_order
               do j = 0, expansion_order
                 expanded_sig_s(j, l, cgp, cg, m, i) = expanded_sig_s(j, l, cgp, cg, m, i) &
-                                                    + basis(g, i) * basis(gp, 0) * sig_s(l, gp, g, m) * basis(gp, j)
+                                                    + basis(g, i) * sig_s(l, gp, g, m) * basis(gp, j)
               end do
             end do
           end do
