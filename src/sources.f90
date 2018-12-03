@@ -110,7 +110,7 @@ module sources
     use state, only : mg_mMap, mg_phi, mg_sig_s
     use angle, only : p_leg
     use control, only : scatter_legendre_order, number_groups, use_DGM
-    use dgm, only : dgm_order, phi_m_zero
+    use dgm, only : dgm_order, phi_m
 
     ! Variable definitions
     integer, intent(in) :: &
@@ -127,7 +127,7 @@ module sources
     ord = scatter_legendre_order
 
     if (use_DGM .and. dgm_order > 0) then
-      sigphi(:,:) = phi_m_zero(0:ord,:,c) * mg_sig_s(:,:,g,mg_mMap(c))
+      sigphi(:,:) = phi_m(0, 0:ord,:,c) * mg_sig_s(:,:,g,mg_mMap(c))
     else
       sigphi(:,:) = mg_phi(0:ord,:,c) * mg_sig_s(:,:,g,mg_mMap(c))
     end if
@@ -161,7 +161,7 @@ module sources
     ! ##########################################################################
 
     ! Use Statements
-    use dgm, only : delta_m, psi_m_zero, dgm_order
+    use dgm, only : delta_m, psi_m, dgm_order
     use state, only : mg_mMap
 
     ! Variable definitions
@@ -172,7 +172,7 @@ module sources
     double precision :: &
       source   ! Source for group g
 
-    source = -delta_m(g,a,mg_mMap(c),dgm_order) * psi_m_zero(g,a,c)
+    source = -delta_m(g,a,mg_mMap(c),dgm_order) * psi_m(0,g,a,c)
 
   end function compute_delta
 

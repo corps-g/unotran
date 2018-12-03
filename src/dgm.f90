@@ -10,12 +10,16 @@ module dgm
       source_m                ! Source moments
   double precision, allocatable, dimension(:,:,:) :: &
       chi_m,                & ! Chi spectrum moments
-      phi_m_zero,           & ! Zeroth moment of scalar flux
-      psi_m_zero              ! Zeroth moment of angular flux
+      expanded_nu_sig_f       ! Expanded fission cross sections
   double precision, allocatable, dimension(:,:,:,:) :: &
-      delta_m                 ! Angular total XS moments
+      delta_m,              & ! Angular total XS moments
+      phi_m,                & ! Scalar flux moments
+      psi_m,                & ! Angular flux moments
+      expanded_sig_t          ! Expanded total cross sections
   double precision, allocatable, dimension(:,:,:,:,:) :: &
       sig_s_m                 ! Scattering XS moments
+  double precision, allocatable, dimension(:,:,:,:,:,:) :: &
+      expanded_sig_s          ! Expanded scattering cross sections
   integer :: &
       expansion_order,      & ! Maximum expansion order
       dgm_order=0             ! Current order
@@ -90,8 +94,8 @@ module dgm
     expansion_order = MAXVAL(order)
 
     ! Form the containers to hold the zeroth moments
-    allocate(phi_m_zero(0:number_legendre, number_coarse_groups, number_cells))
-    allocate(psi_m_zero(number_coarse_groups, 2 * number_angles, number_cells))
+    allocate(phi_m(0:expansion_order, 0:number_legendre, number_coarse_groups, number_cells))
+    allocate(psi_m(0:expansion_order, number_coarse_groups, 2 * number_angles, number_cells))
 
   end subroutine initialize_moments
 
@@ -141,6 +145,81 @@ module dgm
 
   end subroutine initialize_basis
 
+  subroutine compute_expanded_cross_sections()
+    ! ##########################################################################
+    ! Initialize and fill the expanded cross section containers
+    ! ##########################################################################
+
+    ! Use Statements
+    use control, only : number_coarse_groups, scatter_legendre_order, number_fine_groups, &
+                        energy_group_map
+    use material, only : number_materials, sig_t, nu_sig_f, sig_s
+
+    ! Variable definitions
+    integer :: &
+        m,   & ! Material index
+        g,   & ! Group index
+        gp,  & ! Group prime index
+        cg,  & ! Coarse group index
+        cgp, & ! Coarse group prime index
+        l,   & ! Legendre index
+        i,   & ! order index
+        j      ! order prime index
+
+    allocate(expanded_sig_t(0:expansion_order, number_coarse_groups, number_materials, 0:expansion_order))
+    allocate(expanded_nu_sig_f(0:expansion_order, number_coarse_groups, number_materials))
+    allocate(expanded_sig_s(0:expansion_order, 0:scatter_legendre_order, number_coarse_groups, &
+                            number_coarse_groups, number_materials, 0:expansion_order))
+
+    expanded_sig_t = 0.0
+    expanded_nu_sig_f = 0.0
+    expanded_sig_s = 0.0
+
+    ! Fill the expanded total cross section
+    do i = 0, expansion_order
+      do m = 1, number_materials
+        do g = 1, number_fine_groups
+          cg = energy_group_map(g)
+          do j = 0, expansion_order
+            expanded_sig_t(j, cg, m, i) = expanded_sig_t(j, cg, m, i) &
+                                        + basis(g, i) * sig_t(g, m) * basis(g, j)
+          end do
+        end do
+      end do
+    end do
+
+    ! Fill the expanded fission cross section
+    do m = 1, number_materials
+      do g = 1, number_fine_groups
+        cg = energy_group_map(g)
+        do j = 0, expansion_order
+          expanded_nu_sig_f(j, cg, m) = expanded_nu_sig_f(j, cg, m) &
+                                      + basis(g, 0) * nu_sig_f(g, m) * basis(g, j)
+        end do
+      end do
+    end do
+
+    ! Fill the expanded scatter cross section
+    do i = 0, expansion_order
+      do m = 1, number_materials
+        do g = 1, number_fine_groups
+          cg = energy_group_map(g)
+          do gp = 1, number_fine_groups
+            cgp = energy_group_map(g)
+            do l = 0, scatter_legendre_order
+              do j = 0, expansion_order
+                expanded_sig_s(j, l, cgp, cg, m, i) = expanded_sig_s(j, l, cgp, cg, m, i) &
+                                                    + basis(g, i) * basis(gp, 0) * sig_s(l, gp, g, m) * basis(gp, j)
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+
+
+  end subroutine compute_expanded_cross_sections
+
   subroutine finalize_moments()
     ! ##########################################################################
     ! Deallocate the variable containers
@@ -158,11 +237,11 @@ module dgm
     if (allocated(chi_m)) then
       deallocate(chi_m)
     end if
-    if (allocated(phi_m_zero)) then
-      deallocate(phi_m_zero)
+    if (allocated(phi_m)) then
+      deallocate(phi_m)
     end if
-    if (allocated(psi_m_zero)) then
-      deallocate(psi_m_zero)
+    if (allocated(psi_m)) then
+      deallocate(psi_m)
     end if
     if (allocated(source_m)) then
       deallocate(source_m)
@@ -172,6 +251,15 @@ module dgm
     end if
     if (allocated(sig_s_m)) then
       deallocate(sig_s_m)
+    end if
+    if (allocated(expanded_sig_t)) then
+      deallocate(expanded_sig_t)
+    end if
+    if (allocated(expanded_nu_sig_f)) then
+      deallocate(expanded_nu_sig_f)
+    end if
+    if (allocated(expanded_sig_s)) then
+      deallocate(expanded_sig_s)
     end if
   end subroutine finalize_moments
 

@@ -45,7 +45,7 @@ module state
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials
-    use dgm, only : initialize_moments, initialize_basis
+    use dgm, only : initialize_moments, initialize_basis, compute_expanded_cross_sections
 
     ! Variable definitions
     integer :: &
@@ -84,6 +84,7 @@ module state
       ! Initialize DGM moments
       call initialize_moments()
       call initialize_basis()
+      call compute_expanded_cross_sections()
       number_groups = number_coarse_groups
       if (allocated(homogenization_map)) then
         number_regions = maxval(homogenization_map)
@@ -310,7 +311,7 @@ module state
     use control, only : number_cells, use_DGM
     use mesh, only : mMap
     use material, only : nu_sig_f
-    use dgm, only : dgm_order, phi_m_zero
+    use dgm, only : dgm_order, phi_m
 
     ! Variable definitions
     integer :: &
@@ -339,7 +340,7 @@ module state
     else if (use_DGM .and. dgm_order > 0) then
       ! Compute the fission density using the mg_flux for higher moments
       do c = 1, number_cells
-        mg_density(c) = sum(mg_nu_sig_f(:, mg_mMap(c)) * phi_m_zero(0,:,c))
+        mg_density(c) = sum(mg_nu_sig_f(:, mg_mMap(c)) * phi_m(0, 0,:,c))
       end do
     else
       ! Compute the fission density using the mg_flux normally

@@ -117,7 +117,7 @@ class TestDGM(unittest.TestCase):
 
         phi_m_test = np.array([[[2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0],
                                 [1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776, 1.7320508075688776]]]).T
-        np.testing.assert_array_almost_equal(pydgm.dgm.phi_m_zero, phi_m_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.dgm.phi_m[0], phi_m_test, 12)
 
         psi_m_test = 0.5 * np.array([[[2.0],
                                       [2.0],
@@ -128,7 +128,7 @@ class TestDGM(unittest.TestCase):
                                       [1.7320508075688776],
                                       [1.7320508075688776]]])
 
-        np.testing.assert_array_almost_equal(pydgm.dgm.psi_m_zero, psi_m_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.dgm.psi_m[0], psi_m_test, 12)
 
     def test_dgm_compute_incoming_flux(self):
         '''
@@ -293,11 +293,11 @@ class TestDGM2(unittest.TestCase):
 
         phi_m_test = np.array([0.7324537980989441, 0.0008563596450213])
 
-        np.testing.assert_array_almost_equal(pydgm.dgm.phi_m_zero.flatten(), phi_m_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.dgm.phi_m[0].flatten(), phi_m_test, 12)
 
         psi_m_test = 0.5 * phi_m_test
         for a in range(4):
-            np.testing.assert_array_almost_equal(pydgm.dgm.psi_m_zero[:, a, 0].flatten(), psi_m_test, 12)
+            np.testing.assert_array_almost_equal(pydgm.dgm.psi_m[0, :, a, 0].flatten(), psi_m_test, 12)
 
     def test_dgm_compute_xs_moments(self):
         '''
