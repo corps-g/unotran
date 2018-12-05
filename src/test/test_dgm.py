@@ -130,26 +130,6 @@ class TestDGM(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(pydgm.dgm.psi_m[0], psi_m_test, 12)
 
-    def test_dgm_compute_incoming_flux(self):
-        '''
-        Check that the higher order angular flux moments are computed correctly
-        '''
-
-        # Initialize the dependancies
-        pydgm.dgmsolver.initialize_dgmsolver()
-
-        phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
-        for a in range(4):
-            pydgm.state.psi[:, a, 0] = phi / 2
-        basis = np.loadtxt('test/7gbasis').T
-        test = basis.dot(phi) * 0.5
-        test.resize(2, 4)
-
-        for i in range(4):
-            pydgm.dgmsolver.compute_incoming_flux(i, pydgm.state.psi)
-            for a in range(2):
-                np.testing.assert_array_almost_equal(pydgm.state.mg_incident[:, a], test[:, i], 12)
-
     def test_dgm_compute_xs_moments(self):
         '''
         Check that the XS moments are properly computed

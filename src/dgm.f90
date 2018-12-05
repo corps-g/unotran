@@ -210,7 +210,6 @@ module dgm
       end do
     end do
 
-
   end subroutine compute_expanded_cross_sections
 
   subroutine finalize_moments()

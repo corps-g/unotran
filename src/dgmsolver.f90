@@ -35,11 +35,13 @@ module dgmsolver
 
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
-                        ignore_warnings, lamb, number_cells, number_fine_groups, &
-                        number_legendre, number_angles, min_recon_iters
+                        ignore_warnings, lamb, number_cells, &
+                        number_legendre, number_angles, min_recon_iters, number_fine_groups, &
+                        truncate_delta, delta_legendre_order
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
-                      update_fission_density, output_moments
+                      update_fission_density, output_moments, mg_incident
     use dgm, only : expansion_order, phi_m, psi_m, dgm_order
+    use angle, only : p_leg
     use solver, only : solve
 
     ! Variable definitions
@@ -50,7 +52,8 @@ module dgmsolver
     logical :: &
         bypass_flag       ! Local variable to signal an eigen loop bypass
     integer :: &
-        recon_count       ! Iteration counter
+        recon_count,    & ! Iteration counter
+        a                 ! Angle index
     double precision :: &
         recon_error       ! Error between successive iterations
     double precision, dimension(0:number_legendre, number_fine_groups, number_cells) :: &
@@ -81,11 +84,18 @@ module dgmsolver
       phi = 0.0
       psi = 0.0
 
-      ! Solve for order 0
+      ! Solve for each order
       do dgm_order = 0, expansion_order
 
-        ! Set Incoming to the proper order
-        call compute_incoming_flux(dgm_order, old_psi)
+        ! Set incident flux to the proper order
+        if (truncate_delta) then
+          do a = 1, number_angles
+            mg_incident(:, a) = matmul(transpose(phi_m(dgm_order, :delta_legendre_order, :, 1)), &
+                                       p_leg(:delta_legendre_order, a+number_angles))
+          end do
+        else
+          mg_incident(:, :) = psi_m(dgm_order, :, (number_angles+1):, 1)
+        end if
 
         ! Compute the cross section moments
         call slice_xs_moments(order=dgm_order)
@@ -288,35 +298,6 @@ module dgmsolver
 
   end subroutine compute_flux_moments
 
-  subroutine compute_incoming_flux(order, psi)
-    ! ##########################################################################
-    ! Compute the incident angular flux at the boundary for the given order
-    ! ##########################################################################
-
-    ! Use Statements
-    use control, only : number_angles, number_fine_groups, energy_group_map
-    use state, only : mg_incident
-    use dgm, only : basis
-
-    ! Variable definitions
-    double precision, intent(in), dimension(:,:,:) :: &
-      psi      ! Angular flux
-    integer :: &
-      order, & ! Expansion order
-      a,     & ! Angle index
-      g,     & ! Fine group index
-      cg       ! Coarse group index
-
-    mg_incident = 0.0
-    do a = 1, number_angles
-      do g = 1, number_fine_groups
-        cg = energy_group_map(g)
-        mg_incident(cg, a) = mg_incident(cg, a) + basis(g, order) * psi(g, a + number_angles, 1)
-      end do
-    end do
-
-  end subroutine compute_incoming_flux
-
   subroutine slice_xs_moments(order)
     ! ##########################################################################
     ! Fill the XS containers with precomputed values for higher moments
@@ -368,6 +349,7 @@ module dgmsolver
     double precision, dimension(0:number_legendre, number_groups, number_regions) :: &
         homog_phi      ! Homogenization container
 
+    ! Reset the moment containers if need be
     if (allocated(delta_m)) then
       deallocate(delta_m)
     end if

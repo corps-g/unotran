@@ -86,6 +86,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.control.material_map = [1]
         pydgm.control.allow_fission = False
+        nA = 2
 
         pydgm.dgmsolver.initialize_dgmsolver()
 
@@ -111,7 +112,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         # Set the converged fluxes
         pydgm.state.phi[0, :, 0] = phi
-        for a in range(4):
+        for a in range(2 * nA):
             pydgm.state.psi[:, a, 0] = psi[a]
         pydgm.state.keff = 1.0
         old_psi = pydgm.state.psi
@@ -125,7 +126,7 @@ class TestDGMSOLVER(unittest.TestCase):
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.compute_xs_moments()
         pydgm.dgmsolver.slice_xs_moments(order)
 
@@ -144,7 +145,7 @@ class TestDGMSOLVER(unittest.TestCase):
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -159,7 +160,7 @@ class TestDGMSOLVER(unittest.TestCase):
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -174,7 +175,7 @@ class TestDGMSOLVER(unittest.TestCase):
         phi_m = phi_m_test[:, order]
         psi_m = psi_m_test[:, :, order]
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -196,6 +197,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         pydgm.control.material_map = [1]
         pydgm.control.allow_fission = False
+        nA = 2
 
         pydgm.dgmsolver.initialize_dgmsolver()
 
@@ -207,7 +209,7 @@ class TestDGMSOLVER(unittest.TestCase):
         S = pydgm.material.sig_s[0, :, :, 0].T
         phi = np.linalg.solve((T - S), np.ones(7))
         pydgm.state.phi[0, :, 0] = phi
-        for a in range(4):
+        for a in range(2 * nA):
             pydgm.state.psi[:, a, 0] = phi / 2.0
         pydgm.state.keff = 1.0
         old_psi = pydgm.state.psi
@@ -220,7 +222,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         phi_m_test = np.array([46.0567816728045685, 39.9620014433207302])
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.compute_xs_moments()
         pydgm.dgmsolver.slice_xs_moments(order)
 
@@ -241,7 +243,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         phi_m_test = np.array([-7.7591835637013871, 18.2829496616545661])
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -258,7 +260,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-10.382535949686881, -23.8247979105656675])
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -275,7 +277,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-7.4878268473063185, 0.0])
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -298,6 +300,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('1')
         self.setBoundary('reflect')
         pydgm.control.material_map = [1]
+        nA = 2
 
         pydgm.dgmsolver.initialize_dgmsolver()
 
@@ -307,7 +310,7 @@ class TestDGMSOLVER(unittest.TestCase):
         # Set the converged fluxes
         phi = np.array([0.198933535568562, 2.7231683533646702, 1.3986600409998782, 1.010361903429942, 0.8149441787223116, 0.8510697418684054, 0.00286224604623])
         pydgm.state.phi[0, :, 0] = phi
-        for a in range(4):
+        for a in range(2 * nA):
             pydgm.state.psi[:, a, 0] = phi / 2.0
         pydgm.state.keff = 1.0674868709852505
         old_psi = pydgm.state.psi
@@ -322,7 +325,7 @@ class TestDGMSOLVER(unittest.TestCase):
         norm_frac = 2 / sum(phi_m_test)
         phi_m_test *= norm_frac
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.compute_xs_moments()
         pydgm.dgmsolver.slice_xs_moments(order)
 
@@ -346,7 +349,7 @@ class TestDGMSOLVER(unittest.TestCase):
         phi_m_test = np.array([-0.2481536345018054, 0.5742286414743346])
         phi_m_test *= norm_frac
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -364,7 +367,7 @@ class TestDGMSOLVER(unittest.TestCase):
         phi_m_test = np.array([-1.4562664776830221, -0.3610274595244746])
         phi_m_test *= norm_frac
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -382,7 +385,7 @@ class TestDGMSOLVER(unittest.TestCase):
         phi_m_test = np.array([-1.0699480859043353, 0.0])
         phi_m_test *= norm_frac
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, nA:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -492,7 +495,7 @@ class TestDGMSOLVER(unittest.TestCase):
         phi_m_test = pydgm.dgm.phi_m[0].flatten('F')
         phi_m_test /= np.linalg.norm(phi_m_test, 1) / 10
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, pydgm.control.number_angles:, 0]
         pydgm.dgmsolver.compute_xs_moments()
         pydgm.dgmsolver.slice_xs_moments(order)
 
@@ -511,7 +514,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         phi_m_test = np.array([0.66268605409797898, 1.1239769588944581, 1.4011457517310117, 1.3088156391543195, 0.84988298005049157, 3.7839914869954847E-002, 5.7447025802385317E-002, 5.1596378790218486E-002, 3.8939158159247110E-002, 1.8576596655769165E-002])
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, pydgm.control.number_angles:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -526,7 +529,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-0.20710920655711104, -0.44545552454860282, -0.46438347612912256, -0.41828263508757896, -0.18748642683048020, 3.1862102568187112E-004, 3.1141556263365915E-003, 5.3924924332473369E-003, 5.0995287080187754E-003, 3.0030380436572414E-003])
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, pydgm.control.number_angles:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
@@ -541,7 +544,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.dgm.dgm_order = order
         phi_m_test = np.array([-0.13255187402833862, -0.30996650357216082, -0.42418668341792881, -0.32530149073950271, -0.15053175043041164, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000, 0.0000000000000000])
 
-        pydgm.dgmsolver.compute_incoming_flux(order, old_psi)
+        pydgm.state.mg_incident = pydgm.dgm.psi_m[order, :, pydgm.control.number_angles:, 0]
         pydgm.dgmsolver.slice_xs_moments(order)
 
         pydgm.solver.solve()
