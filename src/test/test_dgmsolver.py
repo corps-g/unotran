@@ -1274,7 +1274,7 @@ class TestDGMSOLVER(unittest.TestCase):
             for a in range(nAngles):
                 phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
                 phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
-        np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
+        np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 11)
 
     def tearDown(self):
         pydgm.dgmsolver.finalize_dgmsolver()

@@ -163,8 +163,7 @@ module dgm
         cg,  & ! Coarse group index
         cgp, & ! Coarse group prime index
         l,   & ! Legendre index
-        i,   & ! order index
-        j      ! order prime index
+        i      ! order index
 
     allocate(expanded_sig_t(0:expansion_order, number_coarse_groups, number_materials, 0:expansion_order))
     allocate(expanded_nu_sig_f(0:expansion_order, number_coarse_groups, number_materials))
@@ -180,10 +179,8 @@ module dgm
       do m = 1, number_materials
         do g = 1, number_fine_groups
           cg = energy_group_map(g)
-          do j = 0, expansion_order
-            expanded_sig_t(j, cg, m, i) = expanded_sig_t(j, cg, m, i) &
-                                        + basis(g, i) * sig_t(g, m) * basis(g, j)
-          end do
+          expanded_sig_t(:, cg, m, i) = expanded_sig_t(:, cg, m, i) &
+                                      + basis(g, i) * sig_t(g, m) * basis(g, :)
         end do
       end do
     end do
@@ -192,10 +189,8 @@ module dgm
     do m = 1, number_materials
       do g = 1, number_fine_groups
         cg = energy_group_map(g)
-        do j = 0, expansion_order
-          expanded_nu_sig_f(j, cg, m) = expanded_nu_sig_f(j, cg, m) &
-                                      + nu_sig_f(g, m) * basis(g, j)
-        end do
+        expanded_nu_sig_f(:, cg, m) = expanded_nu_sig_f(:, cg, m) &
+                                    + nu_sig_f(g, m) * basis(g, :)
       end do
     end do
 
@@ -205,12 +200,10 @@ module dgm
         do g = 1, number_fine_groups
           cg = energy_group_map(g)
           do gp = 1, number_fine_groups
-            cgp = energy_group_map(g)
+            cgp = energy_group_map(gp)
             do l = 0, scatter_legendre_order
-              do j = 0, expansion_order
-                expanded_sig_s(j, l, cgp, cg, m, i) = expanded_sig_s(j, l, cgp, cg, m, i) &
-                                                    + basis(g, i) * sig_s(l, gp, g, m) * basis(gp, j)
-              end do
+              expanded_sig_s(:, l, cgp, cg, m, i) = expanded_sig_s(:, l, cgp, cg, m, i) &
+                                                  + basis(g, i) * sig_s(l, gp, g, m) * basis(gp, :)
             end do
           end do
         end do
