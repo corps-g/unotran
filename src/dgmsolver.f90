@@ -36,7 +36,7 @@ module dgmsolver
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
                         ignore_warnings, lamb, number_cells, &
-                        number_legendre, number_angles, min_recon_iters, number_fine_groups, &
+                        number_legendre, number_angles, min_recon_iters, number_coarse_groups, &
                         truncate_delta, delta_legendre_order
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments, mg_incident
@@ -56,10 +56,10 @@ module dgmsolver
         a                 ! Angle index
     double precision :: &
         recon_error       ! Error between successive iterations
-    double precision, dimension(0:number_legendre, number_fine_groups, number_cells) :: &
-        old_phi           ! Scalar flux from previous iteration
-    double precision, dimension(number_fine_groups, 2 * number_angles, number_cells) :: &
-        old_psi           ! Angular flux from previous iteration
+    double precision, dimension(0:expansion_order, 0:number_legendre, number_coarse_groups, number_cells) :: &
+        old_phi_m         ! Scalar flux from previous iteration
+    double precision, dimension(0:expansion_order, number_coarse_groups, 2 * number_angles, number_cells) :: &
+        old_psi_m         ! Angular flux from previous iteration
 
     if (present(bypass_arg)) then
       bypass_flag = bypass_arg
@@ -67,13 +67,13 @@ module dgmsolver
       bypass_flag = bypass_default
     end if
 
+    ! Expand the fluxes into moment form
+    call compute_flux_moments()
+
     do recon_count = 1, max_recon_iters
       ! Save the old value of the scalar flux
-      old_phi = phi
-      old_psi = psi
-
-      ! Expand the fluxes into moment form
-      call compute_flux_moments()
+      old_phi_m = phi_m
+      old_psi_m = psi_m
 
       ! Compute the cross section moments
       call compute_xs_moments()
@@ -81,8 +81,6 @@ module dgmsolver
       ! Fill the initial moments
       mg_phi = phi_m(0,:,:,:)
       mg_psi = psi_m(0,:,:,:)
-      phi = 0.0
-      psi = 0.0
 
       ! Solve for each order
       do dgm_order = 0, expansion_order
@@ -111,21 +109,19 @@ module dgmsolver
           print *, dgm_order, mg_phi
         end if
 
-        ! Unfold ith order flux
-        call unfold_flux_moments(dgm_order, mg_psi, phi, psi)
       end do
 
       ! Update flux using krasnoselskii iteration
-      phi = (1.0 - lamb) * old_phi + lamb * phi
+      phi_m = (1.0 - lamb) * old_phi_m + lamb * phi_m
       if (store_psi) then
-        psi = (1.0 - lamb) * old_psi + lamb * psi
+        psi_m = (1.0 - lamb) * old_psi_m + lamb * psi_m
       end if
 
       ! Compute the fission density
       call update_fission_density()
 
       ! Update the error
-      recon_error = maxval(abs(old_phi - phi))
+      recon_error = maxval(abs(old_phi_m - phi_m))
 
       ! Print output
       if (recon_print > 0) then
@@ -143,6 +139,9 @@ module dgmsolver
 
     end do
 
+    ! Unfold to fine-group flux
+    call unfold_flux_moments()
+
     ! Do final normalization
     call normalize_flux(phi, psi)
 
@@ -159,51 +158,49 @@ module dgmsolver
 
   end subroutine dgmsolve
 
-  subroutine unfold_flux_moments(order, psi_moment, phi_new, psi_new)
+  subroutine unfold_flux_moments()
     ! ##########################################################################
     ! Unfold the fluxes from the moments
     ! ##########################################################################
 
     ! Use Statements
     use control, only : number_fine_groups, number_angles, number_cells, energy_group_map
-    use angle, only : p_leg, wt
-    use control, only : store_psi, number_angles, number_legendre
-    use dgm, only : basis
+    use angle, only : p_leg
+    use control, only : store_psi, number_angles, truncate_delta, &
+                        delta_legendre_order
+    use dgm, only : basis, expansion_order, phi_m, psi_m
+    use state, only : phi, psi
 
     ! Variable definitions
-    integer, intent(in) :: &
-        order         ! Expansion order
-    double precision, intent(in), dimension(:,:,:) :: &
-        psi_moment    ! Angular flux moments
-    double precision, intent(inout), dimension(:,:,:) :: &
-        psi_new,    & ! Scalar flux for current iteration
-        phi_new       ! Angular flux for current iteration
-    double precision, dimension(0:number_legendre) :: &
-        M                    ! Legendre polynomial integration vector
+    double precision, dimension(0:expansion_order) :: &
+        tmp_psi_m     ! Legendre polynomial integration vector
     integer :: &
         a,          & ! Angle index
         c,          & ! Cell index
-        g,          & ! Fine group index
-        an            ! Global angle index
-    double precision :: &
-        val           ! Variable to hold a double value
+        g             ! Fine group index
 
-    ! Recover the angular flux from moments
+    ! Get scalar flux from moments
     do c = 1, number_cells
-      do a = 1, number_angles * 2
-        ! legendre polynomial integration vector
-        an = merge(a, 2 * number_angles - a + 1, a <= number_angles)
-        M = wt(an) * p_leg(:,a)
-        do g = 1, number_fine_groups
-          ! Unfold the moments
-          val = basis(g, order) * psi_moment(energy_group_map(g), a, c)
-          if (store_psi) then
-            psi_new(g, a, c) = psi_new(g, a, c) + val
-          end if
-          phi_new(:, g, c) = phi_new(:, g, c) + M(:) * val
-        end do
+      do g = 1, number_fine_groups
+        phi(:, g, c) = matmul(basis(g, :), phi_m(:, :, energy_group_map(g), c))
       end do
     end do
+
+    if (store_psi) then
+      do c = 1, number_cells
+        do a = 1, number_angles * 2
+          do g = 1, number_fine_groups
+            if (truncate_delta) then
+              tmp_psi_m = matmul(phi_m(:, :delta_legendre_order, energy_group_map(g), c), &
+                                 p_leg(:delta_legendre_order, a))
+            else
+              tmp_psi_m = psi_m(:, energy_group_map(g), a, c)
+            end if
+            psi(g, a, c) = dot_product(basis(g, :), tmp_psi_m)
+          end do
+        end do
+      end do
+    end if
 
   end subroutine unfold_flux_moments
 

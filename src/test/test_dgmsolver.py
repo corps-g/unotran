@@ -574,22 +574,18 @@ class TestDGMSOLVER(unittest.TestCase):
         basis = np.loadtxt('test/7gbasis').T
         phi_m = basis.dot(phi_test)
         phi_m.resize(2, 4)
+        for i in range(4):
+            pydgm.dgm.phi_m[i, 0, :, 0] = phi_m[:, i]
 
         # Assume infinite homogeneous media (isotropic flux)
-        psi_moments = 0.5 * phi_m
-        psi = np.reshape(np.zeros(8), (2, 4, 1), 'F')
-        phi_new = np.reshape(np.zeros(7), (1, 7, 1), 'F')
-        psi_new = np.reshape(np.zeros(28), (7, 4, 1), 'F')
-
-        for order in range(4):
-            for a in range(4):
-                psi[:, a, 0] = psi_moments[:, order]
-
-            pydgm.dgmsolver.unfold_flux_moments(order, psi, phi_new, psi_new)
-
-        np.testing.assert_array_almost_equal(phi_new.flatten(), phi_test, 12)
         for a in range(4):
-            np.testing.assert_array_almost_equal(psi_new[:, a, 0].flatten(), phi_test * 0.5)
+            pydgm.dgm.psi_m[:, :, a, :] = 0.5 * pydgm.dgm.phi_m[:, 0, :, :]
+
+        pydgm.dgmsolver.unfold_flux_moments()
+
+        np.testing.assert_array_almost_equal(pydgm.state.phi.flatten(), phi_test, 12)
+        for a in range(4):
+            np.testing.assert_array_almost_equal(pydgm.state.psi[:, a, 0].flatten(), phi_test * 0.5)
 
     def test_dgmsolver_vacuum1(self):
         '''
