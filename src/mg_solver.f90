@@ -14,7 +14,7 @@ module mg_solver
                         min_outer_iters, number_cells, number_groups
     use sources, only : compute_source
     use sweeper, only : apply_transport_operator
-    use state, only : mg_phi, mg_source
+    use state, only : mg_phi
 
     ! Variable definitions
     integer :: &
