@@ -456,11 +456,11 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_fine_groups, &
+    use control, only : number_cells, number_regions, number_fine_groups, &
                         number_groups, energy_group_map
     use material, only : chi
-    use state, only : mg_constant_source
-    use mesh, only : mMap
+    use state, only : mg_constant_source, mg_mMap
+    use mesh, only : mMap, dx
     use dgm, only : chi_m, source_m, expansion_order, basis
 
     ! Variable definitions
@@ -469,21 +469,32 @@ module dgmsolver
         c,     & ! Cell index
         g,     & ! Fine group index
         cg,    & ! Coarse group index
+        r,     & ! Region index
         mat      ! Material index
+    double precision, dimension(number_regions) :: &
+        lengths  ! Length of each region
 
-    allocate(chi_m(number_groups, number_cells, 0:expansion_order))
+    allocate(chi_m(number_groups, number_regions, 0:expansion_order))
     allocate(source_m(number_groups, 0:expansion_order))
 
     chi_m = 0.0
     source_m = 0.0
 
+    ! Get the length of each region
+    lengths = 0.0
+    do c = 1, number_cells
+      r = mg_mMap(c)
+      lengths(r) = lengths(r) + dx(c)
+    end do
+
     ! chi moment
     do order = 0, expansion_order
       do c = 1, number_cells
         mat = mMap(c)
+        r = mg_mMap(c)
         do g = 1, number_fine_groups
           cg = energy_group_map(g)
-          chi_m(cg, c, order) = chi_m(cg, c, order) + basis(g, order) * chi(g, mat)
+          chi_m(cg, r, order) = chi_m(cg, r, order) + basis(g, order) * chi(g, mat) * dx(c) / lengths(r)
         end do
       end do
     end do
