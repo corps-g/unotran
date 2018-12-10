@@ -57,7 +57,7 @@ module state
     ! read the material cross sections
     call create_material()
     ! Determine the Legendre order of phi to store
-    if (delta_legendre_order /= -1) then
+    if (delta_legendre_order == -1) then
       delta_legendre_order = scatter_legendre_order
     end if
     number_legendre = max(delta_legendre_order, scatter_legendre_order)

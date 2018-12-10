@@ -418,6 +418,7 @@ module dgmsolver
 
     ! Compute delta
     ord = delta_legendre_order
+    print *, ord
     do o = 0, expansion_order
       ! Add angular total cross section moment (delta) to the external source
       do c = 1, number_cells

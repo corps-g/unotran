@@ -178,6 +178,10 @@ module control
           read(buffer, *, iostat=ios) source_value
         case ('scatter_legendre_order')
           read(buffer, *, iostat=ios) scatter_legendre_order
+        case ('delta_legendre_order')
+          read(buffer, *, iostat=ios) delta_legendre_order
+        case ('truncate_delta')
+          read(buffer, *, iostat=ios) truncate_delta
         case ('max_recon_iters')
           read(buffer, *, iostat=ios) max_recon_iters
         case ('max_eigen_iters')
