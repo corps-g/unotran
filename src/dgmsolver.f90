@@ -130,7 +130,7 @@ module dgmsolver
       past_error(3) = past_error(2)
       past_error(2) = past_error(1)
       past_error(1) = log10(recon_error)
-      recon_convergence_rate = sum(past_error) / 3.0
+      recon_convergence_rate = exp(sum(past_error) / 3.0)
 
       ! Print output
       if (recon_print > 0) then
