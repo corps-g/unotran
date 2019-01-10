@@ -39,7 +39,8 @@ module dgmsolver
                         number_legendre, number_angles, min_recon_iters, number_coarse_groups, &
                         truncate_delta, delta_legendre_order
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
-                      update_fission_density, output_moments, mg_incident
+                      update_fission_density, output_moments, mg_incident, &
+                      recon_convergence_rate
     use dgm, only : expansion_order, phi_m, psi_m, dgm_order
     use angle, only : p_leg
     use solver, only : solve
@@ -60,6 +61,8 @@ module dgmsolver
         old_phi_m         ! Scalar flux from previous iteration
     double precision, dimension(0:expansion_order, number_coarse_groups, 2 * number_angles, number_cells) :: &
         old_psi_m         ! Angular flux from previous iteration
+    double precision, dimension(3) :: &
+        past_error        ! Container to hold the error for last 3 iterations
 
     if (present(bypass_arg)) then
       bypass_flag = bypass_arg
@@ -69,6 +72,8 @@ module dgmsolver
 
     ! Expand the fluxes into moment form
     call compute_flux_moments()
+
+    past_error = 0.0
 
     do recon_count = 1, max_recon_iters
       ! Save the old value of the scalar flux
@@ -122,6 +127,10 @@ module dgmsolver
 
       ! Update the error
       recon_error = maxval(abs(old_phi_m - phi_m))
+      past_error(3) = past_error(2)
+      past_error(2) = past_error(1)
+      past_error(1) = log10(recon_error)
+      recon_convergence_rate = sum(past_error) / 3.0
 
       ! Print output
       if (recon_print > 0) then
