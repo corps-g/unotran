@@ -130,12 +130,12 @@ module dgmsolver
       past_error(3) = past_error(2)
       past_error(2) = past_error(1)
       past_error(1) = log10(recon_error)
-      recon_convergence_rate = exp(sum(past_error) / 3.0)
+      recon_convergence_rate = exp((past_error(1) - past_error(3)) / 2.0)
 
       ! Print output
       if (recon_print > 0) then
         write(*, 1001) recon_count, recon_error, keff, recon_convergence_rate
-        1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9, " conv rate: ", f4.3)
+        1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9, " conv rate: ", f5.3)
         if (recon_print > 1) then
           call output_moments()
         end if
