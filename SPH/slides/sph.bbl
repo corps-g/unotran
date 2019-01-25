@@ -1,0 +1,18 @@
+\begin{thebibliography}{1}
+\newcommand{\enquote}[1]{``#1''}
+
+\bibitem{Roberts2014}
+\MakeUppercase{J.~Roberts}, \emph{Advanced Response Matrix Methods for Full
+  Core Analysis}, Ph.D. thesis, Massachusetts Institute of Technology (2014).
+
+\bibitem{RobertsDetran}
+\MakeUppercase{J.~Roberts} and \MakeUppercase{B.~Forget}, \enquote{Multigroup
+  Diffusion Preconditioners for Multiplying Fixed-Source Transport Problems,}
+  \emph{Submitted to Journal of Computational Physics} (2014).
+
+\bibitem{RobertsSerment}
+\MakeUppercase{J.~A. Roberts} and \MakeUppercase{B.~Forget}, \enquote{Solving
+  Eigenvalue Response Matrix Equations with Nonlinear Techniques,} \emph{Annals
+  of Nuclear Energy (In Press)}, \textbf{69}, 97--107 (July 2014).
+
+\end{thebibliography}
