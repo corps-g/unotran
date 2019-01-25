@@ -101,7 +101,7 @@
   \leavevmode%
   \@tempdimb=2.4375ex%
     \multiply\@tempdimb by\beamer@sectionmax%
-  \pgfdeclareimage[height=0.85\@tempdimb]{logo}{ksubanner}%
+  \pgfdeclareimage[height=0.95\@tempdimb]{logo}{ksubanner}%
   \logo{\pgfuseimage{logo}}%
   \ifdim\@tempdimb>0pt%
     \advance\@tempdimb by 1.125ex%
@@ -112,7 +112,7 @@
     %  \vbox to\@tempdimb{\vfil\vfil\textbf{\footnotesize\insertshortinstitute~~}\vfil}%
     %\end{beamercolorbox}%
     \begin{beamercolorbox}[wd=.5\paperwidth,ht=\@tempdimb,left]{subsection in head/foot}%
-      \vbox to\@tempdimb{\vfil\vfil\insertlogo\vfil\vfil}%
+      \vbox to\@tempdimb{\vfil\vfil\hfill\insertlogo\vfil\vfil}%
     \end{beamercolorbox}%
   \fi%
 }
