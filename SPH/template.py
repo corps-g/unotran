@@ -75,31 +75,21 @@ def runSPH(G, pin_map, xs_name):
     fname = '_homo.'.join(xs_name.split('.'))
 
     # Solve for the reference problem
-    ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin)
-    
-    ref_XS = XS(ref.sig_t_homo, ref.sig_f_homo, ref.chi_homo, ref.sig_s_homo)
 
     # Write the reference cross sections
-    ref_XS.write_homogenized_XS(fname, old_mu)
 
     # Build the homogenized geometry
-    nPin, fm, cm, mm = buildGEO(pin_map, True)
 
     for i in range(1000):
         # Get the homogenized solution
-        homo = DGMSOLVER(G, fname, fm, cm, mm, nPin, ref.norm)
 
         # Compute the SPH factors
-        mu = ref.phi_homo / homo.phi_homo
 
         # Write the new cross sections adjusted by SPH
-        ref_XS.write_homogenized_XS(fname, mu)
 
         # Compute the error between successive iterations
-        err = np.linalg.norm(mu - old_mu, np.inf)
 
         # Save the previous SPH factors
-        old_mu = np.copy(mu)
 
         # Provide iteration output
         print 'Iter: {}    Error: {}'.format(i + 1, err)
@@ -136,18 +126,13 @@ if __name__ == '__main__':
     ref = makeColorset(1, pin_map, xs_name, False)
 
     # Get the homogenized cross sections
-    uo2low = runSPH(G, [1, 1, 1, 1, 1, 1, 1, 1], xs_name)   
-    uo2high = runSPH(G, [0, 0, 0, 0, 0, 0, 0, 0], xs_name)
+    uo2low = runSPH()   
+    uo2high = runSPH()
     uo2XS = uo2low + uo2high
 
     # Write the SPH cross sections
-    uo2XS.write_homogenized_XS('XS/colorset_homogenized.anlxs')
 
     # Get the homogenized solution
-    homo = makeColorset(G, pin_map, 'XS/colorset_homogenized.anlxs', True)
-
-    rxn_ref = ref.phi_homo * (ref.sig_t_homo - ref.sig_s_homo)
-    rxn_homo = homo.phi_homo * (homo.sig_t_homo - homo.sig_s_homo)
 
     print 'Reference reaction rates'
     print rxn_ref

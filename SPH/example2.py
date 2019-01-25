@@ -129,22 +129,21 @@ def makeColorset(G, pin_map, xs_name, homog=False, norm=None):
 if __name__ == '__main__':
     np.set_printoptions(precision=6)
     xs_name = 'XS/colorset.anlxs'
-    G = 1
 
     # Get the reference solution
-    pin_map = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+    pin_map = [1, 1, 2, 1, 1, 2, 1, 1, 0, 0, 3, 0, 0, 3, 0, 0]
     ref = makeColorset(1, pin_map, xs_name, False)
 
     # Get the homogenized cross sections
-    uo2low = runSPH(G, [1, 1, 1, 1, 1, 1, 1, 1], xs_name)   
-    uo2high = runSPH(G, [0, 0, 0, 0, 0, 0, 0, 0], xs_name)
+    uo2low = runSPH(1, [1, 1, 2, 1, 1, 2, 1, 1], xs_name)   
+    uo2high = runSPH(1, [0, 0, 3, 0, 0, 3, 0, 0], xs_name)
     uo2XS = uo2low + uo2high
 
     # Write the SPH cross sections
     uo2XS.write_homogenized_XS('XS/colorset_homogenized.anlxs')
 
     # Get the homogenized solution
-    homo = makeColorset(G, pin_map, 'XS/colorset_homogenized.anlxs', True)
+    homo = makeColorset(1, pin_map, 'XS/colorset_homogenized.anlxs', True)
 
     rxn_ref = ref.phi_homo * (ref.sig_t_homo - ref.sig_s_homo)
     rxn_homo = homo.phi_homo * (homo.sig_t_homo - homo.sig_s_homo)
