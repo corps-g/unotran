@@ -30,7 +30,7 @@ def plot(ref, homo):
     Create a plot comparing the reference array to the homogenized one
     '''
 
-    ncells = len(ref.phi[0]) / len(ref.phi_homo[0])
+    ncells = int(len(ref.phi[0]) / len(ref.phi_homo[0]))
 
     rxn = ref.phi * (ref.sig_t - ref.sig_s)
     rxn_homo = ref.phi_homo * (ref.sig_t_homo - ref.sig_s_homo)
@@ -102,18 +102,18 @@ def runSPH(G, pin_map, xs_name):
         old_mu = np.copy(mu)
 
         # Provide iteration output
-        print 'Iter: {}    Error: {}'.format(i + 1, err)
+        print('Iter: {}    Error: {}'.format(i + 1, err))
         if err < 1e-6:
             break
 
-    print 'SPH factors'
-    print mu
+    print('SPH factors')
+    print(mu)
 
     rxn_ref = ref.phi_homo * (ref.sig_t_homo - ref.sig_s_homo)
     rxn_homo = homo.phi_homo * (homo.sig_t_homo - homo.sig_s_homo)
-    print 'Make sure these reactions rates are the same if SPH is working properly'
-    print rxn_ref
-    print rxn_homo
+    print('Make sure these reactions rates are the same if SPH is working properly')
+    print(rxn_ref)
+    print(rxn_homo)
 
     return ref_XS
 
@@ -148,12 +148,12 @@ if __name__ == '__main__':
     rxn_ref = ref.phi_homo * (ref.sig_t_homo - ref.sig_s_homo)
     rxn_homo = homo.phi_homo * (homo.sig_t_homo - homo.sig_s_homo)
 
-    print 'Reference reaction rates'
-    print rxn_ref
-    print 'Homogenzied reaction rates'
-    print rxn_homo
+    print('Reference reaction rates')
+    print(rxn_ref)
+    print('Homogenzied reaction rates')
+    print(rxn_homo)
     np.set_printoptions(precision=6, suppress=True)
-    print 'Error in reaction rates'
-    print (rxn_homo - rxn_ref) / rxn_ref * 100
+    print('Error in reaction rates')
+    print((rxn_homo - rxn_ref) / rxn_ref * 100)
 
     plot(ref, homo)
