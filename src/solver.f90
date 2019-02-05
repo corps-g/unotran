@@ -62,7 +62,7 @@ module solver
     ! Use Statements
     use mg_solver, only : mg_solve
     use state, only : mg_phi, mg_psi, keff, normalize_flux, &
-                      phi, psi, update_fission_density
+                      phi, psi, update_fission_density, ave_sweep_time
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
                         use_DGM, min_eigen_iters, store_psi
@@ -102,8 +102,8 @@ module solver
 
         ! Print output
         if (eigen_print > 0) then
-          write(*, 1001) eigen_count, eigen_error, keff
-          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f14.10)
+          write(*, 1001) eigen_count, eigen_error, keff, ave_sweep_time
+          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f14.10, " ave sweep time: ", f8.6)
           if (eigen_print > 1) then
             print *, mg_phi
           end if

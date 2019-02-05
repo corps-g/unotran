@@ -14,8 +14,9 @@ module sweeper
     use mesh, only : dx
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
                         number_legendre, number_groups
-    use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident, mg_psi
+    use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident, mg_psi, ave_sweep_time
     use sources, only : add_transport_sources
+    use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
     double precision, intent(inout), dimension(:,:,:) :: &
@@ -39,6 +40,7 @@ module sweeper
         M           ! Legendre polynomial integration vector
     double precision :: &
         psi_center, & ! Angular flux at cell center
+        start,      & ! Start time of the sweep function
         source        ! Fission, In-Scattering, External source in group g
     logical :: &
         octant        ! Positive/Negative octant flag
@@ -48,6 +50,8 @@ module sweeper
 
     ! Reset phi
     phi_update = 0.0
+
+    start = omp_get_wtime()
 
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction within the octant
@@ -91,6 +95,8 @@ module sweeper
         end do
       end do
     end do
+
+    ave_sweep_time = ((sweep_count - 1) * ave_sweep_time + (omp_get_wtime() - start)) / sweep_count
 
     phi = phi_update
 

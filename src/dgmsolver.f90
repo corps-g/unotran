@@ -40,7 +40,7 @@ module dgmsolver
                         truncate_delta, delta_legendre_order
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments, mg_incident, &
-                      recon_convergence_rate
+                      recon_convergence_rate, ave_sweep_time
     use dgm, only : expansion_order, phi_m, psi_m, dgm_order
     use angle, only : p_leg
     use solver, only : solve
@@ -134,8 +134,8 @@ module dgmsolver
 
       ! Print output
       if (recon_print > 0) then
-        write(*, 1001) recon_count, recon_error, keff, recon_convergence_rate
-        1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9, " conv rate: ", f5.3)
+        write(*, 1001) recon_count, recon_error, keff, recon_convergence_rate, ave_sweep_time
+        1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9, " conv rate: ", f5.3, " ave sweep time: ", f8.6)
         if (recon_print > 1) then
           call output_moments()
         end if

@@ -5,7 +5,7 @@
 #===============================================================================
 
 F90 = gfortran
-F90FLAGS = -O3 -fcheck=all -fdefault-double-8 -fdefault-real-8 -pg -pedantic -std=f2008 -Wall
+F90FLAGS = -O3 -fcheck=all -fdefault-double-8 -fdefault-real-8 -pg -pedantic -std=f2008 -Wall -fopenmp
 LDFLAGS = 
 
 
@@ -62,7 +62,7 @@ test: pydgm
 # f2py module
 pydgm: control.f90 angle.f90 material.f90 mesh.f90 dgm.f90 state.f90 sources.f90 sweeper.f90 mg_solver.f90 solver.f90 dgmsolver.f90 
 	@rm -f pydgm*so
-	f2py --f90flags="$(F90FLAGS)" -c -m $@ $^
+	f2py --f90flags="$(F90FLAGS)" -c -lgomp -m $@ $^
 
 # Debug module
 debug: F90FLAGS += -g -Wall -pedantic -fbacktrace
