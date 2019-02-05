@@ -14,7 +14,7 @@ module mg_solver
                         min_outer_iters, number_cells, number_groups
     use sources, only : compute_source
     use sweeper, only : apply_transport_operator
-    use state, only : mg_phi
+    use state, only : mg_phi, ave_sweep_time
 
     ! Variable definitions
     integer :: &
@@ -47,8 +47,8 @@ module mg_solver
 
       ! Print output
       if (outer_print > 0) then
-        write(*, 1001) outer_count, outer_error
-        1001 format ( "    outer: ", i4, " Error: ", es12.5E2)
+        write(*, 1001) outer_count, outer_error, ave_sweep_time
+        1001 format ( "    outer: ", i4, " Error: ", es12.5E2, " ave sweep time: ", f5.2, " s")
         if (outer_print > 1) then
           print *, mg_phi
         end if

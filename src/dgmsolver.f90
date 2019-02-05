@@ -135,7 +135,8 @@ module dgmsolver
       ! Print output
       if (recon_print > 0) then
         write(*, 1001) recon_count, recon_error, keff, recon_convergence_rate, ave_sweep_time
-        1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9, " conv rate: ", f5.3, " ave sweep time: ", f8.6)
+        1001 format ("recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9, &
+                     " conv rate: ", f5.3, " ave sweep time: ", f5.2, " s")
         if (recon_print > 1) then
           call output_moments()
         end if

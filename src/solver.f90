@@ -103,7 +103,7 @@ module solver
         ! Print output
         if (eigen_print > 0) then
           write(*, 1001) eigen_count, eigen_error, keff, ave_sweep_time
-          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f14.10, " ave sweep time: ", f8.6)
+          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f14.10, " ave sweep time: ", f5.2, " s")
           if (eigen_print > 1) then
             print *, mg_phi
           end if
