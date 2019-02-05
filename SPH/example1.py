@@ -4,14 +4,14 @@ import matplotlib.pyplot as plt
 
 
 def buildGEO(pin_map, homogenzied=False):
-    fine_map = [150, 200, 150]
+    fine_map = [300, 400, 300]
     coarse_map = [0.0, 0.45, 1.05, 1.5]
     material_map = [[4, 1, 4], [4, 2, 4], [4, 3, 4], [4, 4, 4]]  # High UO2 | Low UO2 | RCC | Water
 
     npins = len(pin_map)
 
     if homogenzied:
-        fine_map = [500]
+        fine_map = [1000]
         coarse_map = [coarse_map[0], coarse_map[-1]]
         material_map = [[i + 1] for i in range(npins)]
         pin_map = range(npins)
@@ -76,7 +76,7 @@ def runSPH(G, pin_map, xs_name):
 
     # Solve for the reference problem
     ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin)
-    
+
     ref_XS = XS(ref.sig_t_homo, ref.sig_f_homo, ref.chi_homo, ref.sig_s_homo)
 
     # Write the reference cross sections
@@ -127,17 +127,17 @@ def makeColorset(G, pin_map, xs_name, homog=False, norm=None):
 
 
 if __name__ == '__main__':
-    np.set_printoptions(precision=6)
+    np.set_printoptions(precision=3)
     xs_name = 'XS/colorset.anlxs'
     G = 1
 
     # Get the reference solution
-    pin_map = [1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0]
+    pin_map = [1, 1, 3, 1, 1, 3, 1, 1, 0, 0, 3, 0, 0, 3, 0, 0]
     ref = makeColorset(1, pin_map, xs_name, False)
 
     # Get the homogenized cross sections
-    uo2low = runSPH(G, [1, 1, 1, 1, 1, 1, 1, 1], xs_name)   
-    uo2high = runSPH(G, [0, 0, 0, 0, 0, 0, 0, 0], xs_name)
+    uo2low = runSPH(G, [1, 1, 3, 1, 1, 3, 1, 1], xs_name)
+    uo2high = runSPH(G, [0, 0, 3, 0, 0, 3, 0, 0], xs_name)
     uo2XS = uo2low + uo2high
 
     # Write the SPH cross sections
@@ -153,8 +153,8 @@ if __name__ == '__main__':
     print(rxn_ref)
     print('Homogenzied reaction rates')
     print(rxn_homo)
-    np.set_printoptions(precision=6, suppress=True)
+    np.set_printoptions(precision=3, suppress=True)
     print('Error in reaction rates')
     print((rxn_homo - rxn_ref) / rxn_ref * 100)
 
-    plot(ref, homo)
+    # plot(ref, homo)

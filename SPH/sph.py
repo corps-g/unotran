@@ -137,6 +137,7 @@ class DGMSOLVER():
         self.dx = np.copy(pydgm.mesh.dx)
         self.mat_map = np.copy(pydgm.state.mg_mmap)
         self.sig_t = np.array([pydgm.material.sig_t[:, self.mat_map[c] - 1] for c in range(len(self.mat_map))]).T
+        self.D = 1 / (3 * self.sig_t)
         self.sig_s = np.array([pydgm.material.sig_s[0, :, :, self.mat_map[c] - 1] for c in range(len(self.mat_map))]).T
         self.vsig_f = np.array([pydgm.material.nu_sig_f[:, self.mat_map[c] - 1] for c in range(len(self.mat_map))]).T
         self.chi = np.array([pydgm.material.chi[:, self.mat_map[c] - 1] for c in range(len(self.mat_map))]).T
@@ -178,4 +179,8 @@ class DGMSOLVER():
         self.sig_s_homo = np.zeros((self.G, self.G, self.npin))
         for gp in range(self.G):
             self.sig_s_homo[gp] = homosum(d_phi * self.sig_s[gp]) / self.phi_homo
+        self.sig_a_homo = self.sig_t_homo - self.sig_s_homo
+        self.D_homo = homosum(d_phi * self.D) / self.phi_homo
+        self.sig_t_homo = 1 / (3 * self.D_homo)
+        self.sig_s_homo = self.sig_t_homo - self.sig_a_homo
 
