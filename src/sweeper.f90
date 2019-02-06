@@ -15,7 +15,7 @@ module sweeper
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
                         number_legendre, number_groups
     use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident, mg_psi, ave_sweep_time
-    use sources, only : add_transport_sources
+    use sources, only : add_transport_sources, compute_source
     use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
@@ -53,6 +53,9 @@ module sweeper
 
     start = omp_get_wtime()
 
+    ! Update the forcing function
+    call compute_source()
+
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction within the octant
       octant = o == 1
@@ -67,6 +70,8 @@ module sweeper
       mg_incident = boundary_type(o) * mg_incident  ! Set albedo conditions
 
       do c = cmin, cmax, cstep  ! Sweep over cells
+        mat = mg_mMap(c)
+
         do a = amin, amax, astep  ! Sweep over angle
           ! Get the correct angle index
           an = merge(a, 2 * number_angles - a + 1, octant)
@@ -76,8 +81,6 @@ module sweeper
 
           ! Loop over the energy groups
           do g = 1, number_groups
-
-            mat = mg_mMap(c)
 
             ! Get the source in this cell, group, and angle
             source = add_transport_sources(g, c, an)

@@ -12,7 +12,6 @@ module mg_solver
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
                         min_outer_iters, number_cells, number_groups
-    use sources, only : compute_source
     use sweeper, only : apply_transport_operator
     use state, only : mg_phi, ave_sweep_time
 
@@ -26,9 +25,6 @@ module mg_solver
 
     ! Begin loop to converge on the in-scattering source
     do outer_count = 1, max_outer_iters
-
-      ! Update the forcing function
-      call compute_source()
 
       ! Save the old flux
       old_phi = mg_phi(0,:,:)
