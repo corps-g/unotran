@@ -39,15 +39,6 @@ class TestSOURCES(unittest.TestCase):
             source = pydgm.state.mg_source[g]
             np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
 
-    def test_add_transport_sources(self):
-        test = [0.7902346527, 0.727303576229, 0.6419223436]
-        pydgm.sources.compute_source()
-        for c in range(pydgm.control.number_cells):
-            for a in range(pydgm.control.number_angles * 2):
-                for g in range(3):
-                    source = pydgm.sources.add_transport_sources(g + 1, c + 1, a + 1)
-                    np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
-
     def tearDown(self):
         pydgm.solver.finalize_solver()
         pydgm.control.finalize_control()
@@ -93,15 +84,6 @@ class TestSOURCESdgm(unittest.TestCase):
         for g in range(2):
             source = pydgm.state.mg_source[g]
             np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
-
-    def test_add_transport_sources(self):
-        test = [0.837139816124, 0.949152758925]
-        pydgm.sources.compute_source()
-        for c in range(pydgm.control.number_cells):
-            for a in range(pydgm.control.number_angles * 2):
-                for g in range(2):
-                    source = pydgm.sources.add_transport_sources(g + 1, c + 1, a + 1)
-                    np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
 
     def tearDown(self):
         pydgm.dgmsolver.finalize_dgmsolver()

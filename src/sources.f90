@@ -72,36 +72,4 @@ module sources
 
   end subroutine compute_source
 
-  function add_transport_sources(g, c, a) result(source)
-    ! ##########################################################################
-    ! Compute the sources into group g from g in cell c and angle a
-    ! ##########################################################################
-
-    ! Use Statements
-    use state, only : mg_source, sigphi, mg_mMap
-    use control, only : use_DGM, scatter_legendre_order
-    use angle, only : p_leg
-    use dgm, only : delta_m, psi_m, dgm_order
-
-    ! Variable definitions
-    integer, intent(in) :: &
-      g,   & ! Group index
-      a,   & ! Angle index
-      c      ! Cell index
-    double precision :: &
-      source ! source for group g, cell c, and angle a
-
-    ! Get the sources into group g
-    source = mg_source(g, c)
-
-    ! Add the scatter source
-    source = source + 0.5 * dot_product(p_leg(:scatter_legendre_order,a), sigphi(:scatter_legendre_order,g,c))
-
-    ! Add the delta source if DGM
-    if (use_DGM) then
-      source = source - delta_m(g, a, mg_mMap(c), dgm_order) * psi_m(0, g, a, c)
-    end if
-
-  end function add_transport_sources
-
 end module sources
