@@ -15,7 +15,7 @@ module sweeper
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
                         number_legendre, number_groups, use_DGM, scatter_legendre_order
     use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident, mg_psi, &
-                      ave_sweep_time, mg_source, sigphi
+                      mg_source, sigphi
     use sources, only : compute_source
     use omp_lib, only : omp_get_wtime
     use dgm, only : delta_m, psi_m, dgm_order
@@ -43,8 +43,6 @@ module sweeper
     double precision, dimension(number_groups) :: &
         psi_center, & ! Angular flux at cell center
         source        ! Fission, In-Scattering, External source in group g
-    double precision :: &
-        start         ! Start time of the sweep function
     logical :: &
         octant        ! Positive/Negative octant flag
 
@@ -53,8 +51,6 @@ module sweeper
 
     ! Reset phi
     phi_update = 0.0
-
-    start = omp_get_wtime()
 
     ! Update the forcing function
     call compute_source()
@@ -104,8 +100,6 @@ module sweeper
         end do
       end do
     end do
-
-    ave_sweep_time = ((sweep_count - 1) * ave_sweep_time + (omp_get_wtime() - start)) / sweep_count
 
     phi = phi_update
 

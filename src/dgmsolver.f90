@@ -40,10 +40,11 @@ module dgmsolver
                         truncate_delta, delta_legendre_order
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments, mg_incident, &
-                      recon_convergence_rate, ave_sweep_time
+                      recon_convergence_rate
     use dgm, only : expansion_order, phi_m, psi_m, dgm_order
     use angle, only : p_leg
     use solver, only : solve
+    use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
     logical, intent(in), optional :: &
@@ -56,7 +57,9 @@ module dgmsolver
         recon_count,    & ! Iteration counter
         a                 ! Angle index
     double precision :: &
-        recon_error       ! Error between successive iterations
+        recon_error,    & ! Error between successive iterations
+        start,          & ! Start time of the sweep function
+        ave_sweep_time    ! Average time in seconds per sweep
     double precision, dimension(0:expansion_order, 0:number_legendre, number_coarse_groups, number_cells) :: &
         old_phi_m         ! Scalar flux from previous iteration
     double precision, dimension(0:expansion_order, number_coarse_groups, 2 * number_angles, number_cells) :: &
@@ -74,8 +77,11 @@ module dgmsolver
     call compute_flux_moments()
 
     past_error = 0.0
+    ave_sweep_time = 0.0
 
     do recon_count = 1, max_recon_iters
+      start = omp_get_wtime()
+    
       ! Save the old value of the scalar flux
       old_phi_m = phi_m
       old_psi_m = psi_m
@@ -131,6 +137,8 @@ module dgmsolver
       past_error(2) = past_error(1)
       past_error(1) = log10(recon_error)
       recon_convergence_rate = exp((past_error(1) - past_error(3)) / 2.0)
+
+      ave_sweep_time = ((recon_count - 1) * ave_sweep_time + (omp_get_wtime() - start)) / recon_count
 
       ! Print output
       if (recon_print > 0) then

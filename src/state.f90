@@ -28,7 +28,6 @@ module state
       keff,        & ! k-eigenvalue
       norm_frac,   & ! Fraction of normalization for eigenvalue problems
       sweep_count, & ! Counter for the number of transport sweeps
-      ave_sweep_time, & ! Average time in seconds per sweep
       recon_convergence_rate ! Approximate rate of convergence for recon iters
   
   contains

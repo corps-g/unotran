@@ -62,25 +62,32 @@ module solver
     ! Use Statements
     use mg_solver, only : mg_solve
     use state, only : mg_phi, mg_psi, keff, normalize_flux, &
-                      phi, psi, update_fission_density, ave_sweep_time
+                      phi, psi, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
                         use_DGM, min_eigen_iters, store_psi
     use dgm, only : dgm_order
+    use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
     double precision :: &
-        eigen_error     ! Error between successive iterations
+        eigen_error,  & ! Error between successive iterations
+        start,        & ! Start time of the sweep function
+        ave_sweep_time  ! Average time in seconds per sweep
     integer :: &
         eigen_count     ! Iteration counter
     double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
         old_phi         ! Scalar flux from previous iteration
+
+    ave_sweep_time = 0.0
 
     ! Run eigen loop only if eigen problem
     if (solver_type == 'fixed' .or. dgm_order > 0) then
       call mg_solve()
     else if (solver_type == 'eigen') then
       do eigen_count = 1, max_eigen_iters
+
+        start = omp_get_wtime()
 
         ! Update the fission density
         call update_fission_density()
@@ -99,6 +106,8 @@ module solver
 
         ! Update the error
         eigen_error = maxval(abs(mg_phi - old_phi))
+
+        ave_sweep_time = ((eigen_count - 1) * ave_sweep_time + (omp_get_wtime() - start)) / eigen_count
 
         ! Print output
         if (eigen_print > 0) then

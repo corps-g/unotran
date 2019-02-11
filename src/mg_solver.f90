@@ -13,7 +13,8 @@ module mg_solver
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
                         min_outer_iters, number_cells, number_groups
     use sweeper, only : apply_transport_operator
-    use state, only : mg_phi, ave_sweep_time
+    use state, only : mg_phi
+    use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
     integer :: &
@@ -22,9 +23,16 @@ module mg_solver
         outer_error    ! Residual error between iterations
     double precision, dimension(number_groups, number_cells) :: &
         old_phi
+    double precision :: &
+        start,       & ! Start time of the sweep function
+        ave_sweep_time ! Average time in seconds per sweep
+
+    ave_sweep_time = 0.0
 
     ! Begin loop to converge on the in-scattering source
     do outer_count = 1, max_outer_iters
+
+      start = omp_get_wtime()
 
       ! Save the old flux
       old_phi = mg_phi(0,:,:)
@@ -41,6 +49,8 @@ module mg_solver
         stop
       end if
 
+      ave_sweep_time = ((outer_count - 1) * ave_sweep_time + (omp_get_wtime() - start)) / outer_count
+
       ! Print output
       if (outer_print > 0) then
         write(*, 1001) outer_count, outer_error, ave_sweep_time
@@ -54,6 +64,8 @@ module mg_solver
       if ((outer_error < outer_tolerance .and. outer_count >= min_outer_iters)) then
         exit
       end if
+      
+      
     end do
 
     if (outer_count == max_outer_iters) then
