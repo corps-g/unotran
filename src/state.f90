@@ -11,7 +11,8 @@ module state
       psi,         & ! Angular flux
       phi,         & ! Scalar Flux
       mg_phi,      & ! Scalar flux mg container
-      mg_psi         ! Angular flux mg container
+      mg_psi,      & ! Angular flux mg container
+      sigphi         ! Scalar flux container
   double precision, allocatable, dimension(:,:) :: &
       mg_nu_sig_f, & ! Fission cross section mg container (times nu)
       mg_chi,      & ! Chi spectrum mg container
@@ -178,6 +179,7 @@ module state
     allocate(mg_phi(0:number_legendre, number_groups, number_cells))
     allocate(mg_chi(number_groups, number_regions))
     allocate(mg_sig_s(0:scatter_legendre_order, number_groups, number_groups, number_regions))
+    allocate(sigphi(0:scatter_legendre_order, number_groups, number_cells))
     if (store_psi) then
       allocate(mg_psi(number_groups, 2 * number_angles, number_cells))
     end if
@@ -237,6 +239,9 @@ module state
     end if
     if (allocated(mg_mMap)) then
       deallocate(mg_mMap)
+    end if
+    if (allocated(sigphi)) then
+      deallocate(sigphi)
     end if
   end subroutine finalize_state
 

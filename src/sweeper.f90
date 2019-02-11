@@ -1,7 +1,7 @@
 module sweeper
 
   implicit none
-  
+
   contains
   
   subroutine apply_transport_operator(phi)
@@ -13,9 +13,12 @@ module sweeper
     use angle, only : p_leg, wt, mu
     use mesh, only : dx
     use control, only : store_psi, boundary_type, number_angles, number_cells, &
-                        number_legendre, number_groups
-    use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident, mg_psi
-    use sources, only : add_transport_sources
+                        number_legendre, number_groups, use_DGM, scatter_legendre_order
+    use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident, mg_psi, &
+                      mg_source, sigphi
+    use sources, only : compute_source
+    use omp_lib, only : omp_get_wtime
+    use dgm, only : delta_m, psi_m, dgm_order
 
     ! Variable definitions
     double precision, intent(inout), dimension(:,:,:) :: &
@@ -37,7 +40,7 @@ module sweeper
         astep         ! Angle stepping direction
     double precision, dimension(0:number_legendre) :: &
         M           ! Legendre polynomial integration vector
-    double precision :: &
+    double precision, dimension(number_groups) :: &
         psi_center, & ! Angular flux at cell center
         source        ! Fission, In-Scattering, External source in group g
     logical :: &
@@ -48,6 +51,9 @@ module sweeper
 
     ! Reset phi
     phi_update = 0.0
+
+    ! Update the forcing function
+    call compute_source()
 
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction within the octant
@@ -63,6 +69,8 @@ module sweeper
       mg_incident = boundary_type(o) * mg_incident  ! Set albedo conditions
 
       do c = cmin, cmax, cstep  ! Sweep over cells
+        mat = mg_mMap(c)
+
         do a = amin, amax, astep  ! Sweep over angle
           ! Get the correct angle index
           an = merge(a, 2 * number_angles - a + 1, octant)
@@ -70,23 +78,24 @@ module sweeper
           ! legendre polynomial integration vector
           M = wt(a) * p_leg(:, an)
 
+          ! Get the source in this cell, group, and angle
+          source(:) = mg_source(:, c)
+          source(:) = source(:) + 0.5 * matmul(transpose(sigphi(:scatter_legendre_order,:,c)), p_leg(:scatter_legendre_order,an))
+          if (use_DGM) then
+            source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)
+          end if
+
+          call computeEQ(number_groups, source(:), mg_incident(:, a), mg_sig_t(:, mat), dx(c), mu(a), psi_center)
+
+          if (store_psi) then
+            mg_psi(:, an, c) = psi_center(:)
+          end if
+
           ! Loop over the energy groups
           do g = 1, number_groups
 
-            mat = mg_mMap(c)
-
-            ! Get the source in this cell, group, and angle
-            source = add_transport_sources(g, c, an)
-
-            ! Use the specified equation.  Defaults to DD
-            call computeEQ(source, mg_incident(g, a), mg_sig_t(g, mat), dx(c), mu(a), psi_center)
-
-            if (store_psi) then
-              mg_psi(g, an, c) = psi_center
-            end if
-
             ! Increment the legendre expansions of the scalar flux
-            phi_update(:, g, c) = phi_update(:, g, c) + M(:) * psi_center
+            phi_update(:, g, c) = phi_update(:, g, c) + M(:) * psi_center(g)
           end do
         end do
       end do
@@ -96,7 +105,7 @@ module sweeper
 
   end subroutine apply_transport_operator
   
-  subroutine computeEQ(S, incident, sig, dx, mua, cellPsi)
+  subroutine computeEQ(ng, S, incident, sig, dx, mua, cellPsi)
     ! ##########################################################################
     ! Compute the value for the closure relationship
     ! ##########################################################################
@@ -105,41 +114,45 @@ module sweeper
     use control, only : equation_type
 
     ! Variable definitions
-    double precision, intent(inout) :: &
+    integer, intent(in) :: &
+        ng       ! Number of groups
+    double precision, intent(inout), dimension(ng) :: &
         incident ! Angular flux incident on the cell
-    double precision, intent(in) :: &
+    double precision, intent(in), dimension(ng) :: &
         S,     & ! Source within the cell
-        sig,   & ! Total cross section within the cell
+        sig      ! Total cross section within the cell
+    double precision, intent(in) :: &
         dx,    & ! Width of the cell
         mua      ! Angle for the cell
-    double precision, intent(out) :: &
+    double precision, intent(out), dimension(:) :: &
         cellPsi  ! Angular flux at cell center
-    double precision :: &
+    double precision, dimension(ng) :: &
         tau,   & ! Parameter used in step characteristics
-        A,     & ! Parameter used in step characteristics
+        A        ! Parameter used in step characteristics
+    double precision :: &
         invmu    ! Parameter used in diamond and step differences
 
-    select case (equation_type)
-    case ('DD')
+    if (equation_type == 'DD') then
       ! Diamond Difference relationship
       invmu = dx / (2 * abs(mua))
-      cellPsi = (incident + invmu * S) / (1 + invmu * sig)
-      incident = 2 * cellPsi - incident
-    case ('SC')
+      cellPsi(:) = (incident(:) + invmu * S(:)) / (1 + invmu * sig(:))
+      incident(:) = 2 * cellPsi(:) - incident(:)
+    else if (equation_type == 'SC') then
       ! Step Characteristics relationship
-      tau = sig * dx / mua
+      tau = sig(:) * dx / mua
       A = exp(-tau)
       cellPsi = incident * (1.0 - A) / tau + S * (sig * dx + mua * (A - 1.0)) / (sig ** 2 * dx)
       incident = A * incident + S * (1.0 - A) / sig
-    case ('SD')
+    else if (equation_type == 'SD') then
       ! Step Difference relationship
       invmu = dx / (abs(mua))
       cellPsi = (incident + invmu * S) / (1 + invmu * sig)
       incident = cellPsi
-    case default
+    else
       print *, 'ERROR : Equation not implemented'
-    end select
-  
+      stop
+    end if
+
   end subroutine computeEQ
   
 end module sweeper
