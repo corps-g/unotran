@@ -99,6 +99,25 @@ class TestDGM(unittest.TestCase):
                                [0.5773502691896258, -0.7071067811865475, 0.4082482904638631, 0.]])
         np.testing.assert_array_almost_equal(pydgm.dgm.basis, basis_test, 12)
 
+    def test_dgm_noncontiguous_basis(self):
+        pydgm.control.energy_group_map = [1, 2, 1, 2, 1, 2, 1]
+        pydgm.control.dgm_basis_name = 'test/noncontig7dlp'.ljust(256)
+
+        # Initialize the dependancies
+        pydgm.dgmsolver.initialize_dgmsolver()
+
+        np.set_printoptions(linewidth=132)
+
+        assert(pydgm.dgm.basis.shape == (7, 4))
+        basis_test = np.array([[0.5, 0.6708203932499369, 0.5, 0.2236067977499789],
+                               [0.5773502691896258, 0.7071067811865475, 0.4082482904638631, 0.],
+                               [0.5, 0.223606797749979, -0.5, -0.6708203932499369],
+                               [0.5773502691896258, 0., -0.8164965809277261, 0.],
+                               [0.5, -0.223606797749979, -0.5, 0.6708203932499369],
+                               [0.5773502691896258, -0.7071067811865475, 0.4082482904638631, 0.],
+                               [0.5, -0.6708203932499369, 0.5, -0.2236067977499789]])
+        np.testing.assert_array_almost_equal(pydgm.dgm.basis, basis_test, 12)
+
     def test_dgm_finalize_moments(self):
         '''
         No good way to test this

@@ -11,7 +11,8 @@ module state
       psi,         & ! Angular flux
       phi,         & ! Scalar Flux
       mg_phi,      & ! Scalar flux mg container
-      mg_psi         ! Angular flux mg container
+      mg_psi,      & ! Angular flux mg container
+      sigphi         ! Scalar flux container
   double precision, allocatable, dimension(:,:) :: &
       mg_nu_sig_f, & ! Fission cross section mg container (times nu)
       mg_chi,      & ! Chi spectrum mg container
@@ -26,7 +27,8 @@ module state
       mg_constant_source, & ! Constant multigroup source
       keff,        & ! k-eigenvalue
       norm_frac,   & ! Fraction of normalization for eigenvalue problems
-      sweep_count    ! Counter for the number of transport sweeps
+      sweep_count, & ! Counter for the number of transport sweeps
+      recon_convergence_rate ! Approximate rate of convergence for recon iters
   
   contains
   
@@ -57,7 +59,7 @@ module state
     ! read the material cross sections
     call create_material()
     ! Determine the Legendre order of phi to store
-    if (delta_legendre_order /= -1) then
+    if (delta_legendre_order == -1) then
       delta_legendre_order = scatter_legendre_order
     end if
     number_legendre = max(delta_legendre_order, scatter_legendre_order)
@@ -177,6 +179,7 @@ module state
     allocate(mg_phi(0:number_legendre, number_groups, number_cells))
     allocate(mg_chi(number_groups, number_regions))
     allocate(mg_sig_s(0:scatter_legendre_order, number_groups, number_groups, number_regions))
+    allocate(sigphi(0:scatter_legendre_order, number_groups, number_cells))
     if (store_psi) then
       allocate(mg_psi(number_groups, 2 * number_angles, number_cells))
     end if
@@ -236,6 +239,9 @@ module state
     end if
     if (allocated(mg_mMap)) then
       deallocate(mg_mMap)
+    end if
+    if (allocated(sigphi)) then
+      deallocate(sigphi)
     end if
   end subroutine finalize_state
 
