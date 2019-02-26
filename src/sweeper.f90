@@ -85,7 +85,7 @@ module sweeper
             source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)
           end if
 
-          call computeEQ(number_groups, source(:), mg_incident(:, a), mg_sig_t(:, mat), dx(c), mu(a), psi_center)
+          call computeEQ(source(:), mg_sig_t(:, mat), dx(c), mu(a), mg_incident(:, a), psi_center)
 
           if (store_psi) then
             mg_psi(:, an, c) = psi_center(:)
@@ -105,7 +105,7 @@ module sweeper
 
   end subroutine apply_transport_operator
   
-  subroutine computeEQ(ng, S, incident, sig, dx, mua, cellPsi)
+  subroutine computeEQ(S, sig, dx, mua, incident, cellPsi)
     ! ##########################################################################
     ! Compute the value for the closure relationship
     ! ##########################################################################
@@ -114,19 +114,17 @@ module sweeper
     use control, only : equation_type
 
     ! Variable definitions
-    integer, intent(in) :: &
-        ng       ! Number of groups
-    double precision, intent(inout), dimension(ng) :: &
+    double precision, dimension(:), intent(inout) :: &
         incident ! Angular flux incident on the cell
-    double precision, intent(in), dimension(ng) :: &
+    double precision, dimension(:), intent(in) :: &
         S,     & ! Source within the cell
         sig      ! Total cross section within the cell
     double precision, intent(in) :: &
         dx,    & ! Width of the cell
         mua      ! Angle for the cell
-    double precision, intent(out), dimension(:) :: &
+    double precision, dimension(:), intent(inout) :: &
         cellPsi  ! Angular flux at cell center
-    double precision, dimension(ng) :: &
+    double precision, allocatable, dimension(:) :: &
         tau,   & ! Parameter used in step characteristics
         A        ! Parameter used in step characteristics
     double precision :: &
@@ -139,10 +137,12 @@ module sweeper
       incident(:) = 2 * cellPsi(:) - incident(:)
     else if (equation_type == 'SC') then
       ! Step Characteristics relationship
+      allocate(tau(size(sig)), A(size(sig)))
       tau = sig(:) * dx / mua
       A = exp(-tau)
       cellPsi = incident * (1.0 - A) / tau + S * (sig * dx + mua * (A - 1.0)) / (sig ** 2 * dx)
       incident = A * incident + S * (1.0 - A) / sig
+      deallocate(tau, A)
     else if (equation_type == 'SD') then
       ! Step Difference relationship
       invmu = dx / (abs(mua))

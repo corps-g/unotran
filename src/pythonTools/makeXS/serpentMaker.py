@@ -199,7 +199,7 @@ def makeFile(fuelOption, numberGroups):
 
     s += '% ** Neutron population and criticality cycles: \n'
     s += '%*****************************************************************************\n'
-    s += 'set pop 1000000 100 20 1.00  % according to the kcode 100000 1.000000 10 110\n'
+    s += 'set pop 100000 500 50 1.00  % according to the kcode 100000 1.000000 10 110\n'
 
     s += '% ** Decay and fission yield libraries\n'
 
