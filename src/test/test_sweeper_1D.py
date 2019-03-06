@@ -6,7 +6,7 @@ import pydgm
 import numpy as np
 
 
-class TestSWEEPER(unittest.TestCase):
+class TestSWEEPER_1D(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
@@ -44,7 +44,7 @@ class TestSWEEPER(unittest.TestCase):
         S = np.ones(N)
         sig = np.ones(N)
 
-        pydgm.sweeper.computeeq(S, sig, 1.0, 0.8611363115940526, inc, Ps)
+        pydgm.sweeper_1d.computeeq(S, sig, 1.0, 0.8611363115940526, inc, Ps)
         np.testing.assert_array_almost_equal(inc, np.ones(N) * 0.734680275209795978, 12)
         np.testing.assert_array_almost_equal(Ps, np.ones(N) * 0.367340137604897989, 12)
 
@@ -60,7 +60,7 @@ class TestSWEEPER(unittest.TestCase):
         S = np.ones(N)
         sig = np.ones(N)
 
-        pydgm.sweeper.computeeq(S, sig, 1.0, 0.8611363115940526, inc, Ps)
+        pydgm.sweeper_1d.computeeq(S, sig, 1.0, 0.8611363115940526, inc, Ps)
         np.testing.assert_array_almost_equal(inc, np.ones(N) * 0.686907416523104323, 12)
         np.testing.assert_array_almost_equal(Ps, np.ones(N) * 0.408479080928661801, 12)
 
@@ -76,7 +76,7 @@ class TestSWEEPER(unittest.TestCase):
         S = np.ones(N)
         sig = np.ones(N)
 
-        pydgm.sweeper.computeeq(S, sig, 1.0, 0.8611363115940526, inc, Ps)
+        pydgm.sweeper_1d.computeeq(S, sig, 1.0, 0.8611363115940526, inc, Ps)
         np.testing.assert_array_almost_equal(inc, np.ones(N) * 0.5373061574106336, 12)
         np.testing.assert_array_almost_equal(Ps, np.ones(N) * 0.5373061574106336, 12)
 

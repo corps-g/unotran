@@ -12,7 +12,7 @@ module mg_solver
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
                         min_outer_iters, number_cells, number_groups
-    use sweeper, only : apply_transport_operator
+    use sweeper_1D, only : apply_transport_operator_1D
     use state, only : mg_phi
     use omp_lib, only : omp_get_wtime
 
@@ -38,7 +38,7 @@ module mg_solver
       old_phi = mg_phi(0,:,:)
 
       ! Update the scalar flux
-      call apply_transport_operator(mg_phi)
+      call apply_transport_operator_1D(mg_phi)
 
       ! Update the error
       outer_error = maxval(abs(mg_phi(0,:,:) - old_phi(:,:)))
