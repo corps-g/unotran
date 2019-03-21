@@ -24,6 +24,7 @@ module sources
       g, & ! Group index
       c, & ! Cell index
       m,        & ! Material index
+      l,  & ! Legendre index
       ord  ! short name for scatter_legendre_order
     logical :: &
       dgm_switch    !
@@ -68,6 +69,10 @@ module sources
           sigphi(:,g,c) = sum(mg_phi(0:ord,:,c) * mg_sig_s(:,:,g,m), 2)
         end do
       end if
+    end do
+
+    do l = 0, scatter_legendre_order
+      sigphi(l,:,:) = sigphi(l,:,:) * (2 * l + 1)
     end do
 
   end subroutine compute_source
