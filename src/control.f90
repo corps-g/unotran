@@ -32,6 +32,7 @@ module control
   character(len=2) :: &
       equation_type="DD"            ! Closure equation for discrete ordinates [DD, SC, SD]
   integer :: &
+      spatial_dimension,          & ! Spatial dimension, i.e. 1 for 1D or 2 for 2D
       angle_order,                & ! Number of angles per octant
       angle_option,               & ! Quadrature option [gl=0, dgl=1]
       max_recon_iters=1000,       & ! Maximum iterations for recon loop

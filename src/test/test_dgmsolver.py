@@ -11,6 +11,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
+        pydgm.control.spatial_dimension = 1
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
         pydgm.control.recon_print = False

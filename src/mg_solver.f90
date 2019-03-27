@@ -11,7 +11,7 @@ module mg_solver
 
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
-                        min_outer_iters, number_cells, number_groups
+                        min_outer_iters, number_cells, number_groups, spatial_dimension
     use sweeper_1D, only : apply_transport_operator_1D
     use state, only : mg_phi
     use omp_lib, only : omp_get_wtime
@@ -38,7 +38,14 @@ module mg_solver
       old_phi = mg_phi(0,:,:)
 
       ! Update the scalar flux
-      call apply_transport_operator_1D(mg_phi)
+      if (spatial_dimension == 1) then
+        call apply_transport_operator_1D(mg_phi)
+      ! else if (spatial_dimension == 2) then
+      !   call apply_transport_operator_2D(mg_phi)
+      else
+        print *, "Dimension ", spatial_dimension, " has not been implemented"
+        stop
+      end if
 
       ! Update the error
       outer_error = maxval(abs(mg_phi(0,:,:) - old_phi(:,:)))

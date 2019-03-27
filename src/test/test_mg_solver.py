@@ -10,6 +10,7 @@ class TestMG_SOLVER(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
+        pydgm.control.spatial_dimension = 1
         pydgm.control.fine_mesh = [1]
         pydgm.control.coarse_mesh = [0.0, 1.0]
         pydgm.control.material_map = [1]
