@@ -7,9 +7,11 @@ module control
 
   ! control variables
   double precision, allocatable, dimension(:) :: &
+      coarse_mesh                   ! Coarse mesh boundaries
       coarse_mesh_x,              & ! Coarse mesh boundaries in x direction
       coarse_mesh_y                 ! Coarse mesh boundaries in y direction
   integer, allocatable, dimension(:) :: &
+      fine_mesh,                  & ! Number of fine cells per coarse region
       fine_mesh_x,                & ! Number of fine cells per coarse region in x direction
       fine_mesh_y,                & ! Number of fine cells per coarse region in y direction
       material_map,               & ! Material ID within each coarse region
@@ -38,6 +40,7 @@ module control
       equation_type="DD"            ! Closure equation for discrete ordinates [DD, SC, SD]
   integer :: &
       spatial_dimension,          & ! Dimension of the spatial variable (1 for 1D, 2 for 2D)
+      angle_order,                & ! Number of angles per octant
       angle_order_azi,            & ! Number of angles per octant in azimuthal angle
       angle_order_pol,            & ! Number of angles per octant in polar angle
       angle_option,               & ! Quadrature option [gl=0, dgl=1]
@@ -125,6 +128,12 @@ module control
 
         ! Parse the label and save the value to the proper variable
         select case (label)
+        case ('fine_mesh')
+          allocate(fine_mesh(nitems(buffer)))
+          read(buffer, *, iostat=ios) fine_mesh
+        case ('coarse_mesh')
+          allocate(coarse_mesh(nitems(buffer)))
+          read(buffer, *, iostat=ios) coarse_mesh
         case ('fine_mesh_x')
           allocate(fine_mesh_x(nitems(buffer)))
           read(buffer, *, iostat=ios) fine_mesh_x
@@ -151,6 +160,8 @@ module control
           initial_psi=trim(adjustl(buffer))
         case ('initial_keff')
           read(buffer, *, iostat=ios) initial_keff
+        case ('angle_order')
+          read(buffer, *, iostat=ios) angle_order
         case ('angle_order_azi')
           read(buffer, *, iostat=ios) angle_order_azi
         case ('angle_order_pol')
@@ -357,11 +368,15 @@ module control
     ! Deallocate all allocated arrays
     ! ##########################################################################
 
+    if (allocated(fine_mesh)) then
+      deallocate(fine_mesh)
     if (allocated(fine_mesh_x)) then
       deallocate(fine_mesh_x)
     end if
     if (allocated(fine_mesh_y)) then
       deallocate(fine_mesh_y)
+    if (allocated(coarse_mesh)) then
+      deallocate(coarse_mesh)
     end if
     if (allocated(coarse_mesh_x)) then
       deallocate(coarse_mesh_x)
