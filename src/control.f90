@@ -7,15 +7,20 @@ module control
 
   ! control variables
   double precision, allocatable, dimension(:) :: &
-      coarse_mesh                   ! Coarse mesh boundaries
+      coarse_mesh_x,              & ! Coarse mesh boundaries in x direction
+      coarse_mesh_y                 ! Coarse mesh boundaries in y direction
   integer, allocatable, dimension(:) :: &
-      fine_mesh,                  & ! Number of fine cells per coarse region
+      fine_mesh_x,                & ! Number of fine cells per coarse region in x direction
+      fine_mesh_y,                & ! Number of fine cells per coarse region in y direction
       material_map,               & ! Material ID within each coarse region
       energy_group_map,           & ! Coarse energy group boundaries
       truncation_map,             & ! Expansion order within each coarse group (optional)
       homogenization_map            ! Map of which fine cells to homogenize for DGM (optional)
   double precision :: &
-      boundary_type(2),           & ! Albedo value at [left, right] boundary
+      boundary_east,              & ! Albedo value at east boundary
+      boundary_west,              & ! Albedo value at west boundary
+      boundary_north,             & ! Albedo value at north boundary
+      boundary_south,             & ! Albedo value at south boundary
       recon_tolerance=1e-8,       & ! Convergance criteria for recon iteration
       eigen_tolerance=1e-8,       & ! Convergance criteria for eigen iteration
       outer_tolerance=1e-8,       & ! Convergance criteria for outer iteration
@@ -32,8 +37,9 @@ module control
   character(len=2) :: &
       equation_type="DD"            ! Closure equation for discrete ordinates [DD, SC, SD]
   integer :: &
-      spatial_dimension,          & ! Spatial dimension, i.e. 1 for 1D or 2 for 2D
-      angle_order,                & ! Number of angles per octant
+      spatial_dimension,          & ! Dimension of the spatial variable (1 for 1D, 2 for 2D)
+      angle_order_azi,            & ! Number of angles per octant in azimuthal angle
+      angle_order_pol,            & ! Number of angles per octant in polar angle
       angle_option,               & ! Quadrature option [gl=0, dgl=1]
       max_recon_iters=1000,       & ! Maximum iterations for recon loop
       max_eigen_iters=1000,       & ! Maximum iterations for eigen loop
@@ -41,9 +47,13 @@ module control
       min_recon_iters=1,          & ! Minimum iterations for recon loop
       min_eigen_iters=1,          & ! Minimum iterations for eigen loop
       min_outer_iters=1,          & ! Minimum iterations for outer loop
-      number_cells,               & ! Total number of cells in the mesh
+      number_cells_x,             & ! Total number of spatial cells in the x direction
+      number_cells_y,             & ! Total number of spatial cells in the y direction
+      number_cells,               & ! Total number of spatial cells in the mesh
       number_regions,             & ! Number of unique material regions
-      number_angles,              & ! Number angles per *half space*
+      number_angles,              & ! Total number of angles per *half space*
+      number_angles_azi,          & ! Number angles per *half space* in azimuthal direction
+      number_angles_pol,          & ! Number angles per *half space* in polar direction
       number_groups,              & ! Number of groups for the MG problem
       number_fine_groups,         & ! Number of groups in the cross section library
       number_coarse_groups,       & ! Number of groups in the expansion
@@ -115,12 +125,18 @@ module control
 
         ! Parse the label and save the value to the proper variable
         select case (label)
-        case ('fine_mesh')
-          allocate(fine_mesh(nitems(buffer)))
-          read(buffer, *, iostat=ios) fine_mesh
-        case ('coarse_mesh')
-          allocate(coarse_mesh(nitems(buffer)))
-          read(buffer, *, iostat=ios) coarse_mesh
+        case ('fine_mesh_x')
+          allocate(fine_mesh_x(nitems(buffer)))
+          read(buffer, *, iostat=ios) fine_mesh_x
+        case ('fine_mesh_y')
+          allocate(fine_mesh_y(nitems(buffer)))
+          read(buffer, *, iostat=ios) fine_mesh_y
+        case ('coarse_mesh_x')
+          allocate(coarse_mesh_x(nitems(buffer)))
+          read(buffer, *, iostat=ios) coarse_mesh_x
+        case ('coarse_mesh_y')
+          allocate(coarse_mesh_y(nitems(buffer)))
+          read(buffer, *, iostat=ios) coarse_mesh_y
         case ('material_map')
           allocate(material_map(nitems(buffer)))
           read(buffer, *, iostat=ios) material_map
@@ -135,12 +151,20 @@ module control
           initial_psi=trim(adjustl(buffer))
         case ('initial_keff')
           read(buffer, *, iostat=ios) initial_keff
-        case ('angle_order')
-          read(buffer, *, iostat=ios) angle_order
+        case ('angle_order_azi')
+          read(buffer, *, iostat=ios) angle_order_azi
+        case ('angle_order_pol')
+          read(buffer, *, iostat=ios) angle_order_pol
         case ('angle_option')
           read(buffer, *, iostat=ios) angle_option
-        case ('boundary_type')
-          read(buffer, *, iostat=ios) boundary_type
+        case ('boundary_east')
+          read(buffer, *, iostat=ios) boundary_east
+        case ('boundary_west')
+          read(buffer, *, iostat=ios) boundary_west
+        case ('boundary_north')
+          read(buffer, *, iostat=ios) boundary_north
+        case ('boundary_south')
+          read(buffer, *, iostat=ios) boundary_south
         case ('allow_fission')
           read(buffer, *, iostat=ios) allow_fission
         case ('energy_group_map')
@@ -189,6 +213,8 @@ module control
           read(buffer, *, iostat=ios) max_eigen_iters
         case ('max_outer_iters')
           read(buffer, *, iostat=ios) max_outer_iters
+        case ('spatial_dimension')
+          read(buffer, *, iostat=ios) spatial_dimension
         case default
           print *, 'Skipping invalid label at line', line
         end select
@@ -214,14 +240,27 @@ module control
     ! ##########################################################################
 
     print *, 'MESH VARIABLES'
-    print *, '  fine_mesh          = [', fine_mesh, ']'
-    print *, '  coarse_mesh        = [', coarse_mesh, ']'
+    print *, '  spatial_dimension  = [', spatial_dimension, ']'
+    print *, '  fine_mesh_x        = [', fine_mesh_x, ']'
+    if (spatial_dimension == 2) then
+      print *, '  fine_mesh_y        = [', fine_mesh_y, ']'
+    end if
+    print *, '  coarse_mesh_x      = [', coarse_mesh_x, ']'
+    if (spatial_dimension == 2) then
+      print *, '  coarse_mesh_y      = [', coarse_mesh_y, ']'
+    end if
     print *, '  material_map       = [', material_map, ']'
-    print *, '  boundary_type      = [', boundary_type, ']'
+    print *, '  boundary_east      = [', boundary_east, ']'
+    print *, '  boundary_west      = [', boundary_west, ']'
+    if (spatial_dimension == 2) then
+      print *, '  boundary_north      = [', boundary_north, ']'
+      print *, '  boundary_south      = [', boundary_south, ']'
+    end if
     print *, 'MATERIAL VARIABLES'
     print *, '  xs_file_name       = "', trim(xs_name), '"'
     print *, 'ANGLE VARIABLES'
-    print *, '  angle_order        = ', angle_order
+    print *, '  angle_order_azi    = ', angle_order_azi
+    print *, '  angle_order_pol    = ', angle_order_pol
     print *, '  angle_option       = ', angle_option
     print *, 'SOURCE'
     print *, '  constant source    = ', source_value
@@ -275,6 +314,12 @@ module control
     ! Verify the inputs are defined correctly
     ! ##########################################################################
 
+    ! Check spatial dimension
+    if (spatial_dimension /= 1 .or. spatial_dimension /= 2) then
+      print *, 'INPUT ERROR : Invalid spatial dimension selected.  Only 1D and 2D supported'
+      stop
+    end if
+
     ! Check solver type
     if (.not. (solver_type == 'eigen' .or. solver_type == 'fixed')) then
       print *, 'INPUT ERROR : Invalid solver type'
@@ -283,7 +328,7 @@ module control
 
     ! Check that the homogenization_map is provided correctly
     if (allocated(homogenization_map)) then
-      if (sum(fine_mesh) /= size(homogenization_map)) then
+      if (sum(fine_mesh_x) * sum(fine_mesh_y) /= size(homogenization_map)) then
         print *, 'INPUT ERROR : homogenization map is the wrong size'
         stop
       end if
@@ -312,11 +357,17 @@ module control
     ! Deallocate all allocated arrays
     ! ##########################################################################
 
-    if (allocated(fine_mesh)) then
-      deallocate(fine_mesh)
+    if (allocated(fine_mesh_x)) then
+      deallocate(fine_mesh_x)
     end if
-    if (allocated(coarse_mesh)) then
-      deallocate(coarse_mesh)
+    if (allocated(fine_mesh_y)) then
+      deallocate(fine_mesh_y)
+    end if
+    if (allocated(coarse_mesh_x)) then
+      deallocate(coarse_mesh_x)
+    end if
+    if (allocated(coarse_mesh_y)) then
+      deallocate(coarse_mesh_y)
     end if
     if (allocated(material_map)) then
       deallocate(material_map)

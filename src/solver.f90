@@ -15,15 +15,14 @@ module solver
 
     ! Use Statements
     use state, only : initialize_state, mg_nu_sig_f, mg_chi, mg_sig_s, mg_sig_t, &
-                      mg_phi, phi, mg_psi, psi, mg_incident, mg_mMap, &
+                      mg_phi, phi, mg_psi, psi, mg_mMap, &
                       update_fission_density
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
-    use control, only : store_psi, number_angles, number_regions,scatter_legendre_order
+    use control, only : store_psi, number_regions,scatter_legendre_order
 
     ! Variable definitions
     integer :: &
-        a,  & ! Angle index
         r     ! Region index
 
     ! allocate the solutions variables
@@ -40,13 +39,6 @@ module solver
     mg_phi(:, :, :) = phi(:, :, :)
     if (store_psi) then
       mg_psi(:, :, :) = psi(:, :, :)
-      ! Default the incoming flux to be equal to the outgoing if present
-      mg_incident = psi(:, (number_angles + 1):, 1)
-    else
-      ! Assume isotropic scalar flux for incident flux
-      do a = 1, number_angles
-        mg_incident(:, a) = phi(0, :, 1) / 2
-      end do
     end if
 
     ! Update the fission density

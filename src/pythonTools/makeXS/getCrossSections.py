@@ -240,7 +240,7 @@ def plotXS(db):
     sig = db['0']['sig_t']
     EE, SIG = barchart(E, sig)
     err = db['0']['sig_t_err']
-    print err
+    print(err)
     _, sig_min = barchart(E, sig - err)
     _, sig_max = barchart(E, sig + err)
 
@@ -259,10 +259,10 @@ def main(name):
     plotXS(db)
 
 if __name__ == '__main__':
-    Gs = [2, 44, 238]
-    names = ['uo2', 'moxlow', 'moxmid', 'moxhigh', 'BWR1', 'BWR2', 'BWR3']
+    Gs = [44, 238]
+    names = ['UO2-1', 'UO2-2', 'UO2-Gd', 'MOX']
     for G in Gs:
         for name in names:
-            print G, name
+            print(G, name)
             main('{}g/'.format(G) + name + '-{}.inp'.format(G))
 

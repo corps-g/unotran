@@ -6,28 +6,29 @@ module state
   implicit none
 
   double precision, allocatable, dimension(:,:,:,:) :: &
-      mg_sig_s       ! Scattering cross section moments
+      mg_sig_s               ! Scattering cross section moments
   double precision, allocatable, dimension(:,:,:) :: &
-      psi,         & ! Angular flux
-      phi,         & ! Scalar Flux
-      mg_phi,      & ! Scalar flux mg container
-      mg_psi,      & ! Angular flux mg container
-      sigphi         ! Scalar flux container
+      psi,                 & ! Angular flux
+      phi,                 & ! Scalar Flux
+      mg_phi,              & ! Scalar flux mg container
+      mg_psi,              & ! Angular flux mg container
+      sigphi                 ! Scalar flux container
   double precision, allocatable, dimension(:,:) :: &
-      mg_nu_sig_f, & ! Fission cross section mg container (times nu)
-      mg_chi,      & ! Chi spectrum mg container
-      mg_source,   & ! External source mg container
-      mg_sig_t,    & ! Scalar total cross section mg container
-      mg_incident    ! Angular flux incident on the current cell
+      mg_nu_sig_f,         & ! Fission cross section mg container (times nu)
+      mg_chi,              & ! Chi spectrum mg container
+      mg_source,           & ! External source mg container
+      mg_sig_t,            & ! Scalar total cross section mg container
+      mg_incident_x,       & ! Angular flux incident on the current cell in x direction
+      mg_incident_y          ! Angular flux incident on the current cell in y direction
   double precision, allocatable, dimension(:) :: &
-      mg_density     ! Fission density
+      mg_density             ! Fission density
   integer, allocatable, dimension(:) :: &
-      mg_mMap        ! material map mg container
+      mg_mMap                ! material map mg container
   double precision :: &
-      mg_constant_source, & ! Constant multigroup source
-      keff,        & ! k-eigenvalue
-      norm_frac,   & ! Fraction of normalization for eigenvalue problems
-      sweep_count, & ! Counter for the number of transport sweeps
+      mg_constant_source,  & ! Constant multigroup source
+      keff,                & ! k-eigenvalue
+      norm_frac,           & ! Fraction of normalization for eigenvalue problems
+      sweep_count,         & ! Counter for the number of transport sweeps
       recon_convergence_rate ! Approximate rate of convergence for recon iters
   
   contains
@@ -126,7 +127,7 @@ module state
 
     ! Only allocate psi if the option is to store psi
     if (store_psi) then
-      allocate(psi(number_fine_groups, 2 * number_angles, number_cells))
+      allocate(psi(number_fine_groups, 4 * number_angles, number_cells))
 
       ! Initialize psi
       ! Attempt to read file or use default if file does not exist
@@ -142,7 +143,7 @@ module state
           ! default to isotropic distribution
           psi = 0.0
           do c = 1, number_cells
-            do a = 1, 2 * number_angles
+            do a = 1, 4 * number_angles
               psi(:, a, c) = phi(0, :, c) / 2
             end do
           end do
@@ -154,7 +155,12 @@ module state
     end if
 
     ! Initialize the angular flux incident on the boundary
-    allocate(mg_incident(number_groups, number_angles))
+    allocate(mg_incident_x(number_groups, number_angles))
+    allocate(mg_incident_y(number_groups, number_angles))
+    ! Assume vacuum conditions for incident flux
+    mg_incident_x(:, :) = 0.0
+    mg_incident_y(:, :) = 0.0
+
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen
     if (solver_type == 'fixed') then
@@ -181,7 +187,7 @@ module state
     allocate(mg_sig_s(0:scatter_legendre_order, number_groups, number_groups, number_regions))
     allocate(sigphi(0:scatter_legendre_order, number_groups, number_cells))
     if (store_psi) then
-      allocate(mg_psi(number_groups, 2 * number_angles, number_cells))
+      allocate(mg_psi(number_groups, 4 * number_angles, number_cells))
     end if
 
   end subroutine initialize_state
@@ -231,8 +237,11 @@ module state
     if (allocated(mg_sig_t)) then
       deallocate(mg_sig_t)
     end if
-    if (allocated(mg_incident)) then
-      deallocate(mg_incident)
+    if (allocated(mg_incident_x)) then
+      deallocate(mg_incident_x)
+    end if
+    if (allocated(mg_incident_y)) then
+      deallocate(mg_incident_y)
     end if
     if (allocated(mg_density)) then
       deallocate(mg_density)
@@ -385,7 +394,8 @@ module state
     end if
 
     ! incoming
-    print *, 'incident = ', mg_incident
+    print *, 'incident_x = ', mg_incident_x
+    print *, 'incident_y = ', mg_incident_y
 
     ! k
     print *, 'k = ', keff

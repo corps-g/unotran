@@ -10,7 +10,7 @@ def readData(matID, g, f):
     return f[begin:end]
 
 def formDataset(g):
-    names = ['uo2', 'moxlow', 'moxmid', 'moxhigh', 'BWR1', 'BWR2', 'BWR3']
+    names = ['UO2-1', 'UO2-2', 'UO2-Gd', 'MOX']
     morenames = ['water']
 
     # Write the header for the XS file
@@ -55,7 +55,7 @@ def formDataset(g):
             f.write(s)
 
 if __name__ == '__main__':
-    Gs = [2, 44, 238]
+    Gs = [44, 238]
     for G in Gs:
         formDataset(G)
 

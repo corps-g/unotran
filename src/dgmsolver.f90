@@ -36,13 +36,11 @@ module dgmsolver
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
                         ignore_warnings, lamb, number_cells, &
-                        number_legendre, number_angles, min_recon_iters, number_coarse_groups, &
-                        truncate_delta, delta_legendre_order
+                        number_legendre, number_angles, min_recon_iters, number_coarse_groups
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
-                      update_fission_density, output_moments, mg_incident, &
-                      recon_convergence_rate
+                      update_fission_density, output_moments, recon_convergence_rate, &
+                      mg_incident_x, mg_incident_y
     use dgm, only : expansion_order, phi_m, psi_m, dgm_order
-    use angle, only : p_leg
     use solver, only : solve
     use omp_lib, only : omp_get_wtime
 
@@ -54,8 +52,7 @@ module dgmsolver
     logical :: &
         bypass_flag       ! Local variable to signal an eigen loop bypass
     integer :: &
-        recon_count,    & ! Iteration counter
-        a                 ! Angle index
+        recon_count       ! Iteration counter
     double precision :: &
         recon_error,    & ! Error between successive iterations
         start,          & ! Start time of the sweep function
@@ -96,15 +93,9 @@ module dgmsolver
       ! Solve for each order
       do dgm_order = 0, expansion_order
 
-        ! Set incident flux to the proper order
-        if (truncate_delta) then
-          do a = 1, number_angles
-            mg_incident(:, a) = matmul(transpose(phi_m(dgm_order, :delta_legendre_order, :, 1)), &
-                                       p_leg(:delta_legendre_order, a+number_angles))
-          end do
-        else
-          mg_incident(:, :) = psi_m(dgm_order, :, (number_angles+1):, 1)
-        end if
+        ! Reset the incident conditions to vacuum
+        mg_incident_x(:,:) = 0.0
+        mg_incident_y(:,:) = 0.0
 
         ! Compute the cross section moments
         call slice_xs_moments(order=dgm_order)

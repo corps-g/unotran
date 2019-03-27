@@ -6,9 +6,11 @@ module mesh
   implicit none
 
   double precision :: &
-      width         ! Total width of the problem
+      width_x,   & ! Total width of the problem in x direction
+      width_y      ! Total width of the problem in y direction
   double precision, allocatable, dimension(:) :: &
-      dx            ! Width of each cell
+      dx,         & ! Width of each cell in EW direction
+      dy            ! Width of each cell in NS direction
   integer, allocatable, dimension(:) :: &
       mMap          ! Material within each cell
 
@@ -21,35 +23,76 @@ module mesh
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, fine_mesh, coarse_mesh, material_map
+    use control, only : number_cells, number_cells_x, number_cells_y, fine_mesh_x, &
+                        fine_mesh_y, coarse_mesh_x, coarse_mesh_y, material_map, &
+                        spatial_dimension, boundary_north, boundary_south
 
     ! Variable definitions
     double precision :: &
-        ddx  ! Temporary variable for cell width
+        ddx, & ! Temporary variable for x cell width
+        ddy    ! Temporary variable for y cell width
     integer :: &
-        n, & ! number of coarse mesh regions
-        c, & ! counting index for total cells
-        i, & ! coarse cell index
-        j    ! fine cell index
+        nx,  & ! number of coarse mesh regions in x direction
+        ny,  & ! number of coarse mesh regions in y direction
+        c,   & ! counting index for total cells
+        cx,  & ! counting index for x cells
+        cy,  & ! counting index for y cells
+        ix,  & ! coarse cell index for x cells
+        iy,  & ! coarse cell index for y cells
+        jx,  & ! fine cell index for x cells
+        jy     ! fine cell index for y cells
 
-    n = size(fine_mesh)  ! Number of coarse mesh regions
-    c = 1  ! counting variable
+    ! Check for 1D problem
+    if (spatial_dimension == 1) then
+      ! Set the y direction to a single spatial cell with reflective contitions
+      boundary_north = 1.0
+      boundary_south = 1.0
+
+      if (allocated(fine_mesh_y)) deallocate(fine_mesh_y)
+      if (allocated(coarse_mesh_y)) deallocate(coarse_mesh_y)
+
+      allocate(fine_mesh_y(1), coarse_mesh_y(2))
+      fine_mesh_y(1) = 1
+      coarse_mesh_y = [0.0, 1.0]
+
+    end if
+
+    nx = size(fine_mesh_x)  ! Number of coarse mesh regions in x
+    ny = size(fine_mesh_y)  ! Number of coarse mesh regions in x
       
-    number_cells = sum(fine_mesh)
-    allocate(dx(number_cells), mMap(number_cells))
-      
-    do i = 1, n  ! loop over coarse mesh cells
-      ! get fine difference
-      ddx = (coarse_mesh(i+1) - coarse_mesh(i)) / fine_mesh(i)
-      do j = 1, fine_mesh(i)  ! loop over fine mesh cells
-        dx(c) = ddx  ! store cell size
-        mMap(c) = material_map(i)  ! store material type
-        c = c + 1
+    number_cells_x = sum(fine_mesh_x)
+    number_cells_y = sum(fine_mesh_y)
+    number_cells = number_cells_x * number_cells_y
+    allocate(dx(number_cells_x), dy(number_cells_y), mMap(number_cells))
+
+    ! Compute the mesh widths and read materials
+    c = 1  ! Initialize counting variable for all cells
+    cx = 1  ! Initialize counting variable for x cells
+
+    do ix = 1, nx  ! Loop over coarse x cells
+      ddx = (coarse_mesh_x(ix+1) - coarse_mesh_x(ix)) / fine_mesh_x(ix)
+      do jx = 1, fine_mesh_x(ix)  ! Loop over fine x cells
+        dx(cx) = ddx  ! Store cell size in x direction
+        cx = cx + 1
+
+        cy = 1  ! Initialize counting variable for y cells
+        do iy = 1, ny  ! Loop over coarse y cells
+          ddy = (coarse_mesh_y(iy+1) - coarse_mesh_y(iy)) / fine_mesh_y(iy)
+
+          do jy = 1, fine_mesh_y(iy)  ! Loop over fine y cells
+            dy(cy) = ddy
+            cy = cy + 1
+
+            mMap(c) = material_map(ix * ny + iy)
+            c = c + 1
+          end do
+        end do
       end do
     end do
 
     ! Store the total width of the problem
-    width = coarse_mesh(n + 1) - coarse_mesh(1)
+    width_x = coarse_mesh_x(nx + 1) - coarse_mesh_x(1)
+    width_y = coarse_mesh_y(ny + 1) - coarse_mesh_y(1)
 
   end subroutine create_mesh
 
