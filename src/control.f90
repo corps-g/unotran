@@ -7,7 +7,7 @@ module control
 
   ! control variables
   double precision, allocatable, dimension(:) :: &
-      coarse_mesh                   ! Coarse mesh boundaries
+      coarse_mesh,                & ! Coarse mesh boundaries
       coarse_mesh_x,              & ! Coarse mesh boundaries in x direction
       coarse_mesh_y                 ! Coarse mesh boundaries in y direction
   integer, allocatable, dimension(:) :: &
@@ -326,8 +326,8 @@ module control
     ! ##########################################################################
 
     ! Check spatial dimension
-    if (spatial_dimension /= 1 .or. spatial_dimension /= 2) then
-      print *, 'INPUT ERROR : Invalid spatial dimension selected.  Only 1D and 2D supported'
+    if (.not. (spatial_dimension == 1 .or. spatial_dimension == 2)) then
+      print *, 'INPUT ERROR : Invalid spatial dimension [', spatial_dimension, '] selected.  Only 1D and 2D supported'
       stop
     end if
 
@@ -370,11 +370,13 @@ module control
 
     if (allocated(fine_mesh)) then
       deallocate(fine_mesh)
+    end if
     if (allocated(fine_mesh_x)) then
       deallocate(fine_mesh_x)
     end if
     if (allocated(fine_mesh_y)) then
       deallocate(fine_mesh_y)
+    end if
     if (allocated(coarse_mesh)) then
       deallocate(coarse_mesh)
     end if

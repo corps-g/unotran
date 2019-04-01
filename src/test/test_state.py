@@ -10,23 +10,17 @@ class TestSTATE(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
-        pydgm.control.fine_mesh = [1]
-        pydgm.control.coarse_mesh = [0.0, 1.0]
+        pydgm.control.spatial_dimension = 1
+        pydgm.control.fine_mesh_x = [1]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0]
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_type = [0.0, 0.0]
         pydgm.control.allow_fission = True
-        pydgm.control.eigen_print = False
-        pydgm.control.outer_print = False
-        pydgm.control.eigen_tolerance = 1e-15
-        pydgm.control.outer_tolerance = 1e-14
-        pydgm.control.lamb = 1.0
         pydgm.control.store_psi = False
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 0.0
-        pydgm.control.equation_type = 'DD'
         pydgm.control.scatter_legendre_order = 0
         pydgm.control.use_DGM = False
 
@@ -54,8 +48,8 @@ class TestSTATE(unittest.TestCase):
         np.testing.assert_array_almost_equal(pydgm.state.psi, psi_test, 12)
 
     def test_state_update_fission_density(self):
-        pydgm.control.fine_mesh = [3, 10, 3]
-        pydgm.control.coarse_mesh = [0.0, 1.0, 2.0, 3.0]
+        pydgm.control.fine_mesh_x = [3, 10, 3]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0, 2.0, 3.0]
         pydgm.control.material_map = [1, 2, 6]
 
         pydgm.solver.initialize_solver()

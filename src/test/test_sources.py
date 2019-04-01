@@ -10,8 +10,9 @@ class TestSOURCES(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
-        pydgm.control.fine_mesh = [1]
-        pydgm.control.coarse_mesh = [0.0, 1.0]
+        pydgm.control.spatial_dimension = 1
+        pydgm.control.fine_mesh_x = [1]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0]
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/3gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
@@ -48,8 +49,9 @@ class TestSOURCESdgm(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
-        pydgm.control.fine_mesh = [1]
-        pydgm.control.coarse_mesh = [0.0, 1.0]
+        pydgm.control.spatial_dimension = 1
+        pydgm.control.fine_mesh_x = [1]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0]
         pydgm.control.material_map = [1]
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl

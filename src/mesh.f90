@@ -82,8 +82,7 @@ module mesh
           do jy = 1, fine_mesh_y(iy)  ! Loop over fine y cells
             dy(cy) = ddy
             cy = cy + 1
-
-            mMap(c) = material_map(ix * ny + iy)
+            mMap(c) = material_map(ix * ny + iy - 1)
             c = c + 1
           end do
         end do
@@ -103,6 +102,9 @@ module mesh
 
     if (allocated(dx)) then
       deallocate(dx)
+    end if
+    if (allocated(dy)) then
+      deallocate(dy)
     end if
     if (allocated(mMap)) then
       deallocate(mMap)

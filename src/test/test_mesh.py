@@ -10,23 +10,10 @@ class TestMESH(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
-        pydgm.control.fine_mesh = [2, 4, 2]
-        pydgm.control.coarse_mesh = [0.0, 1.0, 2.0, 3.0]
+        pydgm.control.spatial_dimension = 1
+        pydgm.control.fine_mesh_x = [2, 4, 2]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0, 2.0, 3.0]
         pydgm.control.material_map = [1, 2, 3]
-        pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
-        pydgm.control.angle_order = 10
-        pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_type = [0.0, 0.0]
-        pydgm.control.allow_fission = False
-        pydgm.control.outer_print = False
-        pydgm.control.outer_tolerance = 1e-14
-        pydgm.control.lamb = 1.0
-        pydgm.control.store_psi = False
-        pydgm.control.solver_type = 'fixed'.ljust(256)
-        pydgm.control.legendre_order = 0
-        pydgm.control.source_value = 1.0
-        pydgm.control.equation_type = 'DD'
-        pydgm.control.use_DGM = False
 
         # Initialize the dependancies
         pydgm.mesh.create_mesh()
@@ -48,7 +35,7 @@ class TestMESH(unittest.TestCase):
         np.testing.assert_array_equal(pydgm.mesh.mmap, mMap_test)
 
         # Test the problem width
-        self.assertEqual(pydgm.mesh.width, 3.0)
+        self.assertEqual(pydgm.mesh.width_x, 3.0)
 
     def tearDown(self):
         pydgm.mesh.finalize_mesh()

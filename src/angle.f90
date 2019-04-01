@@ -26,57 +26,32 @@ module angle
 
     ! Use Statements
     use control, only : number_angles_azi, number_angles_pol, spatial_dimension, &
-                        angle_order_azi, angle_order_pol, angle_option, number_angles
+                        angle_order_azi, angle_order_pol, angle_option, number_angles, &
+                        angle_order
 
     ! Variable definitions
     integer :: &
-        a,                      &  ! Azimuthal angle index
-        p                          ! Polar angle index
-    double precision :: &
-        wt_azi(angle_order_azi), & ! Weight for azimuthal angles
-        phia(angle_order_azi),   & ! Basic angle vector
-        wt_pol(angle_order_pol), & ! Weight for polar angles
-        xi(angle_order_pol)        ! Evaluated points for quadrature
+        a  ! Angle index
 
-    number_angles_azi = angle_order_azi
     if (spatial_dimension == 1) then
-      number_angles_pol = 1
-    else
-      number_angles_pol = angle_order_pol
-    end if
 
-    number_angles = number_angles_azi * number_angles_pol
-    allocate(mu(number_angles), eta(number_angles), wt(number_angles))
+      number_angles = angle_order
+      allocate(mu(number_angles), wt(number_angles))
 
-    wt_azi = PI / (2 * number_angles_azi)
-    phia(:) = wt_azi(1)
-    do a = 1, number_angles_azi
-      phia(a) = phia(a) * (a - 1)
-    end do
-    phia(:) = phia(:) + 0.5 * wt_azi(1)
-
-    ! Generate the Legendre quadrature
-    if (angle_option == GL) then
-      call generate_gl_parameters(number_angles_pol, xi, wt_pol)
-      xi = xi / 2 + 0.5
-      do p = 1, number_angles_pol
-        do a = 1, number_angles_azi
-          wt(a + p * number_angles_azi) = wt_pol(p) * wt_azi(a)
-          mu(a + p * number_angles_azi) = cos(phia(a)) * sqrt(1 - xi(p) ** 2)
-          eta(a + p * number_angles_azi) = sin(phia(a)) * sqrt(1 - xi(p) ** 2)
+      ! Generate the Legendre quadrature
+      if (angle_option == GL) then
+        call generate_gl_parameters(2 * number_angles, mu, wt)
+      else if (angle_option == DGL) then
+        call generate_gl_parameters(number_angles, mu, wt)
+        mu = 0.5 * mu + 0.5
+        wt = 0.5 * wt
+        do a = 1, number_angles / 2
+          mu(number_angles - a + 1) = 1 - mu(a)
+          wt(number_angles - a + 1) = wt(a)
         end do
-      end do
-
-    else if (angle_option == DGL) then
-      call generate_gl_parameters(number_angles, mu, wt)
-      mu = 0.5 * mu + 0.5
-      wt = 0.5 * wt
-      do a = 1, number_angles / 2
-        mu(number_angles - a + 1) = 1 - mu(a)
-        wt(number_angles - a + 1) = wt(a)
-      end do
-    else
-      stop "Invalid quadrature option."
+      else
+        stop "Invalid quadrature option."
+      end if
     end if
 
   end subroutine initialize_angle

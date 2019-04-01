@@ -11,13 +11,14 @@ class TestSOLVER(unittest.TestCase):
     def setUp(self):
         # Set the variables for the test
         pydgm.control.spatial_dimension = 1
-        pydgm.control.fine_mesh = [3, 22, 3]
-        pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+        pydgm.control.fine_mesh_x = [3, 22, 3]
+        pydgm.control.coarse_mesh_x = [0.0, 0.09, 1.17, 1.26]
         pydgm.control.material_map = [5, 1, 5]
         pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 10
         pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_type = [0.0, 0.0]
+        pydgm.control.boundary_east = 0.0
+        pydgm.control.boundary_west = 0.0
         pydgm.control.allow_fission = False
         pydgm.control.eigen_print = False
         pydgm.control.outer_print = False
@@ -68,7 +69,8 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set problem conditions
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.material_map = [1, 1, 1]
         pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
 
@@ -104,7 +106,8 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set problem conditions
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.material_map = [1, 1, 1]
         pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
 
@@ -140,7 +143,8 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set problem conditions
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.material_map = [1, 1, 1]
 
         # Initialize the dependancies
@@ -175,11 +179,12 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set problem conditions
-        pydgm.control.fine_mesh = [5, 5]
-        pydgm.control.coarse_mesh = [0.0, 1.0, 2.0]
+        pydgm.control.fine_mesh_x = [5, 5]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0, 2.0]
         pydgm.control.material_map = [2, 1]
         pydgm.control.angle_order = 2
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
 
         # Initialize the dependancies
@@ -210,11 +215,12 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set problem conditions
-        pydgm.control.fine_mesh = [5, 5]
-        pydgm.control.coarse_mesh = [0.0, 1.0, 2.0]
+        pydgm.control.fine_mesh_x = [5, 5]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0, 2.0]
         pydgm.control.material_map = [2, 1]
         pydgm.control.angle_order = 2
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
 
         # Initialize the dependancies
@@ -245,11 +251,12 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set problem conditions
-        pydgm.control.fine_mesh = [5, 5]
-        pydgm.control.coarse_mesh = [0.0, 1.0, 2.0]
+        pydgm.control.fine_mesh_x = [5, 5]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0, 2.0]
         pydgm.control.material_map = [1, 1]
         pydgm.control.angle_order = 4
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -283,8 +290,8 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
+        pydgm.control.fine_mesh_x = [10]
+        pydgm.control.coarse_mesh_x = [0.0, 10.0]
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
@@ -325,8 +332,8 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
+        pydgm.control.fine_mesh_x = [10]
+        pydgm.control.coarse_mesh_x = [0.0, 10.0]
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
@@ -366,8 +373,8 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
+        pydgm.control.fine_mesh_x = [10]
+        pydgm.control.coarse_mesh_x = [0.0, 10.0]
         pydgm.control.material_map = [1]
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
@@ -406,15 +413,16 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
+        pydgm.control.fine_mesh_x = [10]
+        pydgm.control.coarse_mesh_x = [0.0, 10.0]
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -458,15 +466,16 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
+        pydgm.control.fine_mesh_x = [10]
+        pydgm.control.coarse_mesh_x = [0.0, 10.0]
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 8
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -510,14 +519,15 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [10]
-        pydgm.control.coarse_mesh = [0.0, 10.0]
+        pydgm.control.fine_mesh_x = [10]
+        pydgm.control.coarse_mesh_x = [0.0, 10.0]
         pydgm.control.material_map = [1]
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -562,11 +572,12 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [3, 10, 3]
+        pydgm.control.fine_mesh_x = [3, 10, 3]
         pydgm.control.material_map = [2, 1, 2]
         pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
@@ -605,11 +616,12 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [3, 10, 3]
+        pydgm.control.fine_mesh_x = [3, 10, 3]
         pydgm.control.material_map = [2, 1, 2]
         pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
@@ -648,10 +660,11 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [3, 10, 3]
+        pydgm.control.fine_mesh_x = [3, 10, 3]
         pydgm.control.material_map = [5, 1, 5]
         pydgm.control.angle_order = 2
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
@@ -686,7 +699,7 @@ class TestSOLVER(unittest.TestCase):
 
     def test_solver_anisotropic_fixed_vacuum(self):
         # Set the variables for the test
-        pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+        pydgm.control.coarse_mesh_x = [0.0, 0.09, 1.17, 1.26]
         pydgm.control.material_map = [5, 1, 5]
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
         pydgm.control.angle_order = 8
@@ -714,8 +727,8 @@ class TestSOLVER(unittest.TestCase):
 
     def test_solver_anisotropic_symmetric(self):
         # Set the variables for the test
-        pydgm.control.fine_mesh = [12]
-        pydgm.control.coarse_mesh = [0.0, 5.0]
+        pydgm.control.fine_mesh_x = [12]
+        pydgm.control.coarse_mesh_x = [0.0, 5.0]
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/2g_symmetric.anlxs'.ljust(256)
         pydgm.control.angle_order = 4
@@ -735,12 +748,13 @@ class TestSOLVER(unittest.TestCase):
 
     def test_solver_anisotropic_fixed_reflect(self):
         # Set the variables for the test
-        pydgm.control.coarse_mesh = [0.0, 0.09, 1.17, 1.26]
+        pydgm.control.coarse_mesh_x = [0.0, 0.09, 1.17, 1.26]
         pydgm.control.material_map = [5, 1, 5]
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
         pydgm.control.angle_order = 8
         pydgm.control.scatter_legendre_order = 7
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -768,8 +782,8 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [10, 4]
-        pydgm.control.coarse_mesh = [0.0, 1.5, 2.0]
+        pydgm.control.fine_mesh_x = [10, 4]
+        pydgm.control.coarse_mesh_x = [0.0, 1.5, 2.0]
         pydgm.control.material_map = [1, 5]
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
         pydgm.control.angle_order = 8
@@ -821,8 +835,8 @@ class TestSOLVER(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.fine_mesh = [10, 4]
-        pydgm.control.coarse_mesh = [0.0, 1.5, 2.0]
+        pydgm.control.fine_mesh_x = [10, 4]
+        pydgm.control.coarse_mesh_x = [0.0, 1.5, 2.0]
         pydgm.control.material_map = [1, 5]
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
         pydgm.control.angle_order = 8
@@ -875,8 +889,8 @@ class TestSOLVER(unittest.TestCase):
             pydgm.control.source_value = 0.0
             pydgm.control.allow_fission = True
             pydgm.control.xs_name = 'test/7gXS.anlxs'.ljust(256)
-            pydgm.control.fine_mesh = [2, 1, 2]
-            pydgm.control.coarse_mesh = [0.0, 5.0, 6.0, 11.0]
+            pydgm.control.fine_mesh_x = [2, 1, 2]
+            pydgm.control.coarse_mesh_x = [0.0, 5.0, 6.0, 11.0]
             pydgm.control.material_map = [1, 5, 3]  # UO2 | water | MOX
             pydgm.control.boundary_type = [0.0, 0.0]  # Vacuum | Vacuum
 
