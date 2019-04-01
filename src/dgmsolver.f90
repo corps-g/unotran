@@ -20,7 +20,6 @@ module dgmsolver
 
     ! allocate the solutions variables
     call initialize_state()
-
     ! Fill the multigroup material map
     mg_mMap = homogenization_map
 

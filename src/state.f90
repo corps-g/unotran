@@ -76,7 +76,6 @@ module state
     call initialize_polynomials()
     ! Initialize the constant source
     mg_constant_source = 0.5 * source_value
-
     ! Determine the correct size for the multigroup containers
     number_groups = number_fine_groups
     number_regions = number_materials
@@ -127,7 +126,7 @@ module state
 
     ! Only allocate psi if the option is to store psi
     if (store_psi) then
-      allocate(psi(number_fine_groups, 4 * number_angles, number_cells))
+      allocate(psi(number_fine_groups, 2 * number_angles, number_cells))
 
       ! Initialize psi
       ! Attempt to read file or use default if file does not exist
@@ -143,7 +142,7 @@ module state
           ! default to isotropic distribution
           psi = 0.0
           do c = 1, number_cells
-            do a = 1, 4 * number_angles
+            do a = 1, 2 * number_angles
               psi(:, a, c) = phi(0, :, c) / 2
             end do
           end do
@@ -187,7 +186,7 @@ module state
     allocate(mg_sig_s(0:scatter_legendre_order, number_groups, number_groups, number_regions))
     allocate(sigphi(0:scatter_legendre_order, number_groups, number_cells))
     if (store_psi) then
-      allocate(mg_psi(number_groups, 4 * number_angles, number_cells))
+      allocate(mg_psi(number_groups, 2 * number_angles, number_cells))
     end if
 
   end subroutine initialize_state

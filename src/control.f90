@@ -339,9 +339,16 @@ module control
 
     ! Check that the homogenization_map is provided correctly
     if (allocated(homogenization_map)) then
-      if (sum(fine_mesh_x) * sum(fine_mesh_y) /= size(homogenization_map)) then
-        print *, 'INPUT ERROR : homogenization map is the wrong size'
-        stop
+      if (spatial_dimension == 1) then
+        if (sum(fine_mesh_x) /= size(homogenization_map)) then
+          print *, 'INPUT ERROR : homogenization map is the wrong size'
+          stop
+        end if
+      else
+        if (sum(fine_mesh_x) * sum(fine_mesh_y) /= size(homogenization_map)) then
+          print *, 'INPUT ERROR : homogenization map is the wrong size'
+          stop
+        end if
       end if
       if (minval(homogenization_map) /= 1) then
         print *, 'INPUT ERROR : the first homogenization cell should be designated as 1'

@@ -14,20 +14,22 @@ class TestDGM(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
-        pydgm.control.fine_mesh = [1]
-        pydgm.control.coarse_mesh = [0.0, 1.0]
+        pydgm.control.spatial_dimension = 1
+        pydgm.control.fine_mesh_x = [1]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0]
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/7gXSaniso.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.allow_fission = True
         pydgm.control.outer_print = False
         pydgm.control.outer_tolerance = 1e-14
         pydgm.control.energy_group_map = [1, 1, 1, 1, 2, 2, 2]
         pydgm.control.use_dgm = True
         pydgm.control.dgm_basis_name = 'test/7gbasis'.ljust(256)
-        pydgm.control.Lambda = 1.0
+        pydgm.control.lamb = 1.0
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 2.0
@@ -60,7 +62,7 @@ class TestDGM(unittest.TestCase):
         assert(pydgm.state.mg_chi.shape == (nG, nC))
         assert(pydgm.state.mg_sig_s.shape == (nL, nG, nG, nC))
         assert(pydgm.state.mg_psi.shape == (nG, nA, nC))
-        assert(pydgm.state.mg_incident.shape == (nG, nA / 2))
+        assert(pydgm.state.mg_incident_x.shape == (nG, nA / 2))
 
     def test_dgm_test3(self):
         '''
@@ -68,7 +70,7 @@ class TestDGM(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.Lambda = 0.1
+        pydgm.control.lamb = 0.1
         pydgm.control.truncation_map = [2, 1]
 
         # Initialize the dependancies
@@ -250,13 +252,15 @@ class TestDGM2(unittest.TestCase):
 
     def setUp(self):
         # Set the variables for the test
-        pydgm.control.fine_mesh = [1]
-        pydgm.control.coarse_mesh = [0.0, 1.0]
+        pydgm.control.spatial_dimension = 1
+        pydgm.control.fine_mesh_x = [1]
+        pydgm.control.coarse_mesh_x = [0.0, 1.0]
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/7gXSaniso.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
         pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_type = [0.0, 0.0]
+        pydgm.control.boundary_east = 0.0
+        pydgm.control.boundary_west = 0.0
         pydgm.control.allow_fission = True
         pydgm.control.outer_print = False
         pydgm.control.inner_print = False
