@@ -790,7 +790,9 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
-        pydgm.control.boundary_type = [1.0, 1.0]
+
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.scatter_legendre_order = 0
 
         # Initialize the dependancies
@@ -843,7 +845,8 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 1.0
         pydgm.control.scatter_legendre_order = 7
 
         # Initialize the dependancies
