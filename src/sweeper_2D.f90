@@ -1,10 +1,10 @@
-module sweeper_1D
+module sweeper_2D
 
   implicit none
 
   contains
   
-  subroutine apply_transport_operator_1D(phi)
+  subroutine apply_transport_operator_2D(phi)
     ! ##########################################################################
     ! Sweep over each cell, angle, and octant
     ! ##########################################################################
@@ -117,7 +117,7 @@ module sweeper_1D
 
     phi = phi_update
 
-  end subroutine apply_transport_operator_1D
+  end subroutine apply_transport_operator_2D
   
   subroutine computeEQ(S, sig, dx, dy, mua, eta, incident_x, incident_y, cellPsi)
     ! ##########################################################################
@@ -177,4 +177,4 @@ module sweeper_1D
 
   end subroutine computeEQ
   
-end module sweeper_1D
+end module sweeper_2D

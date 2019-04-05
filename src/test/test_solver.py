@@ -960,8 +960,9 @@ class TestSOLVER_2D(unittest.TestCase):
                                       4, 2, 5,
                                       5, 5, 5]
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
-        pydgm.control.angle_order = 8
         pydgm.control.angle_option = pydgm.angle.gl
+        pydgm.control.number_angles_pol = 8
+        pydgm.control.number_angles_azi = 4
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 0.0
         pydgm.control.boundary_north = 0.0
