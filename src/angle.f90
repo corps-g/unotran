@@ -31,7 +31,13 @@ module angle
 
     ! Variable definitions
     integer :: &
-        a  ! Angle index
+        a, &  ! Angle index
+        p
+    double precision :: &
+        phia(number_angles_azi), &
+        wt_azi(number_angles_azi), &
+        xi(2 * number_angles_pol), &
+        wt_pol(2 * number_angles_pol)
 
     if (spatial_dimension == 1) then
 
@@ -52,6 +58,43 @@ module angle
       else
         stop "Invalid quadrature option."
       end if
+    else if (spatial_dimension == 2) then
+      ! Verify that the angles are specified for 2D
+      if (number_angles_azi < 1) then
+        print *, 'Number of azimuthal angles must be at least 1'
+        stop
+      end if
+      if (number_angles_pol < 1) then
+        print *, 'Number of polar angles must be at least 1'
+        stop
+      end if
+
+      number_angles = number_angles_azi * number_angles_pol
+
+      do a = 0, number_angles_azi - 1
+        phia(a + 1) = PI * (2 * a + 1) / (4 * number_angles_azi)
+        wt_azi(a + 1) = PI / (2 * number_angles_azi)
+      end do
+
+      call generate_gl_parameters(2 * number_angles_pol, xi, wt_pol)
+
+      do a = 1, number_angles_pol
+        xi(2 * number_angles_pol - a + 1) = -xi(a)
+        wt_pol(2 * number_angles_pol - a + 1) = wt_pol(a)
+      end do
+
+      xi = -xi / 2 + 0.5
+
+      allocate(mu(number_angles), eta(number_angles), wt(number_angles))
+
+      do p = 1, number_angles_pol
+        do a = 1, number_angles_azi
+          wt(a + (p - 1) * number_angles_azi) = wt_pol(p) * wt_azi(a)
+          mu(a + (p - 1) * number_angles_azi) = cos(phia(a)) * sqrt(1 - xi(p) ** 2)
+          eta(a + (p - 1) * number_angles_azi) = sin(phia(a)) * sqrt(1 - xi(p) ** 2)
+        end do
+      end do
+
     end if
 
   end subroutine initialize_angle
@@ -63,6 +106,9 @@ module angle
 
     if (allocated(mu)) then
       deallocate(mu)
+    end if
+    if (allocated(eta)) then
+      deallocate(eta)
     end if
     if (allocated(wt)) then
       deallocate(wt)

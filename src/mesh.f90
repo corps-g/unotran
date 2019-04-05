@@ -67,25 +67,23 @@ module mesh
 
     ! Compute the mesh widths and read materials
     c = 1  ! Initialize counting variable for all cells
-    cx = 1  ! Initialize counting variable for x cells
+    cy = 1  ! Initialize counting variable for y cells
 
-    do ix = 1, nx  ! Loop over coarse x cells
-      ddx = (coarse_mesh_x(ix+1) - coarse_mesh_x(ix)) / fine_mesh_x(ix)
-      do jx = 1, fine_mesh_x(ix)  ! Loop over fine x cells
-        dx(cx) = ddx  ! Store cell size in x direction
-        cx = cx + 1
-
-        cy = 1  ! Initialize counting variable for y cells
-        do iy = 1, ny  ! Loop over coarse y cells
-          ddy = (coarse_mesh_y(iy+1) - coarse_mesh_y(iy)) / fine_mesh_y(iy)
-
-          do jy = 1, fine_mesh_y(iy)  ! Loop over fine y cells
-            dy(cy) = ddy
-            cy = cy + 1
-            mMap(c) = material_map(ix * ny + iy - 1)
-            c = c + 1
+    do iy = 1, ny  ! Loop over the coarse y cells
+      ddy = (coarse_mesh_y(iy+1) - coarse_mesh_y(iy)) / fine_mesh_y(iy)
+      do jy = 1, fine_mesh_y(iy)  ! Loop over the fine y cells in region iy
+        cx = 1  ! Initialize counting variable for x cells
+        do ix = 1, nx  ! Loop over the coarse x cells
+          ddx = (coarse_mesh_x(ix+1) - coarse_mesh_x(ix)) / fine_mesh_x(ix)
+          do jx = 1, fine_mesh_x(ix)  ! Loop over the fine x cells in region ix
+            mMap(c) = material_map((iy - 1) * nx + ix)
+            dx(cx) = ddx  ! Store cell size in x direction
+            cx = cx + 1  ! Increment x cells
+            c = c + 1  ! Increment all cells
           end do
         end do
+        dy(cy) = ddy  ! Store cell size in y direction
+        cy = cy + 1  ! Increment y cells
       end do
     end do
 
