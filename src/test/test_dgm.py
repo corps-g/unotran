@@ -62,7 +62,7 @@ class TestDGM(unittest.TestCase):
         assert(pydgm.state.mg_chi.shape == (nG, nC))
         assert(pydgm.state.mg_sig_s.shape == (nL, nG, nG, nC))
         assert(pydgm.state.mg_psi.shape == (nG, nA, nC))
-        assert(pydgm.state.mg_incident_x.shape == (nG, nA / 2))
+        assert(pydgm.state.mg_incident_x.shape == (nG, nA / 2, 1))
 
     def test_dgm_test3(self):
         '''

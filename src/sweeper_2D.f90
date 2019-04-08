@@ -10,7 +10,7 @@ module sweeper_2D
     ! ##########################################################################
 
     ! Use Statements
-    use angle, only : p_leg, wt, mu, eta
+    use angle, only : p_leg, wt, mu, eta, PI
     use mesh, only : dx, dy
     use control, only : store_psi, number_angles, number_cells, number_cells_x, number_cells_y, &
                         number_legendre, number_groups, use_DGM, scatter_legendre_order, &
@@ -83,9 +83,9 @@ module sweeper_2D
         mg_incident_y = boundary_south * mg_incident_y
       end if
 
-      c = 1
-      do cx = cx_start, cx_stop, cx_step  ! Sweep over cells in x direction
-        do cy = cy_start, cy_stop, cy_step  ! Sweep over cells in x direction
+      do cy = cy_start, cy_stop, cy_step  ! Sweep over cells in y direction
+        do cx = cx_start, cx_stop, cx_step  ! Sweep over cells in x direction
+          c = (cy - 1) * number_cells_x + cx
           mat = mg_mMap(c)
 
           do a = 1, number_angles  ! Sweep over angle
@@ -93,12 +93,13 @@ module sweeper_2D
             ! Get the source in this cell, group, and angle
             source(:) = mg_source(:, c)
             source(:) = source(:) + 0.5 * matmul(transpose(sigphi(:scatter_legendre_order,:,c)), p_leg(:scatter_legendre_order,a))
+            source(:) = source(:) / (2 * PI)
             if (use_DGM) then
               source(:) = source(:) - delta_m(:, a, mg_mMap(c), dgm_order) * psi_m(0, :, a, c)
             end if
 
             call computeEQ(source(:), mg_sig_t(:, mat), dx(cx), dy(cy), mu(a), eta(a), &
-                           mg_incident_x(:, a), mg_incident_y(:, a), psi_center)
+                           mg_incident_x(:, a, cy), mg_incident_y(:, a, cx), psi_center)
 
             if (store_psi) then
               mg_psi(:, a, c) = psi_center(:)
@@ -154,7 +155,7 @@ module sweeper_2D
       coef_x = 2 * mua / dx
       coef_y = 2 * eta / dy
       coef = 1 / (sig(:) + coef_x + coef_y)
-      cellPsi(:) = coef * (S(:) + coef_x * incident_x(:) + coef_y * incident_y(:))
+      cellPsi(:) = coef * (S(:) + coef_x * incident_y(:) + coef_y * incident_x(:))
       incident_x(:) = 2 * cellPsi(:) - incident_x(:)
       incident_y(:) = 2 * cellPsi(:) - incident_y(:)
 !    else if (equation_type == 'SC') then

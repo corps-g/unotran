@@ -12,14 +12,14 @@ module state
       phi,                 & ! Scalar Flux
       mg_phi,              & ! Scalar flux mg container
       mg_psi,              & ! Angular flux mg container
+      mg_incident_x,       & ! Angular flux incident on the current cell in x direction
+      mg_incident_y,       & ! Angular flux incident on the current cell in y direction
       sigphi                 ! Scalar flux container
   double precision, allocatable, dimension(:,:) :: &
       mg_nu_sig_f,         & ! Fission cross section mg container (times nu)
       mg_chi,              & ! Chi spectrum mg container
       mg_source,           & ! External source mg container
-      mg_sig_t,            & ! Scalar total cross section mg container
-      mg_incident_x,       & ! Angular flux incident on the current cell in x direction
-      mg_incident_y          ! Angular flux incident on the current cell in y direction
+      mg_sig_t               ! Scalar total cross section mg container
   double precision, allocatable, dimension(:) :: &
       mg_density             ! Fission density
   integer, allocatable, dimension(:) :: &
@@ -44,7 +44,8 @@ module state
                         initial_psi, number_angles, number_cells, number_legendre, &
                         solver_type, source_value, store_psi, check_inputs, &
                         verify_control, homogenization_map, number_regions, &
-                        scatter_legendre_order, delta_legendre_order, truncate_delta
+                        scatter_legendre_order, delta_legendre_order, truncate_delta, &
+                        number_cells_x, number_cells_y
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials
@@ -154,11 +155,11 @@ module state
     end if
 
     ! Initialize the angular flux incident on the boundary
-    allocate(mg_incident_x(number_groups, number_angles))
-    allocate(mg_incident_y(number_groups, number_angles))
+    allocate(mg_incident_x(number_groups, number_angles, number_cells_y))
+    allocate(mg_incident_y(number_groups, number_angles, number_cells_x))
     ! Assume vacuum conditions for incident flux
-    mg_incident_x(:, :) = 0.0
-    mg_incident_y(:, :) = 0.0
+    mg_incident_x(:, :, :) = 0.0
+    mg_incident_y(:, :, :) = 0.0
 
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen

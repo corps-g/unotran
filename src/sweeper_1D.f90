@@ -90,7 +90,7 @@ module sweeper_1D
             source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)
           end if
 
-          call computeEQ(source(:), mg_sig_t(:, mat), dx(c), mu(a), mg_incident_x(:, a), psi_center)
+          call computeEQ(source(:), mg_sig_t(:, mat), dx(c), mu(a), mg_incident_x(:, a, 1), psi_center)
 
           if (store_psi) then
             mg_psi(:, an, c) = psi_center(:)
