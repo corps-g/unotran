@@ -34,7 +34,7 @@ class TestDGM(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 2.0
         pydgm.control.equation_type = 'DD'
-        pydgm.control.scatter_legendre_order = 7
+        pydgm.control.scatter_leg_order = 7
 
     def test_dgm_initialize_moments(self):
         '''
@@ -274,7 +274,7 @@ class TestDGM2(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 2.0
         pydgm.control.equation_type = 'DD'
-        pydgm.control.scatter_legendre_order = 0
+        pydgm.control.scatter_leg_order = 0
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()

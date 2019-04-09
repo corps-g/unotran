@@ -18,6 +18,9 @@ module control
       energy_group_map,           & ! Coarse energy group boundaries
       truncation_map,             & ! Expansion order within each coarse group (optional)
       homogenization_map            ! Map of which fine cells to homogenize for DGM (optional)
+  double precision, parameter :: &
+      scale_1D=0.5,               & ! 1D scaling factor for the source terms
+      scale_2D=12.5663706143591725  ! 2D scaling factor for the source terms
   double precision :: &
       boundary_east,              & ! Albedo value at east boundary
       boundary_west,              & ! Albedo value at west boundary
@@ -41,8 +44,6 @@ module control
   integer :: &
       spatial_dimension,          & ! Dimension of the spatial variable (1 for 1D, 2 for 2D)
       angle_order,                & ! Number of angles per octant
-      angle_order_azi,            & ! Number of angles per octant in azimuthal angle
-      angle_order_pol,            & ! Number of angles per octant in polar angle
       angle_option,               & ! Quadrature option [gl=0, dgl=1]
       max_recon_iters=1000,       & ! Maximum iterations for recon loop
       max_eigen_iters=1000,       & ! Maximum iterations for eigen loop
@@ -64,8 +65,8 @@ module control
       recon_print=1,              & ! Enable/Disable recon iteration printing
       eigen_print=1,              & ! Enable/Disable eigen iteration printing
       outer_print=1,              & ! Enable/Disable outer iteration printing
-      scatter_legendre_order=-1,  & ! Legendre order for anisotropic scattering
-      delta_legendre_order=-1       ! Legendre order for truncated expansion of delta term
+      scatter_leg_order=-1,       & ! Legendre order for anisotropic scattering
+      delta_leg_order=-1            ! Legendre order for truncated expansion of delta term
   logical :: &
       allow_fission=.false.,      & ! Enable/Disable fission in the problem
       use_dgm=.false.,            & ! Enable/Disable DGM solver
@@ -162,10 +163,6 @@ module control
           read(buffer, *, iostat=ios) initial_keff
         case ('angle_order')
           read(buffer, *, iostat=ios) angle_order
-        case ('angle_order_azi')
-          read(buffer, *, iostat=ios) angle_order_azi
-        case ('angle_order_pol')
-          read(buffer, *, iostat=ios) angle_order_pol
         case ('angle_option')
           read(buffer, *, iostat=ios) angle_option
         case ('boundary_east')
@@ -213,9 +210,9 @@ module control
         case ('source')
           read(buffer, *, iostat=ios) source_value
         case ('scatter_legendre_order')
-          read(buffer, *, iostat=ios) scatter_legendre_order
+          read(buffer, *, iostat=ios) scatter_leg_order
         case ('delta_legendre_order')
-          read(buffer, *, iostat=ios) delta_legendre_order
+          read(buffer, *, iostat=ios) delta_leg_order
         case ('truncate_delta')
           read(buffer, *, iostat=ios) truncate_delta
         case ('max_recon_iters')
@@ -270,8 +267,6 @@ module control
     print *, 'MATERIAL VARIABLES'
     print *, '  xs_file_name       = "', trim(xs_name), '"'
     print *, 'ANGLE VARIABLES'
-    print *, '  angle_order_azi    = ', angle_order_azi
-    print *, '  angle_order_pol    = ', angle_order_pol
     print *, '  angle_option       = ', angle_option
     print *, 'SOURCE'
     print *, '  constant source    = ', source_value
@@ -293,8 +288,8 @@ module control
     print *, '  max_outer_iters    = ', max_outer_iters
     print *, '  lambda             = ', lamb
     print *, '  ignore_warnings    = ', ignore_warnings
-    if (scatter_legendre_order > -1) then
-      print *, '  scatter_order      = ', scatter_legendre_order
+    if (scatter_leg_order > -1) then
+      print *, '  scatter_order      = ', scatter_leg_order
     else
       print *, '  scatter_order     = DEFAULT'
     end if

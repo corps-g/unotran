@@ -175,7 +175,7 @@ module dgmsolver
     use control, only : number_fine_groups, number_angles, number_cells, energy_group_map
     use angle, only : p_leg
     use control, only : store_psi, number_angles, truncate_delta, &
-                        delta_legendre_order
+                        delta_leg_order
     use dgm, only : basis, expansion_order, phi_m, psi_m
     use state, only : phi, psi
 
@@ -199,8 +199,8 @@ module dgmsolver
         do a = 1, number_angles * 2
           do g = 1, number_fine_groups
             if (truncate_delta) then
-              tmp_psi_m = matmul(phi_m(:, :delta_legendre_order, energy_group_map(g), c), &
-                                 p_leg(:delta_legendre_order, a))
+              tmp_psi_m = matmul(phi_m(:, :delta_leg_order, energy_group_map(g), c), &
+                                 p_leg(:delta_leg_order, a))
             else
               tmp_psi_m = psi_m(:, energy_group_map(g), a, c)
             end if
@@ -245,7 +245,7 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, &
-                        energy_group_map, delta_legendre_order, truncate_delta
+                        energy_group_map, delta_leg_order, truncate_delta
     use state, only : phi, psi
     use dgm, only : phi_m, psi_m, basis, expansion_order
     use angle, only : p_leg
@@ -277,7 +277,7 @@ module dgmsolver
             ! the angular flux (because the idea is that we would only store
             ! the angular moments and then the discrete delta term would be
             ! generated on the fly from the corresponding delta moments)
-            ord = delta_legendre_order
+            ord = delta_leg_order
             tmp_psi = dot_product(p_leg(:ord, a), phi(:ord, g, c))
           else
             tmp_psi = psi(g, a, c)
@@ -328,8 +328,8 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_cells, number_legendre, number_groups, &
-                        delta_legendre_order, truncate_delta, number_regions, &
-                        scatter_legendre_order, number_coarse_groups
+                        delta_leg_order, truncate_delta, number_regions, &
+                        scatter_leg_order, number_coarse_groups
     use state, only : mg_sig_t, mg_nu_sig_f, mg_mMap
     use mesh, only : mMap, dx
     use dgm, only : phi_m, psi_m, sig_s_m, delta_m, expansion_order, &
@@ -363,7 +363,7 @@ module dgmsolver
     end if
 
     allocate(delta_m(number_groups, 2 * number_angles, number_regions, 0:expansion_order))
-    allocate(sig_s_m(0:scatter_legendre_order, number_groups, number_groups, number_regions, 0:expansion_order))
+    allocate(sig_s_m(0:scatter_leg_order, number_groups, number_groups, number_regions, 0:expansion_order))
 
     ! initialize all moments and mg containers to zero
     sig_s_m = 0.0
@@ -412,7 +412,7 @@ module dgmsolver
         r = mg_mMap(c)
         do cg = 1, number_coarse_groups
           do cgp = 1, number_coarse_groups
-            do l = 0, scatter_legendre_order
+            do l = 0, scatter_leg_order
               float = dot_product(phi_m(:, l, cgp, c), expanded_sig_s(:, l, cgp, cg, mat, o))
               if (homog_phi(l, cgp, r) /= 0.0) then
                   sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
@@ -425,7 +425,7 @@ module dgmsolver
     end do
 
     ! Compute delta
-    ord = delta_legendre_order
+    ord = delta_leg_order
     do o = 0, expansion_order
       ! Add angular total cross section moment (delta) to the external source
       do c = 1, number_cells

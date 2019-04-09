@@ -12,11 +12,11 @@ module sweeper_1D
     ! Use Statements
     use angle, only : p_leg, wt, mu
     use mesh, only : dx
-    use control, only : store_psi, number_angles, number_cells, scatter_legendre_order, &
+    use control, only : store_psi, number_angles, number_cells, scatter_leg_order, &
                         number_legendre, number_groups, use_DGM, boundary_east, &
                         boundary_west
     use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident_x, mg_psi, &
-                      mg_source, sigphi
+                      mg_source, sigphi, scaling
     use sources, only : compute_source
     use omp_lib, only : omp_get_wtime
     use dgm, only : delta_m, psi_m, dgm_order
@@ -85,7 +85,7 @@ module sweeper_1D
 
           ! Get the source in this cell, group, and angle
           source(:) = mg_source(:, c)
-          source(:) = source(:) + 0.5 * matmul(transpose(sigphi(:scatter_legendre_order,:,c)), p_leg(:scatter_legendre_order,an))
+          source(:) = source(:) + scaling * matmul(transpose(sigphi(:scatter_leg_order,:,c)), p_leg(:scatter_leg_order,an))
           if (use_DGM) then
             source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)
           end if

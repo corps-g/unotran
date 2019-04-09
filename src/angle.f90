@@ -26,8 +26,7 @@ module angle
 
     ! Use Statements
     use control, only : number_angles_azi, number_angles_pol, spatial_dimension, &
-                        angle_order_azi, angle_order_pol, angle_option, number_angles, &
-                        angle_order
+                        angle_option, number_angles, angle_order
 
     ! Variable definitions
     integer :: &

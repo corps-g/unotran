@@ -19,7 +19,7 @@ module solver
                       update_fission_density
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
-    use control, only : store_psi, number_regions,scatter_legendre_order
+    use control, only : store_psi, number_regions,scatter_leg_order
 
     ! Variable definitions
     integer :: &
@@ -33,7 +33,7 @@ module solver
     do r = 1, number_regions
       mg_nu_sig_f(:,r) = nu_sig_f(:,r)
       mg_chi(:,r) = chi(:,r)
-      mg_sig_s(:,:,:,r) = sig_s(:scatter_legendre_order,:,:,r)
+      mg_sig_s(:,:,:,r) = sig_s(:scatter_leg_order,:,:,r)
       mg_sig_t(:,r) = sig_t(:,r)
     end do
     mg_phi(:, :, :) = phi(:, :, :)

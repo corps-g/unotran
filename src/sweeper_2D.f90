@@ -13,10 +13,10 @@ module sweeper_2D
     use angle, only : p_leg, wt, mu, eta, PI
     use mesh, only : dx, dy
     use control, only : store_psi, number_angles, number_cells, number_cells_x, number_cells_y, &
-                        number_legendre, number_groups, use_DGM, scatter_legendre_order, &
+                        number_legendre, number_groups, use_DGM, scatter_leg_order, &
                         boundary_east, boundary_west, boundary_north, boundary_south
     use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident_x, mg_incident_y, &
-                      mg_psi, mg_source, sigphi
+                      mg_psi, mg_source, sigphi, scaling
     use sources, only : compute_source
     use omp_lib, only : omp_get_wtime
     use dgm, only : delta_m, psi_m, dgm_order
@@ -92,8 +92,7 @@ module sweeper_2D
 
             ! Get the source in this cell, group, and angle
             source(:) = mg_source(:, c)
-            source(:) = source(:) + 0.5 * matmul(transpose(sigphi(:scatter_legendre_order,:,c)), p_leg(:scatter_legendre_order,a))
-            source(:) = source(:) / (2 * PI)
+            source(:) = source(:) + scaling * matmul(transpose(sigphi(:scatter_leg_order,:,c)), p_leg(:scatter_leg_order,a))
             if (use_DGM) then
               source(:) = source(:) - delta_m(:, a, mg_mMap(c), dgm_order) * psi_m(0, :, a, c)
             end if

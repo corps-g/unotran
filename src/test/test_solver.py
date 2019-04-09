@@ -29,7 +29,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.equation_type = 'DD'
-        pydgm.control.scatter_legendre_order = 0
+        pydgm.control.scatter_leg_order = 0
         pydgm.control.use_DGM = False
         pydgm.control.max_eigen_iters = 10000
         pydgm.control.max_outer_iters = 1000
@@ -703,7 +703,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [5, 1, 5]
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
         pydgm.control.angle_order = 8
-        pydgm.control.scatter_legendre_order = 7
+        pydgm.control.scatter_leg_order = 7
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -713,12 +713,12 @@ class TestSOLVER(unittest.TestCase):
 
         phi_test = np.array(phi_test)
 
-        phi_test = phi_test.reshape(2, pydgm.control.scatter_legendre_order + 1, -1)
+        phi_test = phi_test.reshape(2, pydgm.control.scatter_leg_order + 1, -1)
 
         # Solve the problem
         pydgm.solver.solve()
 
-        for l in range(pydgm.control.scatter_legendre_order + 1):
+        for l in range(pydgm.control.scatter_leg_order + 1):
             phi = pydgm.state.mg_phi[l, :, :].flatten()
 
             test = phi_test[:, l].flatten()
@@ -732,7 +732,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/2g_symmetric.anlxs'.ljust(256)
         pydgm.control.angle_order = 4
-        pydgm.control.scatter_legendre_order = 1
+        pydgm.control.scatter_leg_order = 1
         pydgm.control.boundary_type = [0.0, 0.0]
 
         # Initialize the dependancies
@@ -752,7 +752,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [5, 1, 5]
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
         pydgm.control.angle_order = 8
-        pydgm.control.scatter_legendre_order = 7
+        pydgm.control.scatter_leg_order = 7
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
 
@@ -764,12 +764,12 @@ class TestSOLVER(unittest.TestCase):
 
         phi_test = np.array(phi_test)
 
-        phi_test = phi_test.reshape(2, pydgm.control.scatter_legendre_order + 1, -1)
+        phi_test = phi_test.reshape(2, pydgm.control.scatter_leg_order + 1, -1)
 
         # Solve the problem
         pydgm.solver.solve()
 
-        for l in range(pydgm.control.scatter_legendre_order + 1):
+        for l in range(pydgm.control.scatter_leg_order + 1):
             phi = pydgm.state.mg_phi[l, :, :].flatten()
 
             test = phi_test[:, l].flatten()
@@ -793,7 +793,7 @@ class TestSOLVER(unittest.TestCase):
 
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
-        pydgm.control.scatter_legendre_order = 0
+        pydgm.control.scatter_leg_order = 0
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -808,7 +808,7 @@ class TestSOLVER(unittest.TestCase):
 
         phi_test = np.array(phi_test)
 
-        phi_test = phi_test.reshape(2, pydgm.control.scatter_legendre_order + 1, -1)  # Group, legendre, cell
+        phi_test = phi_test.reshape(2, pydgm.control.scatter_leg_order + 1, -1)  # Group, legendre, cell
 
         keff_test = 1.17455939
 
@@ -847,7 +847,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.source_value = 0.0
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
-        pydgm.control.scatter_legendre_order = 7
+        pydgm.control.scatter_leg_order = 7
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -868,7 +868,7 @@ class TestSOLVER(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, keff_test, 8)
 
         # Test the scalar flux
-        for l in range(pydgm.control.scatter_legendre_order + 1):
+        for l in range(pydgm.control.scatter_leg_order + 1):
             phi = pydgm.state.mg_phi[l, :, :].flatten()
             phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
             np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)
@@ -977,7 +977,7 @@ class TestSOLVER_2D(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.equation_type = 'DD'
-        pydgm.control.scatter_legendre_order = 0
+        pydgm.control.scatter_leg_order = 0
         pydgm.control.use_DGM = False
         pydgm.control.max_eigen_iters = 10000
         pydgm.control.max_outer_iters = 1000
@@ -1023,7 +1023,7 @@ class TestSOLVER_2D(unittest.TestCase):
 #         plt.show()
 
         # Test the scalar flux
-        for l in range(pydgm.control.scatter_legendre_order + 1):
+        for l in range(pydgm.control.scatter_leg_order + 1):
             phi = pydgm.state.mg_phi[l, :, :].flatten()
             phi_zero_test = phi_test
             np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)
@@ -1047,7 +1047,7 @@ class TestSOLVER_2D(unittest.TestCase):
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
-        pydgm.control.scatter_legendre_order = 0
+        pydgm.control.scatter_leg_order = 0
         pydgm.control.eigen_print = 1
 
         # Initialize the dependancies
@@ -1069,7 +1069,7 @@ class TestSOLVER_2D(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, keff_test, 8)
 
         # Test the scalar flux
-        for l in range(pydgm.control.scatter_legendre_order + 1):
+        for l in range(pydgm.control.scatter_leg_order + 1):
             phi = pydgm.state.mg_phi[l, :, :].flatten()
             phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
             np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)
@@ -1093,7 +1093,7 @@ class TestSOLVER_2D(unittest.TestCase):
         pydgm.control.allow_fission = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
-        pydgm.control.scatter_legendre_order = 2
+        pydgm.control.scatter_leg_order = 2
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -1114,7 +1114,7 @@ class TestSOLVER_2D(unittest.TestCase):
         self.assertAlmostEqual(pydgm.state.keff, keff_test, 8)
 
         # Test the scalar flux
-        for l in range(pydgm.control.scatter_legendre_order + 1):
+        for l in range(pydgm.control.scatter_leg_order + 1):
             phi = pydgm.state.mg_phi[l, :, :].flatten()
             phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
             np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)
@@ -1136,14 +1136,19 @@ class TestSOLVER_2D(unittest.TestCase):
 
         # Set the variables for the test
         pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
-        pydgm.control.scatter_legendre_order = 2
+        pydgm.control.solver_type = 'fixed'.ljust(256)
+        pydgm.control.source_value = 1.0
+        pydgm.control.scatter_leg_order = 0
+        pydgm.control.outer_print = 1
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
 
         assert(pydgm.control.number_groups == 2)
+
+        print(pydgm.angle.mu)
+        print(pydgm.angle.eta)
+        print(pydgm.angle.wt)
 
         # Solve the problem
         pydgm.solver.solve()
@@ -1151,10 +1156,15 @@ class TestSOLVER_2D(unittest.TestCase):
         # Partisn output flux indexed as group, Legendre, cell
         phi_test = [[[28.981231758140154, 28.94304820649587, 28.738431503002182, 28.268477380131692, 26.59298746231089, 24.07302437069141, 22.558989594636405, 22.548691542180602, 23.02785414454662, 26.242487865879315, 32.55262194096976, 35.61535874179145, 21.190123056609227, 28.943048206495828, 28.910061535546998, 28.7114963008364, 28.254583766372818, 26.593104975854132, 24.076844837138943, 22.571887972335283, 22.57005782115806, 23.049703294698904, 26.266231447693507, 32.57913091304517, 35.63489418616895, 21.1994773204272, 28.738431503001927, 28.711496300836593, 28.54234387917564, 28.123680180313727, 26.517874996464176, 24.0848470447293, 22.62621881489072, 22.642211077125108, 23.135776706566187, 26.34639806542825, 32.629518472680935, 35.65259217030243, 21.19609519577368, 28.268477380132076, 28.254583766372658, 28.123680180313634, 27.849218135043614, 26.439949078451942, 24.153902108884704, 22.863187549291453, 22.99293778002062, 23.465755397824047, 26.630596031092125, 32.85501712128011, 35.74847621144442, 21.2115250622958, 26.592987462310788, 26.593104975854413, 26.51787499646433, 26.43994907845198, 25.783084796139416, 24.67539491235523, 24.10477648907607, 24.40498313412288, 24.893154160637113, 27.789698745975322, 33.344174625104, 35.7625881091415, 21.196424985175035, 24.07302437069196, 24.076844837139056, 24.08484704472891, 24.153902108884832, 24.675394912354623, 25.94479723556868, 26.562637218161445, 27.001640389585397, 27.60000166663193, 30.023930536973705, 34.1513832905937, 35.82205882928666, 21.269632666706745, 22.558989594637683, 22.57188797233507, 22.626218814890734, 22.86318754929143, 24.104776489076126, 26.562637218160557, 27.935629393513903, 28.5630549183418, 29.17009006050089, 31.281824153899013, 34.66995260502389, 35.82114877333931, 21.23784478986545, 22.548691542184113, 22.57005782115985, 22.64221107712342, 22.992937780017783, 24.404983134122286, 27.00164038959223, 28.563054918343816, 29.30804889260596, 29.86236539630162, 31.877008172349296, 35.09794999649058, 36.03556422136518, 21.31791649225431, 23.027854144573375, 23.049703294688506, 23.135776706554587, 23.465755397825603, 24.893154160636353, 27.60000166664664, 29.170090060529336, 29.862365396320143, 30.359830139541565, 32.259760535107546, 35.31619143751178, 36.03201462104357, 21.22806842894058, 26.242487865936724, 26.266231447661728, 26.34639806539657, 26.630596031108606, 27.789698745987458, 30.023930536947496, 31.281824153934025, 31.877008172464684, 32.259760535182096, 33.85257498118395, 36.181894323735115, 36.34704394735896, 21.407547112152862, 32.552621940894014, 32.57913091309835, 32.629518472718985, 32.85501712126915, 33.34417462511426, 34.15138329058708, 34.66995260491845, 35.09794999647214, 35.316191437702656, 36.18189432380074, 36.862197173467365, 36.02051446596168, 21.131538188855824, 35.61535874174428, 35.63489418618654, 35.65259217034191, 35.748476211445436, 35.76258810915221, 35.82205882932433, 35.82114877332277, 36.0355642210443, 36.032014620367306, 36.347043947371034, 36.02051446640178, 35.05026588953651, 20.909695156517436, 21.19012305670243, 21.199477320345224, 21.196095195735857, 21.21152506233554, 21.19642498520354, 21.269632666730335, 21.237844790026877, 21.31791649196855, 21.228068427900503, 21.40754711214105, 21.13153818949443, 20.909695156477383, 12.937762870718123]], [[12.356653555817097, 12.37968105668741, 12.246086255027937, 12.6031799401654, 9.50469797527528, 3.2026544573777436, 2.0033812727839093, 2.75795144455089, 2.013927460120779, 5.992346239957504, 99.00794224049054, 170.63645067442192, 88.88113132558784, 12.379681056687382, 12.413350211813816, 12.261557438648442, 12.643840791221628, 9.541128483424803, 3.12385121392505, 1.9405525652782505, 2.6688630849509027, 1.9502388959724837, 5.811007084176548, 99.04606811623553, 170.76400168721122, 88.87974990645988, 12.246086255027896, 12.26155743864846, 12.158731104816429, 12.480290850503414, 9.425943298843466, 3.313563286730399, 2.1002082799242654, 2.8928353205408364, 2.110230868295047, 6.2778455193295075, 99.24180289234032, 170.8366080975808, 89.07831631573973, 12.603179940165433, 12.643840791221601, 12.480290850503438, 12.989427202817827, 9.743462854745772, 2.9336407811493643, 1.7841569415559555, 2.4344167466342275, 1.7967392410767002, 5.326904783596695, 99.48635299710189, 171.77014235564187, 89.03611288334429, 9.504697975275299, 9.541128483424863, 9.42594329884345, 9.74346285474583, 7.891138981541001, 3.587933582799086, 2.7276753110778955, 3.4714451172134164, 2.549378249701128, 7.657739055451526, 102.65142389476851, 172.54569854215578, 88.94648591858278, 3.2026544573777773, 3.123851213924989, 3.31356328673047, 2.9336407811492213, 3.587933582799251, 8.223177832991652, 9.737750634274484, 10.151120157346897, 8.031456233191719, 21.636044823178526, 109.7333439840467, 172.4455046650219, 89.64328710887334, 2.003381272783955, 1.940552565278294, 2.1002082799243196, 1.7841569415559444, 2.7276753110778422, 9.737750634273839, 12.708068792621823, 12.766389442514994, 10.647078439049587, 27.206170496644216, 114.20535839125318, 173.15203974352872, 89.71537456904349, 2.7579514445511926, 2.668863084951028, 2.8928353205408315, 2.434416746634226, 3.4714451172136167, 10.151120157348737, 12.766389442514614, 13.10780229351551, 10.950135193367569, 27.410036583348838, 115.63876740555065, 174.83939981290715, 90.20960367724527, 2.0139274601218875, 1.9502388959727974, 2.1102308682951105, 1.7967392410767458, 2.549378249702171, 8.031456233204192, 10.647078439064055, 10.95013519336653, 8.564719345975885, 25.484535296306415, 117.67839153583971, 177.6620539101295, 90.05273656731143, 5.9923462399547835, 5.81100708417697, 6.277845519329425, 5.326904783599684, 7.65773905545387, 21.636044823147156, 27.206170496622793, 27.4100365833699, 25.4845352963293, 44.58646029909886, 132.156816091346, 180.5258497847279, 89.86448910542903, 99.00794224032803, 99.04606811631291, 99.2418028924096, 99.48635299713497, 102.65142389478409, 109.73334398400154, 114.20535839106017, 115.63876740535919, 117.67839153588456, 132.15681609141393, 167.18309797202255, 178.1811622183943, 89.97848366975522, 170.63645067431435, 170.76400168725334, 170.83660809765, 171.77014235568916, 172.54569854217593, 172.44550466499848, 173.1520397432655, 174.83939981221152, 177.6620539092448, 180.52584978474238, 178.1811622189735, 166.0832293168177, 85.00049237842038, 88.88113132565115, 88.87974990641378, 89.07831631573026, 89.03611288337814, 88.94648591860835, 89.64328710882758, 89.71537456894347, 90.20960367672983, 90.05273656627419, 89.86448910540224, 89.97848367043476, 85.00049237853904, 43.91979206297964]]]
 
+        import matplotlib.pyplot as plt
+        plt.contourf(np.array(pydgm.state.phi).flatten().reshape(2, 13, 13)[0])
+        plt.colorbar()
+        plt.show()
+
         phi_test = np.array(phi_test)
 
         # Test the scalar flux
-        for l in range(pydgm.control.scatter_legendre_order + 1):
+        for l in range(pydgm.control.scatter_leg_order + 1):
             phi = pydgm.state.mg_phi[l, :, :].flatten()
             phi_zero_test = phi_test[:, l].flatten()
             np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)
@@ -1176,9 +1186,9 @@ class TestSOLVER_2D(unittest.TestCase):
 
         # Set the variables for the test
         pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
-        pydgm.control.scatter_legendre_order = 2
+        pydgm.control.solver_type = 'fixed'.ljust(256)
+        pydgm.control.source_value = 1.0
+        pydgm.control.scatter_leg_order = 2
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -1194,7 +1204,7 @@ class TestSOLVER_2D(unittest.TestCase):
         phi_test = np.array(phi_test)
 
         # Test the scalar flux
-        for l in range(pydgm.control.scatter_legendre_order + 1):
+        for l in range(pydgm.control.scatter_leg_order + 1):
             phi = pydgm.state.mg_phi[l, :, :].flatten()
             phi_zero_test = phi_test[:, l].flatten()
             np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)

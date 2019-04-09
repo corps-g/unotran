@@ -26,7 +26,7 @@ class TestSOURCES(unittest.TestCase):
         pydgm.control.store_psi = False
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
-        pydgm.control.scatter_legendre_order = 0
+        pydgm.control.scatter_leg_order = 0
         pydgm.control.use_dgm = False
 
         # Initialize the dependancies
@@ -66,7 +66,7 @@ class TestSOURCESdgm(unittest.TestCase):
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
-        pydgm.control.scatter_legendre_order = 0
+        pydgm.control.scatter_leg_order = 0
         pydgm.control.use_dgm = True
         pydgm.control.xs_name = 'test/4gXS.anlxs'.ljust(256)
         pydgm.control.energy_group_map = [1, 1, 2, 2]

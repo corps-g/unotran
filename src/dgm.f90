@@ -151,7 +151,7 @@ module dgm
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_coarse_groups, scatter_legendre_order, number_fine_groups, &
+    use control, only : number_coarse_groups, scatter_leg_order, number_fine_groups, &
                         energy_group_map
     use material, only : number_materials, sig_t, nu_sig_f, sig_s
 
@@ -167,7 +167,7 @@ module dgm
 
     allocate(expanded_sig_t(0:expansion_order, number_coarse_groups, number_materials, 0:expansion_order))
     allocate(expanded_nu_sig_f(0:expansion_order, number_coarse_groups, number_materials))
-    allocate(expanded_sig_s(0:expansion_order, 0:scatter_legendre_order, number_coarse_groups, &
+    allocate(expanded_sig_s(0:expansion_order, 0:scatter_leg_order, number_coarse_groups, &
                             number_coarse_groups, number_materials, 0:expansion_order))
 
     expanded_sig_t = 0.0
@@ -201,7 +201,7 @@ module dgm
           cg = energy_group_map(g)
           do gp = 1, number_fine_groups
             cgp = energy_group_map(gp)
-            do l = 0, scatter_legendre_order
+            do l = 0, scatter_leg_order
               expanded_sig_s(:, l, cgp, cg, m, i) = expanded_sig_s(:, l, cgp, cg, m, i) &
                                                   + basis(g, i) * sig_s(l, gp, g, m) * basis(gp, :)
             end do

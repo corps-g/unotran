@@ -29,6 +29,7 @@ module state
       keff,                & ! k-eigenvalue
       norm_frac,           & ! Fraction of normalization for eigenvalue problems
       sweep_count,         & ! Counter for the number of transport sweeps
+      scaling,             & ! Scaling factor for source terms
       recon_convergence_rate ! Approximate rate of convergence for recon iters
   
   contains
@@ -44,8 +45,9 @@ module state
                         initial_psi, number_angles, number_cells, number_legendre, &
                         solver_type, source_value, store_psi, check_inputs, &
                         verify_control, homogenization_map, number_regions, &
-                        scatter_legendre_order, delta_legendre_order, truncate_delta, &
-                        number_cells_x, number_cells_y
+                        scatter_leg_order, delta_leg_order, truncate_delta, &
+                        number_cells_x, number_cells_y, spatial_dimension, scale_1D, &
+                        scale_2D
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials
@@ -61,10 +63,10 @@ module state
     ! read the material cross sections
     call create_material()
     ! Determine the Legendre order of phi to store
-    if (delta_legendre_order == -1) then
-      delta_legendre_order = scatter_legendre_order
+    if (delta_leg_order == -1) then
+      delta_leg_order = scatter_leg_order
     end if
-    number_legendre = max(delta_legendre_order, scatter_legendre_order)
+    number_legendre = max(delta_leg_order, scatter_leg_order)
     ! Verify the inputs
     if (verify_control) then
       call check_inputs()
@@ -98,6 +100,12 @@ module state
           homogenization_map(c) = c
         end do
       end if
+    end if
+
+    if (spatial_dimension == 1) then
+      scaling = scale_1D
+    else if (spatial_dimension == 2) then
+      scaling = scale_2D
     end if
 
     ! Set the sweep counter to zero
@@ -184,8 +192,8 @@ module state
     allocate(mg_sig_t(number_groups, number_regions))
     allocate(mg_phi(0:number_legendre, number_groups, number_cells))
     allocate(mg_chi(number_groups, number_regions))
-    allocate(mg_sig_s(0:scatter_legendre_order, number_groups, number_groups, number_regions))
-    allocate(sigphi(0:scatter_legendre_order, number_groups, number_cells))
+    allocate(mg_sig_s(0:scatter_leg_order, number_groups, number_groups, number_regions))
+    allocate(sigphi(0:scatter_leg_order, number_groups, number_cells))
     if (store_psi) then
       allocate(mg_psi(number_groups, 2 * number_angles, number_cells))
     end if
