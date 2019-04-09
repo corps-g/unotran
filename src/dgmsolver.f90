@@ -34,7 +34,7 @@ module dgmsolver
 
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
-                        ignore_warnings, lamb, number_cells, &
+                        ignore_warnings, lamb, number_cells, spatial_dimension, &
                         number_legendre, number_angles, min_recon_iters, number_coarse_groups
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments, recon_convergence_rate, &
@@ -58,7 +58,7 @@ module dgmsolver
         ave_sweep_time    ! Average time in seconds per sweep
     double precision, dimension(0:expansion_order, 0:number_legendre, number_coarse_groups, number_cells) :: &
         old_phi_m         ! Scalar flux from previous iteration
-    double precision, dimension(0:expansion_order, number_coarse_groups, 2 * number_angles, number_cells) :: &
+    double precision, dimension(0:expansion_order, number_coarse_groups, 2 * spatial_dimension * number_angles, number_cells) :: &
         old_psi_m         ! Angular flux from previous iteration
     double precision, dimension(3) :: &
         past_error        ! Container to hold the error for last 3 iterations
@@ -329,7 +329,7 @@ module dgmsolver
     ! Use Statements
     use control, only : number_angles, number_cells, number_legendre, number_groups, &
                         delta_leg_order, truncate_delta, number_regions, &
-                        scatter_leg_order, number_coarse_groups
+                        scatter_leg_order, number_coarse_groups, spatial_dimension
     use state, only : mg_sig_t, mg_nu_sig_f, mg_mMap
     use mesh, only : mMap, dx
     use dgm, only : phi_m, psi_m, sig_s_m, delta_m, expansion_order, &
@@ -362,7 +362,7 @@ module dgmsolver
       deallocate(sig_s_m)
     end if
 
-    allocate(delta_m(number_groups, 2 * number_angles, number_regions, 0:expansion_order))
+    allocate(delta_m(number_groups, 2 * spatial_dimension * number_angles, number_regions, 0:expansion_order))
     allocate(sig_s_m(0:scatter_leg_order, number_groups, number_groups, number_regions, 0:expansion_order))
 
     ! initialize all moments and mg containers to zero

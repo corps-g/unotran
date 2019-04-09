@@ -34,6 +34,7 @@ module sweeper_2D
         cy,         & ! y cell index
         mat,        & ! Material index
         a,          & ! Angle index
+        an,         & ! Global angle index
         cx_start,   & ! Lower cell number in x direction
         cx_stop,    & ! Upper cell number in x direction
         cx_step,    & ! Cell stepping direction in x direction
@@ -89,19 +90,20 @@ module sweeper_2D
           mat = mg_mMap(c)
 
           do a = 1, number_angles  ! Sweep over angle
+            an = (o - 1) * number_angles + a
 
             ! Get the source in this cell, group, and angle
             source(:) = mg_source(:, c)
             source(:) = source(:) + scaling * matmul(transpose(sigphi(:scatter_leg_order,:,c)), p_leg(:scatter_leg_order,a))
             if (use_DGM) then
-              source(:) = source(:) - delta_m(:, a, mg_mMap(c), dgm_order) * psi_m(0, :, a, c)
+              source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)
             end if
 
             call computeEQ(source(:), mg_sig_t(:, mat), dx(cx), dy(cy), mu(a), eta(a), &
                            mg_incident_x(:, a, cy), mg_incident_y(:, a, cx), psi_center)
 
             if (store_psi) then
-              mg_psi(:, a, c) = psi_center(:)
+              mg_psi(:, an, c) = psi_center(:)
             end if
 
             ! Loop over the energy groups

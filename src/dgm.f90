@@ -37,7 +37,7 @@ module dgm
     ! Use Statements
     use control, only : energy_group_map, truncation_map, number_angles, &
                         number_groups, number_coarse_groups, number_cells, &
-                        number_legendre, number_fine_groups
+                        number_legendre, number_fine_groups, spatial_dimension
 
     ! Variable definitions
     integer :: &
@@ -95,7 +95,7 @@ module dgm
 
     ! Form the containers to hold the zeroth moments
     allocate(phi_m(0:expansion_order, 0:number_legendre, number_coarse_groups, number_cells))
-    allocate(psi_m(0:expansion_order, number_coarse_groups, 2 * number_angles, number_cells))
+    allocate(psi_m(0:expansion_order, number_coarse_groups, 2 * spatial_dimension * number_angles, number_cells))
 
   end subroutine initialize_moments
 

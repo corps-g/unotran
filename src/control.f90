@@ -19,7 +19,7 @@ module control
       truncation_map,             & ! Expansion order within each coarse group (optional)
       homogenization_map            ! Map of which fine cells to homogenize for DGM (optional)
   double precision, parameter :: &
-      scale_1D=0.5,               & ! 1D scaling factor for the source terms
+      scale_1D=2,                 & ! 1D scaling factor for the source terms
       scale_2D=12.5663706143591725  ! 2D scaling factor for the source terms
   double precision :: &
       boundary_east,              & ! Albedo value at east boundary

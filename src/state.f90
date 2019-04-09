@@ -103,9 +103,9 @@ module state
     end if
 
     if (spatial_dimension == 1) then
-      scaling = scale_1D
+      scaling = 1 / scale_1D
     else if (spatial_dimension == 2) then
-      scaling = scale_2D
+      scaling = 1 / scale_2D
     end if
 
     ! Set the sweep counter to zero
@@ -135,7 +135,7 @@ module state
 
     ! Only allocate psi if the option is to store psi
     if (store_psi) then
-      allocate(psi(number_fine_groups, 2 * number_angles, number_cells))
+      allocate(psi(number_fine_groups, 2 * spatial_dimension * number_angles, number_cells))
 
       ! Initialize psi
       ! Attempt to read file or use default if file does not exist
@@ -151,8 +151,8 @@ module state
           ! default to isotropic distribution
           psi = 0.0
           do c = 1, number_cells
-            do a = 1, 2 * number_angles
-              psi(:, a, c) = phi(0, :, c) / 2
+            do a = 1, 2 * spatial_dimension * number_angles
+              psi(:, a, c) = phi(0, :, c) * scaling
             end do
           end do
         end if
@@ -195,7 +195,7 @@ module state
     allocate(mg_sig_s(0:scatter_leg_order, number_groups, number_groups, number_regions))
     allocate(sigphi(0:scatter_leg_order, number_groups, number_cells))
     if (store_psi) then
-      allocate(mg_psi(number_groups, 2 * number_angles, number_cells))
+      allocate(mg_psi(number_groups, 2 * spatial_dimension * number_angles, number_cells))
     end if
 
   end subroutine initialize_state

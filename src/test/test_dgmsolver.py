@@ -1331,7 +1331,7 @@ class TestDGMSOLVER(unittest.TestCase):
                 phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
-    def test_dgmsolver_partisn_eigen_2g_l7(self):
+    def test_dgmsolver_partisn_eigen_2g_l3(self):
         '''
         Test eigenvalue source problem with reflective conditions and 2g
         '''
