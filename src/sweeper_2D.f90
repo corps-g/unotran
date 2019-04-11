@@ -47,6 +47,11 @@ module sweeper_2D
         psi_center, & ! Angular flux at cell center
         source        ! Fission, In-Scattering, External source in group g
 
+    if (scatter_leg_order > 0) then
+      print *, 'ERROR: Only isotropic scattering is implemented for 2D'
+      stop
+    end if
+
     ! Increment the sweep counter
     sweep_count = sweep_count + 1
 
@@ -93,8 +98,7 @@ module sweeper_2D
             an = (o - 1) * number_angles + a
 
             ! Get the source in this cell, group, and angle
-            source(:) = mg_source(:, c)
-            source(:) = source(:) + scaling * matmul(transpose(sigphi(:scatter_leg_order,:,c)), p_leg(:scatter_leg_order,a))
+            source(:) = mg_source(:, c) + scaling * matmul(transpose(sigphi(:scatter_leg_order,:,c)), p_leg(:scatter_leg_order,a))
             if (use_DGM) then
               source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)
             end if
