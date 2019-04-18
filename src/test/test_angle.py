@@ -86,53 +86,7 @@ class TestANGLE_2D(unittest.TestCase):
 
     def setUp(self):
         pydgm.control.spatial_dimension = 2
-        pydgm.control.number_angles_pol = 4
-        pydgm.control.number_angles_azi = 8
-
-#     def test_angle_legendre_p(self):
-#         '''
-#         Test the function used to create the legendre polynomials
-#         '''
-#
-#         angle = pydgm.angle
-#
-#         self.assertEqual(angle.legendre_p(0, 0.5), 1)
-#         self.assertEqual(angle.legendre_p(1, 0.5), 0.5)
-#         self.assertEqual(angle.legendre_p(2, 0.5), -0.125)
-#
-#     def test_angle_d_legendre_p(self):
-#         '''
-#         Test the function used to create the double legendre polynomials
-#         '''
-#
-#         angle = pydgm.angle
-#
-#         self.assertEqual(angle.d_legendre_p(0, 0.5), 0.0)
-#         self.assertEqual(angle.d_legendre_p(1, 0.5), 1.0)
-#         self.assertEqual(angle.d_legendre_p(2, 0.5), 1.5)
-#
-#     def test_angle_initialize_polynomials(self):
-#         '''
-#         Test the the legendre polynomial basis is correct
-#         '''
-#         nAngle = 8
-#         pydgm.control.angle_order = nAngle
-#         pydgm.control.angle_option = pydgm.angle.gl
-#         pydgm.control.number_legendre = 7
-#
-#         pydgm.angle.initialize_angle()
-#         pydgm.angle.initialize_polynomials()
-#
-#         # Get the basis set
-#         basis = pydgm.angle.p_leg
-#
-#         # Use numpy to get the test basis
-#         x, wt = np.polynomial.legendre.leggauss(nAngle * 2)
-#         I = np.eye(nAngle * 2)
-#         test_basis = np.array([np.polynomial.legendre.legval(x, I[i]) * (-1) ** i for i in range(nAngle)])
-#
-#         # Test the basis
-#         np.testing.assert_array_almost_equal(basis, test_basis, 12)
+        pydgm.control.angle_order = 8
 
     def test_angle_quadrature(self):
         '''
@@ -143,6 +97,11 @@ class TestANGLE_2D(unittest.TestCase):
 
         # build quadrature, test it, and deallocate
         pydgm.angle.initialize_angle()
+
+        print(pydgm.angle.mu)
+        print(pydgm.angle.eta)
+        print(pydgm.angle.wt)
+        stop()
 
         # Get the test quadrature weights from numpy
         N_polar, N_azi = 4, 8

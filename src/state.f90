@@ -46,11 +46,10 @@ module state
                         solver_type, source_value, store_psi, check_inputs, &
                         verify_control, homogenization_map, number_regions, &
                         scatter_leg_order, delta_leg_order, truncate_delta, &
-                        number_cells_x, number_cells_y, spatial_dimension, scale_1D, &
-                        scale_2D
+                        number_cells_x, number_cells_y, spatial_dimension
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material, number_materials
-    use angle, only : initialize_angle, initialize_polynomials
+    use angle, only : initialize_angle, initialize_polynomials, PI
     use dgm, only : initialize_moments, initialize_basis, compute_expanded_cross_sections
 
     ! Variable definitions
@@ -77,8 +76,6 @@ module state
     call initialize_angle()
     ! get the basis vectors
     call initialize_polynomials()
-    ! Initialize the constant source
-    mg_constant_source = 0.5 * source_value
     ! Determine the correct size for the multigroup containers
     number_groups = number_fine_groups
     number_regions = number_materials
@@ -102,11 +99,10 @@ module state
       end if
     end if
 
-    if (spatial_dimension == 1) then
-      scaling = 1 / scale_1D
-    else if (spatial_dimension == 2) then
-      scaling = 1 / scale_2D
-    end if
+    scaling = 1.0 / (2 * spatial_dimension)
+
+    ! Initialize the constant source
+    mg_constant_source = source_value * scaling
 
     ! Set the sweep counter to zero
     sweep_count = 0
