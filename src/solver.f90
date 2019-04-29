@@ -57,7 +57,8 @@ module solver
                       phi, psi, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
-                        use_DGM, min_eigen_iters, store_psi
+                        use_DGM, min_eigen_iters, store_psi, eigen_converged, &
+                        outer_converged
     use dgm, only : dgm_order
     use omp_lib, only : omp_get_wtime
 
@@ -72,6 +73,9 @@ module solver
         old_phi         ! Scalar flux from previous iteration
 
     ave_sweep_time = 0.0
+
+    ! Initialize the eigen convergence flag to False
+    eigen_converged = .False.
 
     ! Run eigen loop only if eigen problem
     if (solver_type == 'fixed' .or. dgm_order > 0) then
@@ -112,7 +116,15 @@ module solver
 
         ! Check if tolerance is reached
         if (eigen_error < eigen_tolerance .and. eigen_count >= min_eigen_iters) then
-          exit
+          ! Set the eigen convergence flag to True
+          eigen_converged = .true.
+          ! If the inner iterations are converged, exit
+          if (outer_converged) then
+            exit
+          end if
+        else
+          ! Set the eigen convergence flag to False
+          eigen_converged = .false.
         end if
 
       end do

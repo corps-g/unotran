@@ -25,20 +25,13 @@ module angle
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles_azi, number_angles_pol, spatial_dimension, &
-                        angle_option, number_angles, angle_order
+    use control, only : spatial_dimension, angle_option, number_angles, angle_order
 
     ! Variable definitions
     integer :: &
         a, & ! Angle index
         i, & ! Counting variable
-        j, & ! Counting variable
-        p
-    double precision :: &
-        phia(number_angles_azi), &
-        wt_azi(number_angles_azi), &
-        xi(2 * number_angles_pol), &
-        wt_pol(2 * number_angles_pol)
+        j    ! Counting variable
     double precision, allocatable, dimension(:) :: &
         mu_vals, & !
         wt_vals    !
@@ -104,6 +97,16 @@ module angle
         wt_vals(1) = 0.120987654320987654320988
         wt_vals(2) = 0.0907407407407407407407407
         wt_vals(3) = 0.0925925925925925925925926
+
+        ! Partisn values
+!        mu_vals(1) = 0.19232747
+!        mu_vals(2) = 0.57735027
+!        mu_vals(3) = 0.79352178
+!        mu_vals(4) = 0.96229948
+!        wt_vals(1) = 0.11678847
+!        wt_vals(2) = 0.09325523
+!        wt_vals(3) = 0.09010320
+
         wt_map = [0, 1, 1, 0, 1, 2, 1, 1, 1, 0]
       else if (angle_order == 10) then
         allocate(mu_vals(5), wt_vals(4))
@@ -301,6 +304,8 @@ module angle
         end do
       end do
 
+      wt(:) = 0.5 * PI * wt(:)
+
       deallocate(mu_vals, wt_vals)
 
       ! Verify that the angles are specified for 2D
@@ -404,21 +409,58 @@ module angle
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_legendre
+    use control, only : number_angles, number_legendre, spatial_dimension
 
     ! Variable definitions
     integer :: &
         l,             & ! Legendre order index
+        ll,            & ! Total order
+        o,             & ! Octant index
+        m,             & ! Legendre moment index
+        mu_sign,       & ! Sign of the cosine of angle
+        eta_sign,      & ! Sign of the sine of angle
+        an,            & ! Global angle index
         a                ! Angle index
+    double precision :: &
+        xi               ! direction cosine w/r to z axis
 
-    allocate(p_leg(0:number_legendre, number_angles * 2))
+    if (spatial_dimension == 1) then
+      allocate(p_leg(0:number_legendre, number_angles * 2))
 
-    do a = 1, number_angles
-      do l = 0, number_legendre
-        p_leg(l, a) = legendre_p(l, mu(a))
-        p_leg(l, 2 * number_angles - a + 1) = legendre_p(l, -mu(a))
+      do a = 1, number_angles
+        do l = 0, number_legendre
+          p_leg(l, a) = legendre_p(l, mu(a))
+          p_leg(l, 2 * number_angles - a + 1) = legendre_p(l, -mu(a))
+        end do
       end do
-    end do
+    else if (spatial_dimension == 2) then
+      ll = 0
+      do l = 0, number_legendre
+        do m = -l, l
+          ll = ll + 1
+        end do
+      end do
+
+      allocate(p_leg(0:(number_legendre + 1) ** 2 - 1, number_angles * 4))
+
+      do o = 1, 4
+        mu_sign = merge(1, -1, o ==1 .or. o == 2)
+        eta_sign = merge(1, -1, o == 1 .or. o == 4)
+        do a = 1, number_angles
+          an = (o - 1) * number_angles + a
+          xi = abs(sqrt(1 - mu(a) ** 2 - eta(a) ** 2))
+          ll = 0
+          do l = 0, number_legendre
+            do m = -l, l
+              p_leg(ll, an) = generate_y_lm(l, m, mu_sign * mu(a), eta_sign * eta(a), xi)
+              !p_leg(ll, an) = p_leg(ll, an) + generate_y_lm(l, m, mu_sign * mu(a), eta_sign * eta(a), -xi)
+              ll = ll + 1
+            end do
+          end do
+        end do
+      end do
+      !p_leg = p_leg / sqrt(16.0 * number_angles)
+    end if
 
   end subroutine initialize_polynomials
 
@@ -507,214 +549,219 @@ module angle
     end if
 
     if (l == 0) then
-      ! R_0^0 = sqrt(2)
-      generate_y_lm = 1.41421356237309505
+      if (m == 0) then
+        ! R_0^0 = 1.00000000000000
+        generate_y_lm = 1.00000000000000000
+      end if
     else if (l == 1) then
       if (m == -1) then
-        ! R_1^-1 = sqrt(2)*eta/2
-        generate_y_lm = 0.707106781186547524*eta
+        ! R_1^-1 = sqrt(3)*eta
+        generate_y_lm = 1.73205080756887729*eta
       else if (m == 0) then
-        ! R_1^0 = sqrt(2)*xi
-        generate_y_lm = 1.41421356237309505*xi
+        ! R_1^0 = sqrt(3)*xi
+        generate_y_lm = 1.73205080756887729*xi
       else if (m == 1) then
-        ! R_1^1 = sqrt(2)*mu/2
-        generate_y_lm = 0.707106781186547524*mu
+        ! R_1^1 = sqrt(3)*mu
+        generate_y_lm = 1.73205080756887729*mu
       end if
     else if (l == 2) then
       if (m == -2) then
-        ! R_2^-2 = 0.5*sqrt(6)*eta*mu
-        generate_y_lm = 1.22474487139158905*eta*mu
+        ! R_2^-2 = sqrt(15)*eta*mu
+        generate_y_lm = 3.87298334620741689*eta*mu
       else if (m == -1) then
-        ! R_2^-1 = 0.5*sqrt(6)*eta*xi
-        generate_y_lm = 1.22474487139158905*eta*xi
+        ! R_2^-1 = sqrt(15)*eta*xi
+        generate_y_lm = 3.87298334620741689*eta*xi
       else if (m == 0) then
-        ! R_2^0 = sqrt(2)*(1.5*xi**2 - 0.5)
-        generate_y_lm = 2.12132034355964257*xi**2 - 0.707106781186547524
+        ! R_2^0 = sqrt(5)*(1.5*xi**2 - 0.5)
+        generate_y_lm = 3.35410196624968454*xi**2 - 1.11803398874989485
       else if (m == 1) then
-        ! R_2^1 = 0.5*sqrt(6)*mu*xi
-        generate_y_lm = 1.22474487139158905*mu*xi
+        ! R_2^1 = sqrt(15)*mu*xi
+        generate_y_lm = 3.87298334620741689*mu*xi
       else if (m == 2) then
-        ! R_2^2 = 0.25*sqrt(6)*(-eta**2 + mu**2)
-        generate_y_lm = -0.612372435695794525*eta**2 + 0.612372435695794525*mu**2
+        ! R_2^2 = 0.5*sqrt(15)*(-eta**2 + mu**2)
+        generate_y_lm = -1.93649167310370844*eta**2 + 1.93649167310370844*mu**2
       end if
     else if (l == 3) then
       if (m == -3) then
-        ! R_3^-3 = sqrt(5)*eta*(-0.25*eta**2 + 0.75*mu**2)
-        generate_y_lm = 2.2360679774997897*eta*(-0.25*eta**2 + 0.75*mu**2)
+        ! R_3^-3 = sqrt(70)*eta*(-0.25*eta**2 + 0.75*mu**2)
+        generate_y_lm = 8.36660026534075548*eta*(-0.25*eta**2 + 0.75*mu**2)
       else if (m == -2) then
-        ! R_3^-2 = 0.5*sqrt(30)*eta*mu*xi
-        generate_y_lm = 2.73861278752583057*eta*mu*xi
+        ! R_3^-2 = sqrt(105)*eta*mu*xi
+        generate_y_lm = 10.2469507659595984*eta*mu*xi
       else if (m == -1) then
-        ! R_3^-1 = sqrt(3)*eta*(1.25*xi**2 - 0.25)
-        generate_y_lm = 1.73205080756887729*eta*(1.25*xi**2 - 0.25)
+        ! R_3^-1 = sqrt(42)*eta*(1.25*xi**2 - 0.25)
+        generate_y_lm = 6.48074069840786023*eta*(1.25*xi**2 - 0.25)
       else if (m == 0) then
-        ! R_3^0 = sqrt(2)*xi*(2.5*xi**2 - 1.5)
-        generate_y_lm = 1.41421356237309505*xi*(2.5*xi**2 - 1.5)
+        ! R_3^0 = sqrt(7)*xi*(2.5*xi**2 - 1.5)
+        generate_y_lm = 2.64575131106459059*xi*(2.5*xi**2 - 1.5)
       else if (m == 1) then
-        ! R_3^1 = sqrt(3)*mu*(1.25*xi**2 - 0.25)
-        generate_y_lm = 1.73205080756887729*mu*(1.25*xi**2 - 0.25)
+        ! R_3^1 = sqrt(42)*mu*(1.25*xi**2 - 0.25)
+        generate_y_lm = 6.48074069840786023*mu*(1.25*xi**2 - 0.25)
       else if (m == 2) then
-        ! R_3^2 = 0.25*sqrt(30)*xi*(-eta**2 + mu**2)
-        generate_y_lm = 1.36930639376291528*xi*(-eta**2 + mu**2)
+        ! R_3^2 = 0.5*sqrt(105)*xi*(-eta**2 + mu**2)
+        generate_y_lm = 5.12347538297979919*xi*(-eta**2 + mu**2)
       else if (m == 3) then
-        ! R_3^3 = sqrt(5)*mu*(-0.75*eta**2 + 0.25*mu**2)
-        generate_y_lm = 2.2360679774997897*mu*(-0.75*eta**2 + 0.25*mu**2)
+        ! R_3^3 = sqrt(70)*mu*(-0.75*eta**2 + 0.25*mu**2)
+        generate_y_lm = 8.36660026534075548*mu*(-0.75*eta**2 + 0.25*mu**2)
       end if
     else if (l == 4) then
       if (m == -4) then
-        ! R_4^-4 = 0.25*sqrt(70)*eta*mu*(-eta**2 + mu**2)
-        generate_y_lm = 2.09165006633518887*eta*mu*(-eta**2 + mu**2)
+        ! R_4^-4 = 1.5*sqrt(35)*eta*mu*(-eta**2 + mu**2)
+        generate_y_lm = 8.87411967464942406*eta*mu*(-eta**2 + mu**2)
       else if (m == -3) then
-        ! R_4^-3 = sqrt(35)*eta*xi*(-0.25*eta**2 + 0.75*mu**2)
-        generate_y_lm = 5.91607978309961604*eta*xi*(-0.25*eta**2 + 0.75*mu**2)
+        ! R_4^-3 = sqrt(70)*eta*xi*(-0.75*eta**2 + 2.25*mu**2)
+        generate_y_lm = 8.36660026534075548*eta*xi*(-0.75*eta**2 + 2.25*mu**2)
       else if (m == -2) then
-        ! R_4^-2 = sqrt(10)*eta*mu*(1.75*xi**2 - 0.25)
-        generate_y_lm = 3.16227766016837933*eta*mu*(1.75*xi**2 - 0.25)
+        ! R_4^-2 = sqrt(5)*eta*mu*(10.5*xi**2 - 1.5)
+        generate_y_lm = 2.2360679774997897*eta*mu*(10.5*xi**2 - 1.5)
       else if (m == -1) then
-        ! R_4^-1 = sqrt(5)*eta*xi*(1.75*xi**2 - 0.75)
-        generate_y_lm = 2.2360679774997897*eta*xi*(1.75*xi**2 - 0.75)
+        ! R_4^-1 = sqrt(10)*eta*xi*(5.25*xi**2 - 2.25)
+        generate_y_lm = 3.16227766016837933*eta*xi*(5.25*xi**2 - 2.25)
       else if (m == 0) then
-        ! R_4^0 = sqrt(2)*(4.375*xi**4 - 3.75*xi**2 + 0.375)
-        generate_y_lm = 6.18718433538229084*xi**4 - 5.30330085889910643*xi**2 + 0.530330085889910643
+        ! R_4^0 = 13.125*xi**4 - 11.25*xi**2 + 1.125
+        generate_y_lm = 13.125*xi**4 - 11.25*xi**2 + 1.125
       else if (m == 1) then
-        ! R_4^1 = sqrt(5)*mu*xi*(1.75*xi**2 - 0.75)
-        generate_y_lm = 2.2360679774997897*mu*xi*(1.75*xi**2 - 0.75)
+        ! R_4^1 = sqrt(10)*mu*xi*(5.25*xi**2 - 2.25)
+        generate_y_lm = 3.16227766016837933*mu*xi*(5.25*xi**2 - 2.25)
       else if (m == 2) then
-        ! R_4^2 = sqrt(10)*(-eta**2 + mu**2)*(52.5*xi**2 - 7.5)/60
-        generate_y_lm = 0.0527046276694729889*(-eta**2 + mu**2)*(52.5*xi**2 - 7.5)
+        ! R_4^2 = sqrt(5)*(-eta**2 + mu**2)*(52.5*xi**2 - 7.5)/10
+        generate_y_lm = 0.22360679774997897*(-eta**2 + mu**2)*(52.5*xi**2 - 7.5)
       else if (m == 3) then
-        ! R_4^3 = sqrt(35)*mu*xi*(-0.75*eta**2 + 0.25*mu**2)
-        generate_y_lm = 5.91607978309961604*mu*xi*(-0.75*eta**2 + 0.25*mu**2)
+        ! R_4^3 = sqrt(70)*mu*xi*(-2.25*eta**2 + 0.75*mu**2)
+        generate_y_lm = 8.36660026534075548*mu*xi*(-2.25*eta**2 + 0.75*mu**2)
       else if (m == 4) then
-        ! R_4^4 = sqrt(70)*(0.0625*eta**4 - 0.375*eta**2*mu**2 + 0.0625*mu**4)
-        generate_y_lm = 0.522912516583797217*eta**4 - 3.1374750995027833*eta**2*mu**2 + 0.522912516583797217*mu**4
+        ! R_4^4 = sqrt(35)*(0.375*eta**4 - 2.25*eta**2*mu**2 + 0.375*mu**4)
+        generate_y_lm = 2.21852991866235602*eta**4 - 13.3111795119741361*eta**2*mu**2 + 2.21852991866235602*mu**4
       end if
     else if (l == 5) then
       if (m == -5) then
-        ! R_5^-5 = sqrt(7)*eta*(0.1875*eta**4 - 1.875*eta**2*mu**2 + 0.9375*mu**4)
-        generate_y_lm = 2.64575131106459059*eta*(0.1875*eta**4 - 1.875*eta**2*mu**2 + 0.9375*mu**4)
+        ! R_5^-5 = sqrt(154)*eta*(0.1875*eta**4 - 1.875*eta**2*mu**2 + 0.9375*mu**4)
+        generate_y_lm = 12.4096736459908566*eta*(0.1875*eta**4 - 1.875*eta**2*mu**2 + 0.9375*mu**4)
       else if (m == -4) then
-        ! R_5^-4 = 0.75*sqrt(70)*eta*mu*xi*(-eta**2 + mu**2)
-        generate_y_lm = 6.27495019900556661*eta*mu*xi*(-eta**2 + mu**2)
+        ! R_5^-4 = 1.5*sqrt(385)*eta*mu*xi*(-eta**2 + mu**2)
+        generate_y_lm = 29.4321253055228752*eta*mu*xi*(-eta**2 + mu**2)
       else if (m == -3) then
-        ! R_5^-3 = -sqrt(35)*eta*(eta**2 - 3*mu**2)*(472.5*xi**2 - 52.5)/840
-        generate_y_lm = -0.00704295212273763815*eta*(eta**2 - 3.0*mu**2)*(472.5*xi**2 - 52.5)
+        ! R_5^-3 = -sqrt(770)*eta*(eta**2 - 3*mu**2)*(472.5*xi**2 - 52.5)/840
+        generate_y_lm = -0.0330343736321704951*eta*(eta**2 - 3.0*mu**2)*(472.5*xi**2 - 52.5)
       else if (m == -2) then
-        ! R_5^-2 = sqrt(210)*eta*mu*xi*(0.75*xi**2 - 0.25)
-        generate_y_lm = 14.4913767461894386*eta*mu*xi*(0.75*xi**2 - 0.25)
+        ! R_5^-2 = sqrt(1155)*eta*mu*xi*(1.5*xi**2 - 0.5)
+        generate_y_lm = 33.9852909359328569*eta*mu*xi*(1.50000000000000022*xi**2 - 0.5)
       else if (m == -1) then
-        ! R_5^-1 = sqrt(30)*eta*(1.3125*xi**4 - 0.875*xi**2 + 0.0625)
-        generate_y_lm = 5.47722557505166113*eta*(1.3125*xi**4 - 0.875*xi**2 + 0.0625)
+        ! R_5^-1 = sqrt(165)*eta*(2.625*xi**4 - 1.75*xi**2 + 0.125)
+        generate_y_lm = 12.845232578665129*eta*(2.625*xi**4 - 1.75*xi**2 + 0.125)
       else if (m == 0) then
-        ! R_5^0 = sqrt(2)*xi*(7.875*xi**4 - 8.75*xi**2 + 1.875)
-        generate_y_lm = 1.41421356237309505*xi*(7.875*xi**4 - 8.75*xi**2 + 1.875)
+        ! R_5^0 = sqrt(11)*xi*(7.875*xi**4 - 8.75*xi**2 + 1.875)
+        generate_y_lm = 3.31662479035539985*xi*(7.875*xi**4 - 8.75*xi**2 + 1.875)
       else if (m == 1) then
-        ! R_5^1 = sqrt(30)*mu*(1.3125*xi**4 - 0.875*xi**2 + 0.0625)
-        generate_y_lm = 5.47722557505166113*mu*(1.3125*xi**4 - 0.875*xi**2 + 0.0625)
+        ! R_5^1 = sqrt(165)*mu*(2.625*xi**4 - 1.75*xi**2 + 0.125)
+        generate_y_lm = 12.845232578665129*mu*(2.625*xi**4 - 1.75*xi**2 + 0.125)
       else if (m == 2) then
-        ! R_5^2 = sqrt(210)*xi*(-eta**2 + mu**2)*(157.5*xi**2 - 52.5)/420
-        generate_y_lm = 0.0345032779671177109*xi*(-eta**2 + mu**2)*(157.5*xi**2 - 52.5)
+        ! R_5^2 = sqrt(1155)*xi*(-eta**2 + mu**2)*(157.5*xi**2 - 52.5)/210
+        generate_y_lm = 0.161834718742537414*xi*(-eta**2 + mu**2)*(157.5*xi**2 - 52.5)
       else if (m == 3) then
-        ! R_5^3 = -sqrt(35)*mu*(3*eta**2 - mu**2)*(472.5*xi**2 - 52.5)/840
-        generate_y_lm = -0.00704295212273763815*mu*(3.0*eta**2 - mu**2)*(472.5*xi**2 - 52.5)
+        ! R_5^3 = -sqrt(770)*mu*(3*eta**2 - mu**2)*(472.5*xi**2 - 52.5)/840
+        generate_y_lm = -0.0330343736321704951*mu*(3.0*eta**2 - mu**2)*(472.5*xi**2 - 52.5)
       else if (m == 4) then
-        ! R_5^4 = sqrt(70)*xi*(0.1875*eta**4 - 1.125*eta**2*mu**2 + 0.1875*mu**4)
-        generate_y_lm = 8.36660026534075548*xi*(0.1875*eta**4 - 1.125*eta**2*mu**2 + 0.1875*mu**4)
+        ! R_5^4 = sqrt(385)*xi*(0.375*eta**4 - 2.25*eta**2*mu**2 + 0.375*mu**4)
+        generate_y_lm = 19.6214168703485835*xi*(0.375*eta**4 - 2.25*eta**2*mu**2 + 0.375*mu**4)
       else if (m == 5) then
-        ! R_5^5 = sqrt(7)*mu*(0.9375*eta**4 - 1.875*eta**2*mu**2 + 0.1875*mu**4)
-        generate_y_lm = 2.64575131106459059*mu*(0.9375*eta**4 - 1.875*eta**2*mu**2 + 0.1875*mu**4)
+        ! R_5^5 = sqrt(154)*mu*(0.9375*eta**4 - 1.875*eta**2*mu**2 + 0.1875*mu**4)
+        generate_y_lm = 12.4096736459908566*mu*(0.9375*eta**4 - 1.875*eta**2*mu**2 + 0.1875*mu**4)
       end if
     else if (l == 6) then
       if (m == -6) then
-        ! R_6^-6 = sqrt(231)*eta*mu*(0.1875*eta**4 - 0.625*eta**2*mu**2 + 0.1875*mu**4)
-        generate_y_lm = 15.1986841535706636*eta*mu*(0.1875*eta**4 - 0.625*eta**2*mu**2 + 0.1875*mu**4)
+        ! R_6^-6 = sqrt(6006)*eta*mu*(0.1875*eta**4 - 0.625*eta**2*mu**2 + 0.1875*mu**4)
+        generate_y_lm = 77.4983870799902519*eta*mu*(0.1875*eta**4 - 0.625*eta**2*mu**2 + 0.1875*mu**4)
       else if (m == -5) then
-        ! R_6^-5 = sqrt(77)*eta*xi*(0.1875*eta**4 - 1.875*eta**2*mu**2 + 0.9375*mu**4)
-        generate_y_lm = 8.77496438739212206*eta*xi*(0.1875*eta**4 - 1.875*eta**2*mu**2 + 0.9375*mu**4)
+        ! R_6^-5 = sqrt(2002)*eta*xi*(0.1875*eta**4 - 1.875*eta**2*mu**2 + 0.9375*mu**4)
+        generate_y_lm = 44.7437146423941873*eta*xi*(0.1875*eta**4 - 1.875*eta**2*mu**2 + 0.9375*mu**4)
       else if (m == -4) then
-        ! R_6^-4 = -sqrt(14)*eta*mu*(eta**2 - mu**2)*(5197.5*xi**2 - 472.5)/1260
-        generate_y_lm = -0.00296956935458249316*eta*mu*(eta**2 - mu**2)*(5197.5*xi**2 - 472.5)
+        ! R_6^-4 = -sqrt(91)*eta*mu*(eta**2 - mu**2)*(5197.5*xi**2 - 472.5)/630
+        generate_y_lm = -0.0151418920859832643*eta*mu*(eta**2 - mu**2)*(5197.5*xi**2 - 472.5)
       else if (m == -3) then
-        ! R_6^-3 = -sqrt(105)*eta*xi*(eta**2 - 3*mu**2)*(1732.5*xi**2 - 472.5)/2520
-        generate_y_lm = -0.00406625030395222158*eta*xi*(eta**2 - 3.0*mu**2)*(1732.5*xi**2 - 472.5)
+        ! R_6^-3 = -sqrt(2730)*eta*xi*(eta**2 - 3*mu**2)*(1732.5*xi**2 - 472.5)/2520
+        generate_y_lm = -0.0207338896470049704*eta*xi*(eta**2 - 3.0*mu**2)*(1732.5*xi**2 - 472.5)
       else if (m == -2) then
-        ! R_6^-2 = sqrt(105)*eta*mu*(2.0625*xi**4 - 1.125*xi**2 + 0.0625)
-        generate_y_lm = 10.2469507659595984*eta*mu*(2.0625*xi**4 - 1.125*xi**2 + 0.0625)
+        ! R_6^-2 = sqrt(2730)*eta*mu*(2.0625*xi**4 - 1.125*xi**2 + 0.0625)
+        generate_y_lm = 52.2494019104525253*eta*mu*(2.0625*xi**4 - 1.125*xi**2 + 0.0625)
       else if (m == -1) then
-        ! R_6^-1 = sqrt(42)*eta*xi*(2.0625*xi**4 - 1.875*xi**2 + 0.3125)
-        generate_y_lm = 6.48074069840786023*eta*xi*(2.0625*xi**4 - 1.875*xi**2 + 0.3125)
+        ! R_6^-1 = sqrt(273)*eta*xi*(4.125*xi**4 - 3.75*xi**2 + 0.625)
+        generate_y_lm = 16.5227116418583061*eta*xi*(4.125*xi**4 - 3.75*xi**2 + 0.625)
       else if (m == 0) then
-        ! R_6^0 = sqrt(2)*(14.4375*xi**6 - 19.6875*xi**4 + 6.5625*xi**2 - 0.3125)
-        generate_y_lm = 20.4177083067615598*xi**6 - 27.8423295092203088*xi**4 + 9.28077650307343626*xi**2 - 0.441941738241592203
+        ! R_6^0 = sqrt(13)*(14.4375*xi**6 - 19.6875*xi**4 + 6.5625*xi**2 - 0.3125)
+        generate_y_lm = 52.0551465395113454*xi**6 - 70.9842907356972892*xi**4 + 23.6614302452324297*xi**2 - 1.12673477358249665
       else if (m == 1) then
-        ! R_6^1 = sqrt(42)*mu*xi*(2.0625*xi**4 - 1.875*xi**2 + 0.3125)
-        generate_y_lm = 6.48074069840786023*mu*xi*(2.0625*xi**4 - 1.875*xi**2 + 0.3125)
+        ! R_6^1 = sqrt(273)*mu*xi*(4.125*xi**4 - 3.75*xi**2 + 0.625)
+        generate_y_lm = 16.5227116418583061*mu*xi*(4.125*xi**4 - 3.75*xi**2 + 0.625)
       else if (m == 2) then
-        ! R_6^2 = sqrt(105)*(-eta**2 + mu**2)*(433.125*xi**4 - 236.25*xi**2 + 13.125)/420
-        generate_y_lm = 0.0243975018237133295*(-eta**2 + mu**2)*(433.125*xi**4 - 236.25*xi**2 + 13.125)
+        ! R_6^2 = sqrt(2730)*(-eta**2 + mu**2)*(210.0*xi**4 + 210.0*xi**2*(xi**2 - 1) + 13.125*(xi**2 - 1)**2)/420
+        generate_y_lm = 0.124403337882029822*(-eta**2 + mu**2)*(210.0*xi**4 + 210.0*xi**2*(xi**2 - 1.0) + 13.125*(xi**2 - 1.0)**2)
       else if (m == 3) then
-        ! R_6^3 = -sqrt(105)*mu*xi*(3*eta**2 - mu**2)*(1732.5*xi**2 - 472.5)/2520
-        generate_y_lm = -0.00406625030395222158*mu*xi*(3.0*eta**2 - mu**2)*(1732.5*xi**2 - 472.5)
+        ! R_6^3 = -sqrt(2730)*mu*xi*(3*eta**2 - mu**2)*(1732.5*xi**2 - 472.5)/2520
+        generate_y_lm = -0.0207338896470049704*mu*xi*(3.0*eta**2 - mu**2)*(1732.5*xi**2 - 472.5)
       else if (m == 4) then
-        ! R_6^4 = sqrt(14)*(5197.5*xi**2 - 472.5)*(eta**2*(eta**2 - 3*mu**2) - mu**2*(3*eta**2 - mu**2))/5040
-        generate_y_lm = 0.000742392338645623291*(5197.5*xi**2 - 472.5)*(eta**2*(eta**2 - 3.0*mu**2) - mu**2*(3.0*eta**2 - mu**2))
+        ! R_6^4 = sqrt(91)*(5197.5*xi**2 - 472.5)*(eta**2*(eta**2 - 3*mu**2) - mu**2*(3*eta**2 - mu**2))/2520
+        generate_y_lm = 0.00378547302149581607*(5197.5*xi**2 - 472.5)*(eta**2*(eta**2 - 3.0*mu**2) - mu**2*(3.0*eta**2 - mu**2))
       else if (m == 5) then
-        ! R_6^5 = sqrt(77)*mu*xi*(0.9375*eta**4 - 1.875*eta**2*mu**2 + 0.1875*mu**4)
-        generate_y_lm = 8.77496438739212206*mu*xi*(0.9375*eta**4 - 1.875*eta**2*mu**2 + 0.1875*mu**4)
+        ! R_6^5 = sqrt(2002)*mu*xi*(0.9375*eta**4 - 1.875*eta**2*mu**2 + 0.1875*mu**4)
+        generate_y_lm = 44.7437146423941873*mu*xi*(0.9375*eta**4 - 1.875*eta**2*mu**2 + 0.1875*mu**4)
       else if (m == 6) then
-        ! R_6^6 = sqrt(231)*(-0.03125*eta**6 + 0.46875*eta**4*mu**2 - 0.46875*eta**2*mu**4 + 0.03125*mu**6)
-        generate_y_lm = -0.474958879799083238*eta**6 + 7.12438319698624858*eta**4*mu**2 &
-                       - 7.12438319698624858*eta**2*mu**4 + 0.474958879799083238*mu**6
+        ! R_6^6 = sqrt(6006)*(-0.03125*eta**6 + 0.46875*eta**4*mu**2 - 0.46875*eta**2*mu**4 + 0.03125*mu**6)
+        generate_y_lm = -2.42182459624969537*eta**6 + 36.3273689437454306*eta**4*mu**2 - 36.3273689437454306*eta**2*mu**4 &
+                        + 2.42182459624969537*mu**6
       end if
     else if (l == 7) then
       if (m == -7) then
-        ! R_7^-7 = sqrt(858)*eta*(-0.015625*eta**6 + 0.328125*eta**4*mu**2 - 0.546875*eta**2*mu**4 + 0.109375*mu**6)
-        generate_y_lm = 29.2916370317536196*eta*(-0.015625*eta**6 + 0.328125*eta**4*mu**2 - 0.546875*eta**2*mu**4 + 0.109375*mu**6)
+        ! R_7^-7 = sqrt(715)*eta*(-0.09375*eta**6 + 1.96875*eta**4*mu**2 - 3.28125*eta**2*mu**4 + 0.65625*mu**6)
+        generate_y_lm = 26.7394839142418753*eta*(-0.09375*eta**6 + 1.96875*eta**4*mu**2 - 3.28125*eta**2*mu**4 + 0.65625*mu**6)
       else if (m == -6) then
-        ! R_7^-6 = sqrt(3003)*eta*mu*xi*(0.1875*eta**4 - 0.625*eta**2*mu**2 + 0.1875*mu**4)
-        generate_y_lm = 54.7996350352810288*eta*mu*xi*(0.1875*eta**4 - 0.625*eta**2*mu**2 + 0.1875*mu**4)
+        ! R_7^-6 = sqrt(10010)*eta*mu*xi*(0.5625*eta**4 - 1.875*eta**2*mu**2 + 0.5625*mu**4)
+        generate_y_lm = 100.049987506246096*eta*mu*xi*(0.5625*eta**4 - 1.875*eta**2*mu**2 + 0.5625*mu**4)
       else if (m == -5) then
-        ! R_7^-5 = sqrt(462)*eta*(67567.5*xi**2 - 5197.5)*(eta**2*(eta**2 - 3*mu**2) - 4*mu**2*(eta**2 - mu**2) - mu**2*(3*eta**2 - mu**2))/332640
-        generate_y_lm = 0.0000646169590554493658*eta*(67567.5*xi**2 - 5197.5) &
-                       * (eta**2*(eta**2 - 3.0*mu**2) - 4.0*mu**2*(eta**2 - mu**2) - mu**2*(3.0*eta**2 - mu**2))
+        ! R_7^-5 = sqrt(385)*eta*(67567.5*xi**2 - 5197.5)*(eta**2*(eta**2 - 3*mu**2) - 4*mu**2*(eta**2 - mu**2) - mu**2*(3*eta**2 - mu**2))/55440
+        generate_y_lm = 0.000353921660720573295*eta*(67567.5*xi**2 - 5197.5)*(eta**2*(eta**2 - 3.0*mu**2) &
+                        - 4.0*mu**2*(eta**2 - mu**2) - mu**2*(3.0*eta**2 - mu**2))
       else if (m == -4) then
-        ! R_7^-4 = -sqrt(462)*eta*mu*xi*(eta**2 - mu**2)*(22522.5*xi**2 - 5197.5)/13860
-        generate_y_lm = -0.00155080701733078478*eta*mu*xi*(eta**2 - mu**2)*(22522.5*xi**2 - 5197.5)
+        ! R_7^-4 = -sqrt(385)*eta*mu*xi*(eta**2 - mu**2)*(22522.5*xi**2 - 5197.5)/2310
+        generate_y_lm = -0.00849411985729375908*eta*mu*xi*(eta**2 - mu**2)*(22522.5*xi**2 - 5197.5)
       else if (m == -3) then
-        ! R_7^-3 = -sqrt(42)*eta*(eta**2 - 3*mu**2)*(5630.625*xi**4 - 2598.75*xi**2 + 118.125)/2520
-        generate_y_lm = -0.0025717224993681985*eta*(eta**2 - 3.0*mu**2)*(5630.625*xi**4 - 2598.75*xi**2 + 118.125)
+        ! R_7^-3 = -sqrt(35)*eta*(eta**2 - 3*mu**2)*(3150.0*xi**4 + 2362.5*xi**2*(xi**2 - 1) + 118.125*(xi**2 - 1)**2)/420
+        generate_y_lm = -0.0140859042454752763*eta*(eta**2 - 3.0*mu**2)*(3150.0*xi**4 + 2362.5*xi**2*(xi**2 - 1.0) &
+                        + 118.125*(xi**2 - 1.0)**2)
       else if (m == -2) then
-        ! R_7^-2 = sqrt(21)*eta*mu*xi*(8.9375*xi**4 - 6.875*xi**2 + 0.9375)
-        generate_y_lm = 4.58257569495584001*eta*mu*xi*(8.9375*xi**4 - 6.875*xi**2 + 0.9375)
+        ! R_7^-2 = sqrt(70)*eta*mu*xi*(26.8125*xi**4 - 20.625*xi**2 + 2.8125)
+        generate_y_lm = 8.36660026534075548*eta*mu*xi*(26.8125*xi**4 - 20.625*xi**2 + 2.8125)
       else if (m == -1) then
-        ! R_7^-1 = sqrt(14)*eta*(6.703125*xi**6 - 7.734375*xi**4 + 2.109375*xi**2 - 0.078125)
-        generate_y_lm = 3.74165738677394139*eta*(6.703125*xi**6 - 7.734375*xi**4 + 2.109375*xi**2 - 0.078125)
+        ! R_7^-1 = sqrt(105)*eta*(13.40625*xi**6 - 15.46875*xi**4 + 4.21875*xi**2 - 0.15625)
+        generate_y_lm = 10.2469507659595984*eta*(13.40625*xi**6 - 15.46875*xi**4 + 4.21875*xi**2 - 0.15625)
       else if (m == 0) then
-        ! R_7^0 = sqrt(2)*xi*(26.8125*xi**6 - 43.3125*xi**4 + 19.6875*xi**2 - 2.1875)
-        generate_y_lm = 1.41421356237309505*xi*(26.8125*xi**6 - 43.3125*xi**4 + 19.6875*xi**2 - 2.1875)
+        ! R_7^0 = sqrt(15)*xi*(26.8125*xi**6 - 43.3125*xi**4 + 19.6875*xi**2 - 2.1875)
+        generate_y_lm = 3.87298334620741689*xi*(26.8125*xi**6 - 43.3125*xi**4 + 19.6875*xi**2 - 2.1875)
       else if (m == 1) then
-        ! R_7^1 = sqrt(14)*mu*(6.703125*xi**6 - 7.734375*xi**4 + 2.109375*xi**2 - 0.078125)
-        generate_y_lm = 3.74165738677394139*mu*(6.703125*xi**6 - 7.734375*xi**4 + 2.109375*xi**2 - 0.078125)
+        ! R_7^1 = sqrt(105)*mu*(13.40625*xi**6 - 15.46875*xi**4 + 4.21875*xi**2 - 0.15625)
+        generate_y_lm = 10.2469507659595984*mu*(13.40625*xi**6 - 15.46875*xi**4 + 4.21875*xi**2 - 0.15625)
       else if (m == 2) then
-        ! R_7^2 = sqrt(21)*xi*(-eta**2 + mu**2)*(1126.125*xi**4 - 866.25*xi**2 + 118.125)/252
-        generate_y_lm = 0.0181848241863326984*xi*(-eta**2 + mu**2)*(1126.125*xi**4 - 866.25*xi**2 + 118.125)
+        ! R_7^2 = sqrt(70)*xi*(-eta**2 + mu**2)*(378.0*xi**4 + 630.0*xi**2*(xi**2 - 1) + 118.125*(xi**2 - 1)**2)/84
+        generate_y_lm = 0.09960238411119947*xi*(-eta**2 + mu**2)*(378.0*xi**4 + 630.0*xi**2*(xi**2 - 1.0) &
+                        + 118.125*(xi**2 - 1.0)**2)
       else if (m == 3) then
-        ! R_7^3 = -sqrt(42)*mu*(3*eta**2 - mu**2)*(5630.625*xi**4 - 2598.75*xi**2 + 118.125)/2520
-        generate_y_lm = -0.0025717224993681985*mu*(3.0*eta**2 - mu**2)*(5630.625*xi**4 - 2598.75*xi**2 + 118.125)
+        ! R_7^3 = -sqrt(35)*mu*(3*eta**2 - mu**2)*(3150.0*xi**4 + 2362.5*xi**2*(xi**2 - 1) + 118.125*(xi**2 - 1)**2)/420
+        generate_y_lm = -0.0140859042454752763*mu*(3.0*eta**2 - mu**2)*(3150.0*xi**4 + 2362.5*xi**2*(xi**2 - 1.0) &
+                        + 118.125*(xi**2 - 1.0)**2)
       else if (m == 4) then
-        ! R_7^4 = sqrt(462)*xi*(22522.5*xi**2 - 5197.5)*(eta**2*(eta**2 - 3*mu**2) - mu**2*(3*eta**2 - mu**2))/55440
-        generate_y_lm = 0.000387701754332696195*xi*(22522.5*xi**2 - 5197.5) &
-                       * (eta**2*(eta**2 - 3.0*mu**2) - mu**2*(3.0*eta**2 - mu**2))
+        ! R_7^4 = sqrt(385)*xi*(22522.5*xi**2 - 5197.5)*(eta**2*(eta**2 - 3*mu**2) - mu**2*(3*eta**2 - mu**2))/9240
+        generate_y_lm = 0.00212352996432343977*xi*(22522.5*xi**2 - 5197.5)*(eta**2*(eta**2 - 3.0*mu**2) &
+                        - mu**2*(3.0*eta**2 - mu**2))
       else if (m == 5) then
-        ! R_7^5 = sqrt(462)*mu*(67567.5*xi**2 - 5197.5)*(eta**2*(eta**2 - 3*mu**2) + 4*eta**2*(eta**2 - mu**2) - mu**2*(3*eta**2 - mu**2))/332640
-        generate_y_lm = 0.0000646169590554493658*mu*(67567.5*xi**2 - 5197.5) &
-                       * (eta**2*(eta**2 - 3.0*mu**2) + 4.0*eta**2*(eta**2 - mu**2) - mu**2*(3.0*eta**2 - mu**2))
+        ! R_7^5 = sqrt(385)*mu*(67567.5*xi**2 - 5197.5)*(eta**2*(eta**2 - 3*mu**2) + 4*eta**2*(eta**2 - mu**2) - mu**2*(3*eta**2 - mu**2))/55440
+        generate_y_lm = 0.000353921660720573295*mu*(67567.5*xi**2 - 5197.5)*(eta**2*(eta**2 - 3.0*mu**2) &
+                        + 4.0*eta**2*(eta**2 - mu**2) - mu**2*(3.0*eta**2 - mu**2))
       else if (m == 6) then
-        ! R_7^6 = sqrt(3003)*xi*(-0.03125*eta**6 + 0.46875*eta**4*mu**2 - 0.46875*eta**2*mu**4 + 0.03125*mu**6)
-        generate_y_lm = 54.7996350352810288*xi*(-0.03125*eta**6 + 0.46875*eta**4*mu**2 - 0.46875*eta**2*mu**4 + 0.03125*mu**6)
+        ! R_7^6 = sqrt(10010)*xi*(-0.09375*eta**6 + 1.40625*eta**4*mu**2 - 1.40625*eta**2*mu**4 + 0.09375*mu**6)
+        generate_y_lm = 100.049987506246096*xi*(-0.09375*eta**6 + 1.40625*eta**4*mu**2 - 1.40625*eta**2*mu**4 + 0.09375*mu**6)
       else if (m == 7) then
-        ! R_7^7 = sqrt(858)*mu*(-0.109375*eta**6 + 0.546875*eta**4*mu**2 - 0.328125*eta**2*mu**4 + 0.015625*mu**6)
-        generate_y_lm = 29.2916370317536196*mu*(-0.109375*eta**6 + 0.546875*eta**4*mu**2 - 0.328125*eta**2*mu**4 + 0.015625*mu**6)
+        ! R_7^7 = sqrt(715)*mu*(-0.65625*eta**6 + 3.28125*eta**4*mu**2 - 1.96875*eta**2*mu**4 + 0.09375*mu**6)
+        generate_y_lm = 26.7394839142418753*mu*(-0.65625*eta**6 + 3.28125*eta**4*mu**2 - 1.96875*eta**2*mu**4 + 0.09375*mu**6)
       end if
     else
       print *, 'Order l=', l, ' not implemented'

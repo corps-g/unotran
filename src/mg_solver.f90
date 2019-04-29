@@ -11,7 +11,8 @@ module mg_solver
 
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
-                        min_outer_iters, number_cells, number_groups, spatial_dimension
+                        min_outer_iters, number_cells, number_groups, spatial_dimension, &
+                        outer_converged, eigen_converged
     use sweeper_1D, only : apply_transport_operator_1D
     use sweeper_2D, only : apply_transport_operator_2D
     use state, only : mg_phi
@@ -30,8 +31,11 @@ module mg_solver
 
     ave_sweep_time = 0.0
 
+    ! Initialize the outer convergence flag to False
+    outer_converged = .false.
+
     ! Begin loop to converge on the in-scattering source
-    do outer_count = 1, max_outer_iters
+    do outer_count = 1, max_outer_iters * merge(100, 1, eigen_converged)
 
       start = omp_get_wtime()
 
@@ -70,6 +74,8 @@ module mg_solver
 
       ! Check if tolerance is reached
       if ((outer_error < outer_tolerance .and. outer_count >= min_outer_iters)) then
+        ! Set the converged flag to True
+        outer_converged = .true.
         exit
       end if
       

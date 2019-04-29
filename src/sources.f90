@@ -73,7 +73,7 @@ module sources
     end do
 
     do l = 0, scatter_leg_order
-      sigphi(l,:,:) = sigphi(l,:,:) * (2 * l + 1)
+      sigphi(l,:,:) = sigphi(l,:,:) * (2 * l + 1) * scaling
     end do
 
   end subroutine compute_source

@@ -93,8 +93,8 @@ module dgmsolver
       do dgm_order = 0, expansion_order
 
         ! Reset the incident conditions to vacuum
-        mg_incident_x(:,:,:) = 0.0
-        mg_incident_y(:,:,:) = 0.0
+        mg_incident_x(:,:,:,:) = 0.0
+        mg_incident_y(:,:,:,:) = 0.0
 
         ! Compute the cross section moments
         call slice_xs_moments(order=dgm_order)

@@ -69,6 +69,8 @@ module control
       use_dgm=.false.,            & ! Enable/Disable DGM solver
       store_psi=.false.,          & ! Enable/Disable storing the angular flux
       ignore_warnings=.true.,     & ! Enable/Disable warning messages
+      outer_converged=.false.,    & ! Flag to state if the outer iterations have converged
+      eigen_converged=.false.,    & ! Flag to state if the eigen iterations have converged
       truncate_delta=.false.,     & ! Enable/Disable truncated expansion of delta term
       verify_control=.true.         ! Enable/Disable checking control variables
 

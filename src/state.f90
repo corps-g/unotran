@@ -6,14 +6,14 @@ module state
   implicit none
 
   double precision, allocatable, dimension(:,:,:,:) :: &
+      mg_incident_x,       & ! Angular flux incident on the current cell in x direction
+      mg_incident_y,       & ! Angular flux incident on the current cell in y direction
       mg_sig_s               ! Scattering cross section moments
   double precision, allocatable, dimension(:,:,:) :: &
       psi,                 & ! Angular flux
       phi,                 & ! Scalar Flux
       mg_phi,              & ! Scalar flux mg container
       mg_psi,              & ! Angular flux mg container
-      mg_incident_x,       & ! Angular flux incident on the current cell in x direction
-      mg_incident_y,       & ! Angular flux incident on the current cell in y direction
       sigphi                 ! Scalar flux container
   double precision, allocatable, dimension(:,:) :: &
       mg_nu_sig_f,         & ! Fission cross section mg container (times nu)
@@ -99,7 +99,11 @@ module state
       end if
     end if
 
-    scaling = 1.0 / (2 * spatial_dimension)
+    if (spatial_dimension == 1) then
+      scaling = 0.5
+    else
+      scaling = 1.0 / (2 * PI)
+    end if
 
     ! Initialize the constant source
     mg_constant_source = source_value * scaling
@@ -159,11 +163,16 @@ module state
     end if
 
     ! Initialize the angular flux incident on the boundary
-    allocate(mg_incident_x(number_groups, number_angles, number_cells_y))
-    allocate(mg_incident_y(number_groups, number_angles, number_cells_x))
+    if (spatial_dimension == 1) then
+      allocate(mg_incident_x(number_groups, number_angles, number_cells_y, 1))
+      allocate(mg_incident_y(number_groups, number_angles, number_cells_x, 1))
+    else if (spatial_dimension == 2) then
+      allocate(mg_incident_x(number_groups, number_angles, number_cells_y, 4))
+      allocate(mg_incident_y(number_groups, number_angles, number_cells_x, 4))
+    end if
     ! Assume vacuum conditions for incident flux
-    mg_incident_x(:, :, :) = 0.0
-    mg_incident_y(:, :, :) = 0.0
+    mg_incident_x(:, :, :, :) = 0.0
+    mg_incident_y(:, :, :, :) = 0.0
 
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen

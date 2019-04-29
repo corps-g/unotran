@@ -35,22 +35,22 @@ module sweeper_2D
         mat,        & ! Material index
         a,          & ! Angle index
         an,         & ! Global angle index
+        l,          & ! Degree index for spherical harmonics
+        m,          & ! Order index for spherical harmonics
+        ll,         & ! Basis index
+        src_x,      & ! Source index for cell boundary condition in x direction
+        src_y,      & ! Source index for cell boundary condition in y direction
+        dst_x,      & ! Destination index for cell boundary condition in x direction
+        dst_y,      & ! Destination index for cell boundary condition in y direction
         cx_start,   & ! Lower cell number in x direction
         cx_stop,    & ! Upper cell number in x direction
         cx_step,    & ! Cell stepping direction in x direction
         cy_start,   & ! Lower cell number in y direction
         cy_stop,    & ! Upper cell number in y direction
         cy_step       ! Cell stepping direction in y direction
-    double precision, dimension(0:number_legendre) :: &
-        M           ! Legendre polynomial integration vector
     double precision, dimension(number_groups) :: &
         psi_center, & ! Angular flux at cell center
         source        ! Fission, In-Scattering, External source in group g
-
-    if (scatter_leg_order > 0) then
-      print *, 'ERROR: Only isotropic scattering is implemented for 2D'
-      stop
-    end if
 
     ! Increment the sweep counter
     sweep_count = sweep_count + 1
@@ -68,12 +68,16 @@ module sweeper_2D
         cx_start = 1
         cx_stop = number_cells_x
         cx_step = 1
-        mg_incident_x = boundary_west * mg_incident_x
+        src_x = merge(1, 2, o == 1)
+        dst_x = merge(4, 3, o == 1)
+        mg_incident_x(:,:,:,dst_x) = boundary_west * mg_incident_x(:,:,:,src_x)
       else
         cx_start = number_cells_x
         cx_stop = 1
         cx_step = -1
-        mg_incident_x = boundary_east * mg_incident_x
+        src_x = merge(3, 4, o == 3)
+        dst_x = merge(2, 1, o == 3)
+        mg_incident_x(:,:,:,dst_x) = boundary_east * mg_incident_x(:,:,:,src_x)
       end if
 
       ! Get sweep direction and set boundary condition for y cells
@@ -81,12 +85,16 @@ module sweeper_2D
         cy_start = 1
         cy_stop = number_cells_y
         cy_step = 1
-        mg_incident_y = boundary_north * mg_incident_y
+        src_y = merge(1, 4, o == 1)
+        dst_y = merge(2, 3, o == 1)
+        mg_incident_y(:,:,:,dst_y) = boundary_north * mg_incident_y(:,:,:,src_y)
       else
         cy_start = number_cells_y
         cy_stop = 1
         cy_step = -1
-        mg_incident_y = boundary_south * mg_incident_y
+        src_y = merge(2, 3, o == 2)
+        dst_y = merge(1, 4, o == 2)
+        mg_incident_y(:,:,:,dst_y) = boundary_south * mg_incident_y(:,:,:,src_y)
       end if
 
       do cy = cy_start, cy_stop, cy_step  ! Sweep over cells in y direction
@@ -98,34 +106,49 @@ module sweeper_2D
             an = (o - 1) * number_angles + a
 
             ! Get the source in this cell, group, and angle
-            source(:) = mg_source(:, c) + scaling * matmul(transpose(sigphi(:scatter_leg_order,:,c)), p_leg(:scatter_leg_order,a))
+            source(:) = mg_source(:, c)
+            ll = 0
+            do l = 0, scatter_leg_order
+              do m = -l, l
+                source(:) = source(:) + sigphi(l,:,c) * p_leg(ll,an)
+                ll = ll + 1
+              end do
+            end do
+
+            !source(:) = 10.0 * source(:) / 3.0
+
             if (use_DGM) then
               source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)
             end if
 
+            ! Solve the equation for psi_center
             call computeEQ(source(:), mg_sig_t(:, mat), dx(cx), dy(cy), mu(a), eta(a), &
-                           mg_incident_x(:, a, cy), mg_incident_y(:, a, cx), psi_center)
+                           mg_incident_x(:, a, cy, dst_x), mg_incident_y(:, a, cx, dst_y), psi_center)
 
+            ! Store psi if desired
             if (store_psi) then
               mg_psi(:, an, c) = psi_center(:)
             end if
 
-            ! Loop over the energy groups
-            do g = 1, number_groups
-
-              ! Increment the legendre expansions of the scalar flux
-              phi_update(:, g, c) = phi_update(:, g, c) + wt(a) * psi_center(g)
+            ! Increment the legendre expansions of the scalar flux
+            ll = 0
+            do l = 0, number_legendre
+              do m = -l, l
+                phi_update(l, :, c) = phi_update(l, :, c) + wt(a) * p_leg(ll,an) * psi_center(:)
+                ll = ll + 1
+              end do
             end do
           end do
         end do
       end do
+
     end do
 
     phi = phi_update
 
   end subroutine apply_transport_operator_2D
   
-  subroutine computeEQ(S, sig, dx, dy, mua, eta, incident_x, incident_y, cellPsi)
+  subroutine computeEQ(S, sig, dx, dy, mua, eta, inc_x, inc_y, cellPsi)
     ! ##########################################################################
     ! Compute the value for the closure relationship
     ! ##########################################################################
@@ -135,8 +158,8 @@ module sweeper_2D
 
     ! Variable definitions
     double precision, dimension(:), intent(inout) :: &
-        incident_x,   & ! Angular flux incident on the cell from x direction
-        incident_y      ! Angular flux incident on the cell from y direction
+        inc_x,   & ! Angular flux incident on the cell from x direction
+        inc_y      ! Angular flux incident on the cell from y direction
     double precision, dimension(:), intent(in) :: &
         S,            & ! Source within the cell
         sig             ! Total cross section within the cell
@@ -157,12 +180,12 @@ module sweeper_2D
 
     if (equation_type == 'DD') then
       ! Diamond Difference relationship
-      coef_x = 2 * mua / dx
-      coef_y = 2 * eta / dy
-      coef = 1 / (sig(:) + coef_x + coef_y)
-      cellPsi(:) = coef * (S(:) + coef_x * incident_y(:) + coef_y * incident_x(:))
-      incident_x(:) = 2 * cellPsi(:) - incident_x(:)
-      incident_y(:) = 2 * cellPsi(:) - incident_y(:)
+      coef_x = 2.0 * mua / dx
+      coef_y = 2.0 * eta / dy
+      coef = 1.0 / (sig(:) + coef_x + coef_y)
+      cellPsi(:) = coef * (S(:) + coef_x * inc_x(:) + coef_y * inc_y(:))
+      inc_x(:) = 2 * cellPsi(:) - inc_x(:)
+      inc_y(:) = 2 * cellPsi(:) - inc_y(:)
 !    else if (equation_type == 'SC') then
 !      ! Step Characteristics relationship
 !      allocate(tau(size(sig)), A(size(sig)))

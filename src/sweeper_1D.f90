@@ -85,12 +85,12 @@ module sweeper_1D
 
           ! Get the source in this cell, group, and angle
           source(:) = mg_source(:, c)
-          source(:) = source(:) + scaling * matmul(transpose(sigphi(:scatter_leg_order,:,c)), p_leg(:scatter_leg_order,an))
+          source(:) = source(:) + matmul(transpose(sigphi(:scatter_leg_order,:,c)), p_leg(:scatter_leg_order,an))
           if (use_DGM) then
             source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)
           end if
 
-          call computeEQ(source(:), mg_sig_t(:, mat), dx(c), mu(a), mg_incident_x(:, a, 1), psi_center)
+          call computeEQ(source(:), mg_sig_t(:, mat), dx(c), mu(a), mg_incident_x(:, a, 1, 1), psi_center)
 
           if (store_psi) then
             mg_psi(:, an, c) = psi_center(:)
