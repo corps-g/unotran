@@ -110,12 +110,10 @@ module sweeper_2D
             ll = 0
             do l = 0, scatter_leg_order
               do m = -l, l
-                source(:) = source(:) + sigphi(l,:,c) * p_leg(ll,an)
+                source(:) = source(:) + sigphi(l,:,c) * p_leg(ll,an) / (2 * l + 1) ** 5
                 ll = ll + 1
               end do
             end do
-
-            !source(:) = 10.0 * source(:) / 3.0
 
             if (use_DGM) then
               source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)

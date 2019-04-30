@@ -111,22 +111,20 @@ class TestANGLE_2D(unittest.TestCase):
     def test_spherical_harmonics(self):
 
         # build quadrature, test it, and deallocate
-        pydgm.control.angle_order = 16
+        pydgm.control.angle_order = 4
         pydgm.angle.initialize_angle()
         pydgm.angle.initialize_polynomials()
 
         basis = pydgm.angle.p_leg
 
-        print(basis.T)
-
         np.set_printoptions(precision=3, suppress=True, linewidth=132, threshold=10000)
 
-        D = basis[:9] @ basis.T[:,:9]
-        
+        D = basis[:9].dot(basis.T[:, :9])
+
         print(pydgm.control.number_angles)
         print(D)
         print(sum(pydgm.angle.wt))
-        
+
 #         mu = pydgm.angle.mu
 #         eta = pydgm.angle.eta
 #         xi = np.sqrt(1 - mu ** 2 - eta ** 2)

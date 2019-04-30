@@ -1135,7 +1135,7 @@ class TestSOLVER_2D(unittest.TestCase):
         pydgm.control.coarse_mesh_x = [0.0, 21.42]
         pydgm.control.coarse_mesh_y = [0.0, 21.42]
         pydgm.control.material_map = [2]
-        pydgm.control.max_eigen_iters = 5
+        pydgm.control.max_eigen_iters = 10
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -1170,9 +1170,7 @@ class TestSOLVER_2D(unittest.TestCase):
         '''
 
         # Set the variables for the test
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.set_eigen()
         pydgm.control.scatter_leg_order = 0
         pydgm.control.angle_order = 8
         pydgm.control.boundary_east = 0.0
@@ -1208,7 +1206,6 @@ class TestSOLVER_2D(unittest.TestCase):
             phi = pydgm.state.mg_phi[l, :, :].flatten()
             phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
             np.testing.assert_array_almost_equal(phi, phi_zero_test, 6)
-        # np.testing.assert_array_almost_equal(phi_one, phi_one_test, 12)
 
         self.angular_test()
 
