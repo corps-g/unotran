@@ -17,16 +17,18 @@ module sources
                       mg_mMap, mg_phi, keff, mg_chi, mg_density, mg_constant_source, &
                       scaling
     use control, only : number_cells, allow_fission, solver_type, number_groups, &
-                        scatter_leg_order, use_DGM
+                        scatter_leg_order, use_DGM, spatial_dimension, number_moments
     use dgm, only : dgm_order, phi_m, source_m
 
     ! Variable definitions
     integer :: &
-      g, & ! Group index
-      c, & ! Cell index
-      m,        & ! Material index
-      l,  & ! Legendre index
-      ord  ! short name for scatter_legendre_order
+      g,   & ! Group index
+      c,   & ! Cell index
+      mat, & ! Material index
+      l,   & ! Legendre index
+      m,   & ! Moment index
+      ll,  & ! Total moment index
+      ord    ! short name for scatter_legendre_order
     logical :: &
       dgm_switch    !
 
@@ -40,14 +42,14 @@ module sources
       end if
     end if
 
-    ord = scatter_leg_order
     dgm_switch = use_DGM .and. dgm_order > 0
 
     sigphi = 0.0
+    ord = scatter_leg_order
 
     ! Compute the source
     do c = 1, number_cells
-      m = mg_mMap(c)
+      mat = mg_mMap(c)
 
       ! Add the external source
       if (use_DGM) then
@@ -58,17 +60,42 @@ module sources
 
       ! Add the fission source
       if (allow_fission .or. solver_type == 'eigen') then
-        mg_source(:,c) = mg_source(:,c) + scaling * mg_chi(:,m) * mg_density(c) / keff
+        mg_source(:,c) = mg_source(:,c) + scaling * mg_chi(:,mat) * mg_density(c) / keff
       end if
 
-      if (dgm_switch) then
-        do g = 1, number_groups
-          sigphi(:,g,c) = sum(phi_m(0, 0:ord,:,c) * mg_sig_s(:,:,g,m), 2)
-        end do
+      ! Compute the scattering matrix
+      if (spatial_dimension == 1) then
+        if (dgm_switch) then
+          do g = 1, number_groups
+            sigphi(:,g,c) = sum(phi_m(0, 0:ord,:,c) * mg_sig_s(:,:,g,mat), 2)
+          end do
+        else
+          do g = 1, number_groups
+            sigphi(:,g,c) = sum(mg_phi(0:ord,:,c) * mg_sig_s(:,:,g,mat), 2)
+          end do
+        end if
       else
-        do g = 1, number_groups
-          sigphi(:,g,c) = sum(mg_phi(0:ord,:,c) * mg_sig_s(:,:,g,m), 2)
-        end do
+        if (dgm_switch) then
+          do g = 1, number_groups
+            ll = 0
+            do l = 0, scatter_leg_order
+              do m = -l, l
+                sigphi(ll,g,c) = sum(phi_m(0,ll,:,c) * mg_sig_s(l,:,g,mat))
+                ll = ll + 1
+              end do
+            end do
+          end do
+        else
+          do g = 1, number_groups
+            ll = 0
+            do l = 0, scatter_leg_order
+              do m = -l, l
+                sigphi(ll,g,c) = sum(mg_phi(ll,:,c) * mg_sig_s(l,:,g,mat))
+                ll = ll + 1
+              end do
+            end do
+          end do
+        end if
       end if
     end do
 

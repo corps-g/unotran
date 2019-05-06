@@ -58,7 +58,8 @@ module control
       number_groups,              & ! Number of groups for the MG problem
       number_fine_groups,         & ! Number of groups in the cross section library
       number_coarse_groups,       & ! Number of groups in the expansion
-      number_legendre,            & ! Number of anisotropic scattering moments
+      number_legendre,            & ! Number of anisotropic scattering orders
+      number_moments,             & ! Total number of legendre moments (equal to number_legendre in 1D)
       recon_print=1,              & ! Enable/Disable recon iteration printing
       eigen_print=1,              & ! Enable/Disable eigen iteration printing
       outer_print=1,              & ! Enable/Disable outer iteration printing

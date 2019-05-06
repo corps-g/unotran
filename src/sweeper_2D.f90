@@ -14,7 +14,7 @@ module sweeper_2D
     use mesh, only : dx, dy
     use control, only : store_psi, number_angles, number_cells, number_cells_x, number_cells_y, &
                         number_legendre, number_groups, use_DGM, scatter_leg_order, &
-                        boundary_east, boundary_west, boundary_north, boundary_south
+                        boundary_east, boundary_west, boundary_north, boundary_south, number_moments
     use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident_x, mg_incident_y, &
                       mg_psi, mg_source, sigphi, scaling
     use sources, only : compute_source
@@ -24,7 +24,7 @@ module sweeper_2D
     ! Variable definitions
     double precision, intent(inout), dimension(:,:,:) :: &
         phi           ! Scalar flux for current iteration and group g
-    double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
+    double precision, dimension(0:number_moments, number_groups, number_cells) :: &
         phi_update    ! Container to hold the updated scalar flux
     integer :: &
         g,          & ! Group index
@@ -110,7 +110,7 @@ module sweeper_2D
             ll = 0
             do l = 0, scatter_leg_order
               do m = -l, l
-                source(:) = source(:) + sigphi(l,:,c) * p_leg(ll,an) / (2 * l + 1) ** 5
+                source(:) = source(:) + sigphi(ll,:,c) * p_leg(ll,an) / (2 * l + 1.0) ** 1.5
                 ll = ll + 1
               end do
             end do
@@ -129,12 +129,8 @@ module sweeper_2D
             end if
 
             ! Increment the legendre expansions of the scalar flux
-            ll = 0
-            do l = 0, number_legendre
-              do m = -l, l
-                phi_update(l, :, c) = phi_update(l, :, c) + wt(a) * p_leg(ll,an) * psi_center(:)
-                ll = ll + 1
-              end do
+            do ll = 0, number_moments
+              phi_update(ll, :, c) = phi_update(ll, :, c) + wt(a) * p_leg(ll,an) * psi_center(:)
             end do
           end do
         end do

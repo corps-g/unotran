@@ -46,7 +46,7 @@ module state
                         solver_type, source_value, store_psi, check_inputs, &
                         verify_control, homogenization_map, number_regions, &
                         scatter_leg_order, delta_leg_order, truncate_delta, &
-                        number_cells_x, number_cells_y, spatial_dimension
+                        number_cells_x, number_cells_y, spatial_dimension, number_moments
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials, PI
@@ -56,6 +56,7 @@ module state
     integer :: &
         ios = 0, & ! I/O error status
         c,       & ! Cell index
+        ord,     & ! Total legendre moments
         a          ! Angle index
 
     ! Initialize the sub-modules
@@ -66,6 +67,11 @@ module state
       delta_leg_order = scatter_leg_order
     end if
     number_legendre = max(delta_leg_order, scatter_leg_order)
+    if (spatial_dimension == 1) then
+      number_moments = number_legendre
+    else
+      number_moments = (number_legendre + 1) ** 2 - 1
+    end if
     ! Verify the inputs
     if (verify_control) then
       call check_inputs()
@@ -112,7 +118,7 @@ module state
     sweep_count = 0
 
     ! Allocate the scalar flux and source containers
-    allocate(phi(0:number_legendre, number_fine_groups, number_cells))
+    allocate(phi(0:number_moments, number_fine_groups, number_cells))
     ! Initialize phi
     ! Attempt to read file or use default if file does not exist
     open(unit = 10, status='old', file=initial_phi, form='unformatted', iostat=ios)
@@ -195,10 +201,14 @@ module state
     allocate(mg_source(number_groups, number_cells))
     allocate(mg_nu_sig_f(number_groups, number_regions))
     allocate(mg_sig_t(number_groups, number_regions))
-    allocate(mg_phi(0:number_legendre, number_groups, number_cells))
+    allocate(mg_phi(0:number_moments, number_groups, number_cells))
     allocate(mg_chi(number_groups, number_regions))
     allocate(mg_sig_s(0:scatter_leg_order, number_groups, number_groups, number_regions))
-    allocate(sigphi(0:scatter_leg_order, number_groups, number_cells))
+    if (spatial_dimension == 1) then
+      allocate(sigphi(0:scatter_leg_order, number_groups, number_cells))
+    else
+      allocate(sigphi(0:(scatter_leg_order + 1) ** 2 - 1, number_groups, number_cells))
+    end if
     if (store_psi) then
       allocate(mg_psi(number_groups, 2 * spatial_dimension * number_angles, number_cells))
     end if

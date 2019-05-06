@@ -97,16 +97,6 @@ module angle
         wt_vals(1) = 0.120987654320987654320988
         wt_vals(2) = 0.0907407407407407407407407
         wt_vals(3) = 0.0925925925925925925925926
-
-        ! Partisn values
-!        mu_vals(1) = 0.19232747
-!        mu_vals(2) = 0.57735027
-!        mu_vals(3) = 0.79352178
-!        mu_vals(4) = 0.96229948
-!        wt_vals(1) = 0.11678847
-!        wt_vals(2) = 0.09325523
-!        wt_vals(3) = 0.09010320
-
         wt_map = [0, 1, 1, 0, 1, 2, 1, 1, 1, 0]
       else if (angle_order == 10) then
         allocate(mu_vals(5), wt_vals(4))
@@ -417,7 +407,8 @@ module angle
           do l = 0, number_legendre
             do m = -l, l
               p_leg(ll, an) = generate_y_lm(l, m, mu_sign * mu(a), eta_sign * eta(a), xi)
-              !p_leg(ll, an) = p_leg(ll, an) + generate_y_lm(l, m, mu_sign * mu(a), eta_sign * eta(a), -xi)
+              p_leg(ll, an) = p_leg(ll, an) + generate_y_lm(l, m, mu_sign * mu(a), eta_sign * eta(a), -xi)
+              p_leg(ll, an) = p_leg(ll, an) * 0.5
               ll = ll + 1
             end do
           end do

@@ -58,7 +58,7 @@ module solver
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, number_legendre, &
                         use_DGM, min_eigen_iters, store_psi, eigen_converged, &
-                        outer_converged
+                        outer_converged, number_moments
     use dgm, only : dgm_order
     use omp_lib, only : omp_get_wtime
 
@@ -69,7 +69,7 @@ module solver
         ave_sweep_time  ! Average time in seconds per sweep
     integer :: &
         eigen_count     ! Iteration counter
-    double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
+    double precision, dimension(0:number_moments, number_groups, number_cells) :: &
         old_phi         ! Scalar flux from previous iteration
 
     ave_sweep_time = 0.0
@@ -107,8 +107,9 @@ module solver
 
         ! Print output
         if (eigen_print > 0) then
-          write(*, 1001) eigen_count, eigen_error, keff, ave_sweep_time
-          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f14.10, " ave sweep time: ", f5.2, " s")
+          write(*, 1001) eigen_count, eigen_error, keff, ave_sweep_time, outer_converged
+          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " Eigenvalue: ", f14.10, " AveSweepTime: ", f5.2, " s", &
+                        " OuterConverged: ", L1)
           if (eigen_print > 1) then
             print *, mg_phi
           end if

@@ -294,8 +294,8 @@ module dgmsolver
     ! Get moments for the Scalar flux
     do c = 1, number_cells
       do g = 1, number_fine_groups
+        cg = energy_group_map(g)
         do j = 0, expansion_order
-          cg = energy_group_map(g)
           phi_m(j, :, cg, c) = phi_m(j, :, cg, c) + basis(g, j) * phi(:, g, c)
         end do
       end do

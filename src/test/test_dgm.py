@@ -62,7 +62,7 @@ class TestDGM(unittest.TestCase):
         assert(pydgm.state.mg_chi.shape == (nG, nC))
         assert(pydgm.state.mg_sig_s.shape == (nL, nG, nG, nC))
         assert(pydgm.state.mg_psi.shape == (nG, nA, nC))
-        assert(pydgm.state.mg_incident_x.shape == (nG, nA / 2, 1))
+        assert(pydgm.state.mg_incident_x.shape == (nG, nA / 2, 1, 1))
 
     def test_dgm_test3(self):
         '''
@@ -275,6 +275,7 @@ class TestDGM2(unittest.TestCase):
         pydgm.control.source_value = 2.0
         pydgm.control.equation_type = 'DD'
         pydgm.control.scatter_leg_order = 0
+        pydgm.control.delta_leg_order = 0
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -345,7 +346,7 @@ class TestDGM2(unittest.TestCase):
         '''
         Deallocate the arrays to prep for the next initialization
         '''
-        pydgm.state.finalize_state()
+        pydgm.dgmsolver.finalize_dgmsolver()
         pydgm.control.finalize_control()
 
 
