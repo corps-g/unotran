@@ -39,8 +39,9 @@ class TestSOURCES(unittest.TestCase):
         pydgm.sources.compute_source()
 
         for g in range(3):
-            source = pydgm.state.mg_source[g]
-            np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
+            with self.subTest(g=g):
+                source = pydgm.state.mg_source[g]
+                np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
 
     def tearDown(self):
         pydgm.solver.finalize_solver()
@@ -133,8 +134,9 @@ class TestSOURCESdgm(unittest.TestCase):
         test = [0.727975095456, 0.707343815354]
         pydgm.sources.compute_source()
         for g in range(2):
-            source = pydgm.state.mg_source[g]
-            np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
+            with self.subTest(g=g):
+                source = pydgm.state.mg_source[g]
+                np.testing.assert_array_almost_equal(source, test[g], 12, 'Failed for g={}'.format(g + 1))
 
     def tearDown(self):
         pydgm.dgmsolver.finalize_dgmsolver()

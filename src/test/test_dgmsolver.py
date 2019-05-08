@@ -1500,9 +1500,6 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.finalize_control()
 
 
-anisotropicBroken = True
-
-
 class TestDGMSOLVER_2D(unittest.TestCase):
 
     def setUp(self):
@@ -1669,7 +1666,6 @@ class TestDGMSOLVER_2D(unittest.TestCase):
 
         self.angular_test()
 
-    @unittest.skipIf(anisotropicBroken, 'Anisotropic is not working yet')
     def test_solver_basic_2D_1g_1a_vacuum_l1(self):
         '''
         Test for a basic 1 group problem
@@ -1754,7 +1750,6 @@ class TestDGMSOLVER_2D(unittest.TestCase):
 
         self.angular_test()
 
-    @unittest.skipIf(anisotropicBroken, 'Anisotropic is not working yet')
     def test_solver_basic_2D_2g_8a_vacuum_l1(self):
         '''
         Test for a basic 2 group problem
@@ -1799,7 +1794,6 @@ class TestDGMSOLVER_2D(unittest.TestCase):
 
         self.angular_test()
 
-    @unittest.skipIf(anisotropicBroken, 'Anisotropic is not working yet')
     def test_solver_basic_2D_2g_8a_vacuum_l2(self):
         '''
         Test for a basic 2 group problem
@@ -1930,7 +1924,6 @@ class TestDGMSOLVER_2D(unittest.TestCase):
 
         self.angular_test()
 
-    @unittest.skipIf(anisotropicBroken, 'Anisotropic is not working yet')
     def test_solver_partisn_eigen_2g_l1_simple(self):
         '''
         Test eigenvalue source problem with reflective conditions and 2g
@@ -2062,7 +2055,6 @@ class TestDGMSOLVER_2D(unittest.TestCase):
 
         self.angular_test()
 
-    @unittest.skipIf(anisotropicBroken, 'Anisotropic is not working yet')
     def test_solver_partisn_eigen_2g_l1(self):
         '''
         Test eigenvalue source problem with reflective conditions and 2g
@@ -2094,9 +2086,10 @@ class TestDGMSOLVER_2D(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
 
         self.angular_test()
 
@@ -2129,13 +2122,13 @@ class TestDGMSOLVER_2D(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
 
         self.angular_test()
 
-    @unittest.skipIf(anisotropicBroken, 'Anisotropic is not working yet')
     def test_solver_partisn_fixed_2g_l2(self):
         '''
         Test eigenvalue source problem with reflective conditions and 2g
@@ -2162,9 +2155,10 @@ class TestDGMSOLVER_2D(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten()
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten()
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)
 
         self.angular_test()
 

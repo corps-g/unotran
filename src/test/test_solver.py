@@ -42,8 +42,9 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
-                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
+                with self.subTest(c=c, a=a):
+                    phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                    phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_vacuum1(self):
@@ -635,11 +636,12 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
 
-            test = phi_test[:, l].flatten()
+                test = phi_test[:, l].flatten()
 
-            np.testing.assert_array_almost_equal(phi, test, 12)
+                np.testing.assert_array_almost_equal(phi, test, 12)
 
     def test_solver_anisotropic_symmetric(self):
         # Set the variables for the test
@@ -686,11 +688,12 @@ class TestSOLVER(unittest.TestCase):
         pydgm.solver.solve()
 
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
 
-            test = phi_test[:, l].flatten()
+                test = phi_test[:, l].flatten()
 
-            np.testing.assert_array_almost_equal(phi, test, 9)
+                np.testing.assert_array_almost_equal(phi, test, 9)
 
     def test_solver_partisn_eigen_2g_l0(self):
         '''
@@ -779,10 +782,10 @@ class TestSOLVER(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)
-        # np.testing.assert_array_almost_equal(phi_one, phi_one_test, 12)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 12)
 
         # Test the angular flux
         self.angular_test()
@@ -895,7 +898,8 @@ class TestSOLVER_2D(unittest.TestCase):
         for o in range(4):
             for c in range(pydgm.control.number_cells):
                 for a in range(nAngles):
-                    phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, o * nAngles + a, c]
+                    with self.subTest(o=o, c=c, a=a):
+                        phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, o * nAngles + a, c]
         np.testing.assert_array_almost_equal(phi_test, pydgm.state.phi[0, :, :], 12)
 
     def set_mesh(self, pType):
@@ -995,9 +999,10 @@ class TestSOLVER_2D(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten()
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten()
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
 
         self.angular_test()
 
@@ -1065,9 +1070,10 @@ class TestSOLVER_2D(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten()
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 7)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten()
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 7)
 
         self.angular_test()
 
@@ -1173,9 +1179,10 @@ class TestSOLVER_2D(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 7)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 7)
 
         self.angular_test()
 
@@ -1214,10 +1221,10 @@ class TestSOLVER_2D(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
-        # np.testing.assert_array_almost_equal(phi_one, phi_one_test, 12)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
 
         self.angular_test()
 
@@ -1298,9 +1305,10 @@ class TestSOLVER_2D(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 6)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 6)
 
         self.angular_test()
 
@@ -1411,9 +1419,10 @@ class TestSOLVER_2D(unittest.TestCase):
 
         # Test the scalar flux
         for l in range(pydgm.control.scatter_leg_order + 1):
-            phi = pydgm.state.mg_phi[l, :, :].flatten()
-            phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
-            np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
+            with self.subTest(l=l):
+                phi = pydgm.state.mg_phi[l, :, :].flatten()
+                phi_zero_test = phi_test[:, l].flatten() / np.linalg.norm(phi_test[:, l]) * np.linalg.norm(phi)
+                np.testing.assert_array_almost_equal(phi, phi_zero_test, 8)
 
         self.angular_test()
 

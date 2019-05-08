@@ -245,7 +245,7 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, &
-                        energy_group_map, delta_leg_order, truncate_delta
+                        energy_group_map, delta_leg_order, truncate_delta, spatial_dimension
     use state, only : phi, psi
     use dgm, only : phi_m, psi_m, basis, expansion_order
     use angle, only : p_leg
@@ -268,7 +268,7 @@ module dgmsolver
 
     ! Get moments for the Angular flux
     do c = 1, number_cells
-      do a = 1, number_angles * 2
+      do a = 1, number_angles * 2 * spatial_dimension
         do g = 1, number_fine_groups
           cg = energy_group_map(g)
 
@@ -327,7 +327,7 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_cells, number_legendre, number_groups, &
+    use control, only : number_angles, number_cells, number_moments, number_groups, &
                         delta_leg_order, truncate_delta, number_regions, &
                         scatter_leg_order, number_coarse_groups, spatial_dimension
     use state, only : mg_sig_t, mg_nu_sig_f, mg_mMap
@@ -351,7 +351,7 @@ module dgmsolver
         float          ! temporary double precision number
     double precision, dimension(0:expansion_order) :: &
         tmp_psi_m      ! flux arrays
-    double precision, dimension(0:number_legendre, number_groups, number_regions) :: &
+    double precision, dimension(0:number_moments, number_groups, number_regions) :: &
         homog_phi      ! Homogenization container
 
     ! Reset the moment containers if need be
@@ -432,7 +432,7 @@ module dgmsolver
         ! get the material for the current cell
         mat = mMap(c)
         r = mg_mMap(c)
-        do a = 1, number_angles * 2
+        do a = 1, number_angles * 2 * spatial_dimension
           do cg = 1, number_coarse_groups
             if (truncate_delta) then
               ! If we are truncating the delta term, then first truncate
