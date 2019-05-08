@@ -110,7 +110,7 @@ module sweeper_2D
             ll = 0
             do l = 0, scatter_leg_order
               do m = -l, l
-                source(:) = source(:) + sigphi(ll,:,c) * p_leg(ll,an) / (2 * l + 1.0) ** 1.5
+                source(:) = source(:) + sigphi(ll,:,c) * p_leg(ll,an) * (2 * l + 1)
                 ll = ll + 1
               end do
             end do

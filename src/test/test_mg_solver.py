@@ -29,6 +29,7 @@ class TestMG_SOLVER(unittest.TestCase):
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.scatter_leg_order = 0
+        pydgm.control.delta_leg_order = 0
         pydgm.control.max_outer_iters = 20000
 
         # Initialize the dependancies
