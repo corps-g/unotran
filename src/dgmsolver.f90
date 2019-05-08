@@ -35,7 +35,7 @@ module dgmsolver
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
                         ignore_warnings, lamb, number_cells, spatial_dimension, &
-                        number_legendre, number_angles, min_recon_iters, number_coarse_groups
+                        number_moments, number_angles, min_recon_iters, number_coarse_groups
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments, recon_convergence_rate, &
                       mg_incident_x, mg_incident_y
@@ -56,7 +56,7 @@ module dgmsolver
         recon_error,    & ! Error between successive iterations
         start,          & ! Start time of the sweep function
         ave_sweep_time    ! Average time in seconds per sweep
-    double precision, dimension(0:expansion_order, 0:number_legendre, number_coarse_groups, number_cells) :: &
+    double precision, dimension(0:expansion_order, 0:number_moments, number_coarse_groups, number_cells) :: &
         old_phi_m         ! Scalar flux from previous iteration
     double precision, dimension(0:expansion_order, number_coarse_groups, 2 * spatial_dimension * number_angles, number_cells) :: &
         old_psi_m         ! Angular flux from previous iteration

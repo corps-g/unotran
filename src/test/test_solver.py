@@ -1004,7 +1004,6 @@ class TestSOLVER_2D(unittest.TestCase):
 
         self.angular_test()
 
-    # @unittest.skipIf(anisotropicBroken, 'Anisotropic is not working yet')
     def test_solver_basic_2D_1g_1a_vacuum_l1(self):
         '''
         Test for a basic 1 group problem
@@ -1075,7 +1074,6 @@ class TestSOLVER_2D(unittest.TestCase):
 
         self.angular_test()
 
-    # @unittest.skipIf(anisotropicBroken, 'Anisotropic is not working yet')
     def test_solver_basic_2D_2g_8a_vacuum_l1(self):
         '''
         Test for a basic 2 group problem
@@ -1111,7 +1109,6 @@ class TestSOLVER_2D(unittest.TestCase):
 
         self.angular_test()
 
-    # @unittest.skipIf(anisotropicBroken, 'Anisotropic is not working yet')
     def test_solver_basic_2D_2g_8a_vacuum_l2(self):
         '''
         Test for a basic 2 group problem
