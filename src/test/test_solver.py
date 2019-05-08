@@ -42,9 +42,8 @@ class TestSOLVER(unittest.TestCase):
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
-                with self.subTest(c=c, a=a):
-                    phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
-                    phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, a, c]
+                phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, 2 * nAngles - a - 1, c]
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
     def test_solver_vacuum1(self):
@@ -898,8 +897,7 @@ class TestSOLVER_2D(unittest.TestCase):
         for o in range(4):
             for c in range(pydgm.control.number_cells):
                 for a in range(nAngles):
-                    with self.subTest(o=o, c=c, a=a):
-                        phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, o * nAngles + a, c]
+                    phi_test[:, c] += pydgm.angle.wt[a] * pydgm.state.psi[:, o * nAngles + a, c]
         np.testing.assert_array_almost_equal(phi_test, pydgm.state.phi[0, :, :], 12)
 
     def set_mesh(self, pType):

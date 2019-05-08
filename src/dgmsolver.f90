@@ -172,7 +172,8 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_fine_groups, number_angles, number_cells, energy_group_map
+    use control, only : number_fine_groups, number_angles, number_cells, &
+                        energy_group_map, spatial_dimension
     use angle, only : p_leg
     use control, only : store_psi, number_angles, truncate_delta, &
                         delta_leg_order
@@ -196,7 +197,7 @@ module dgmsolver
 
     if (store_psi) then
       do c = 1, number_cells
-        do a = 1, number_angles * 2
+        do a = 1, number_angles * 2 * spatial_dimension
           do g = 1, number_fine_groups
             if (truncate_delta) then
               tmp_psi_m = matmul(phi_m(:, :delta_leg_order, energy_group_map(g), c), &
@@ -327,11 +328,11 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_cells, number_moments, number_groups, &
-                        delta_leg_order, truncate_delta, number_regions, &
+    use control, only : number_angles, number_cells_x, number_cells_y, number_moments, &
+                        number_groups, delta_leg_order, truncate_delta, number_regions, &
                         scatter_leg_order, number_coarse_groups, spatial_dimension
     use state, only : mg_sig_t, mg_nu_sig_f, mg_mMap
-    use mesh, only : mMap, dx
+    use mesh, only : mMap, dx, dy
     use dgm, only : phi_m, psi_m, sig_s_m, delta_m, expansion_order, &
                     expanded_sig_t, expanded_nu_sig_f, expanded_sig_s
     use angle, only : p_leg
@@ -341,6 +342,8 @@ module dgmsolver
         o,           & ! Order index
         a,           & ! Angle index
         c,           & ! Cell index
+        cx,          & ! Cell index for x cells
+        cy,          & ! Cell index for y cells
         cg,          & ! Outer coarse group index
         cgp,         & ! Inner coarse group index
         l,           & ! Legendre moment index
@@ -373,53 +376,69 @@ module dgmsolver
 
     ! Compute the denominator for spatial homogenization
     homog_phi = 0.0
-    do c = 1, number_cells
-      r = mg_mMap(c)
-      homog_phi(0:, :, r) = homog_phi(0:, :, r) + dx(c) * phi_m(0, 0:, :, c)
+    c = 1
+    do cy = 1, number_cells_y
+      do cx = 1, number_cells_x
+        r = mg_mMap(c)
+        homog_phi(0:, :, r) = homog_phi(0:, :, r) + dx(cx) * dy(cy) * phi_m(0, 0:, :, c)
+        c = c + 1
+      end do
     end do
 
     ! Compute the total cross section moments
     mg_sig_t = 0.0
-    do c = 1, number_cells
-      mat = mMap(c)
-      r = mg_mMap(c)
-      do cg = 1, number_coarse_groups
-        float = dot_product(phi_m(:, 0, cg, c), expanded_sig_t(:, cg, mat, 0))
-        if (homog_phi(0, cg, r) /= 0.0)  then
-          mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(c) * float / homog_phi(0, cg, r)
-        end if
+    c = 1
+    do cy = 1, number_cells_y
+      do cx = 1, number_cells_x
+        mat = mMap(c)
+        r = mg_mMap(c)
+        do cg = 1, number_coarse_groups
+          float = dot_product(phi_m(:, 0, cg, c), expanded_sig_t(:, cg, mat, 0))
+          if (homog_phi(0, cg, r) /= 0.0)  then
+            mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
+          end if
+        end do
+        c = c + 1
       end do
     end do
 
     ! Compute the fission cross section moments
     mg_nu_sig_f = 0.0
-    do c = 1, number_cells
-      mat = mMap(c)
-      r = mg_mMap(c)
-      do cg = 1, number_coarse_groups
-        float = dot_product(phi_m(:, 0, cg, c), expanded_nu_sig_f(:, cg, mat))
-        if (homog_phi(0, cg, r) /= 0.0)  then
-          mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(c) * float / homog_phi(0, cg, r)
-        end if
+    c = 1
+    do cy = 1, number_cells_y
+      do cx = 1, number_cells_x
+        mat = mMap(c)
+        r = mg_mMap(c)
+        do cg = 1, number_coarse_groups
+          float = dot_product(phi_m(:, 0, cg, c), expanded_nu_sig_f(:, cg, mat))
+          if (homog_phi(0, cg, r) /= 0.0)  then
+            mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
+          end if
+        end do
+        c = c + 1
       end do
     end do
 
     ! Compute the scattering cross section moments
     do o = 0, expansion_order
-      do c = 1, number_cells
-        ! get the material for the current cell
-        mat = mMap(c)
-        r = mg_mMap(c)
-        do cg = 1, number_coarse_groups
-          do cgp = 1, number_coarse_groups
-            do l = 0, scatter_leg_order
-              float = dot_product(phi_m(:, l, cgp, c), expanded_sig_s(:, l, cgp, cg, mat, o))
-              if (homog_phi(l, cgp, r) /= 0.0) then
-                  sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
-                                            + dx(c) * float / homog_phi(l, cgp, r)
-              end if
+      c = 1
+      do cy = 1, number_cells_y
+        do cx = 1, number_cells_x
+          ! get the material for the current cell
+          mat = mMap(c)
+          r = mg_mMap(c)
+          do cg = 1, number_coarse_groups
+            do cgp = 1, number_coarse_groups
+              do l = 0, scatter_leg_order
+                float = dot_product(phi_m(:, l, cgp, c), expanded_sig_s(:, l, cgp, cg, mat, o))
+                if (homog_phi(l, cgp, r) /= 0.0) then
+                    sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
+                                              + dx(cx) * dy(cy) * float / homog_phi(l, cgp, r)
+                end if
+              end do
             end do
           end do
+          c = c + 1
         end do
       end do
     end do
@@ -428,29 +447,33 @@ module dgmsolver
     ord = delta_leg_order
     do o = 0, expansion_order
       ! Add angular total cross section moment (delta) to the external source
-      do c = 1, number_cells
-        ! get the material for the current cell
-        mat = mMap(c)
-        r = mg_mMap(c)
-        do a = 1, number_angles * 2 * spatial_dimension
-          do cg = 1, number_coarse_groups
-            if (truncate_delta) then
-              ! If we are truncating the delta term, then first truncate
-              ! the angular flux (because the idea is that we would only store
-              ! the angular moments and then the discrete delta term would be
-              ! generated on the fly from the corresponding delta moments)
-              tmp_psi_m = matmul(phi_m(:, :ord, cg, c), p_leg(:ord, a))
-            else
-              tmp_psi_m = psi_m(:, cg, a, c)
-            end if
-            ! Check if producing nan and not computing with a nan
-            float = dot_product(tmp_psi_m(:), expanded_sig_t(:, cg, mat, o))
-            float = float - mg_sig_t(cg, r) * tmp_psi_m(o)
-            if ((homog_phi(0, cg, r) /= 0.0) .and. (tmp_psi_m(0) /= 0)) then
-              delta_m(cg, a, r, o) = delta_m(cg, a, r, o) &
-                                   + dx(c) * float / tmp_psi_m(0) * phi_m(0, 0, cg, c) / homog_phi(0, cg, r)
-            end if
+      c = 1
+      do cy = 1, number_cells_y
+        do cx = 1, number_cells_x
+          ! get the material for the current cell
+          mat = mMap(c)
+          r = mg_mMap(c)
+          do a = 1, number_angles * 2 * spatial_dimension
+            do cg = 1, number_coarse_groups
+              if (truncate_delta) then
+                ! If we are truncating the delta term, then first truncate
+                ! the angular flux (because the idea is that we would only store
+                ! the angular moments and then the discrete delta term would be
+                ! generated on the fly from the corresponding delta moments)
+                tmp_psi_m = matmul(phi_m(:, :ord, cg, c), p_leg(:ord, a))
+              else
+                tmp_psi_m = psi_m(:, cg, a, c)
+              end if
+              ! Check if producing nan and not computing with a nan
+              float = dot_product(tmp_psi_m(:), expanded_sig_t(:, cg, mat, o))
+              float = float - mg_sig_t(cg, r) * tmp_psi_m(o)
+              if ((homog_phi(0, cg, r) /= 0.0) .and. (tmp_psi_m(0) /= 0)) then
+                delta_m(cg, a, r, o) = delta_m(cg, a, r, o) &
+                                     + dx(cx) * dy(cy) * float / tmp_psi_m(0) * phi_m(0, 0, cg, c) / homog_phi(0, cg, r)
+              end if
+            end do
           end do
+          c = c + 1
         end do
       end do
     end do
@@ -464,17 +487,19 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_regions, number_fine_groups, &
+    use control, only : number_cells_x, number_cells_y, number_regions, number_fine_groups, &
                         number_groups, energy_group_map
     use material, only : chi
     use state, only : mg_constant_source, mg_mMap
-    use mesh, only : mMap, dx
+    use mesh, only : mMap, dx, dy
     use dgm, only : chi_m, source_m, expansion_order, basis
 
     ! Variable definitions
     integer :: &
         order, & ! Expansion order index
         c,     & ! Cell index
+        cx,    & ! Cell index for x cells
+        cy,    & ! Cell index for y cells
         g,     & ! Fine group index
         cg,    & ! Coarse group index
         r,     & ! Region index
@@ -490,19 +515,27 @@ module dgmsolver
 
     ! Get the length of each region
     lengths = 0.0
-    do c = 1, number_cells
-      r = mg_mMap(c)
-      lengths(r) = lengths(r) + dx(c)
+    c = 1
+    do cy = 1, number_cells_y
+      do cx = 1, number_cells_x
+        r = mg_mMap(c)
+        lengths(r) = lengths(r) + dx(cx) * dy(cy)
+        c = c + 1
+      end do
     end do
 
     ! chi moment
     do order = 0, expansion_order
-      do c = 1, number_cells
-        mat = mMap(c)
-        r = mg_mMap(c)
-        do g = 1, number_fine_groups
-          cg = energy_group_map(g)
-          chi_m(cg, r, order) = chi_m(cg, r, order) + basis(g, order) * chi(g, mat) * dx(c) / lengths(r)
+      c = 1
+      do cy = 1, number_cells_y
+        do cx = 1, number_cells_x
+          mat = mMap(c)
+          r = mg_mMap(c)
+          do g = 1, number_fine_groups
+            cg = energy_group_map(g)
+            chi_m(cg, r, order) = chi_m(cg, r, order) + basis(g, order) * chi(g, mat) * dx(cx) * dy(cy) / lengths(r)
+          end do
+          c = c + 1
         end do
       end do
     end do
