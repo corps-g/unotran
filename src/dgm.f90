@@ -60,13 +60,13 @@ module dgm
     ! Compute the order within each coarse group
     do g = 1, number_fine_groups
       order(energy_group_map(g)) = order(energy_group_map(g)) + 1
-    end do
+    end do  ! End g loop
 
     ! The basis map is the index to start reading the basis from the file
     basisMap(1) = 1
     do cg = 2, number_coarse_groups
       basisMap(cg) = sum(order(1:(cg-1))) + 1
-    end do
+    end do  ! End cg loop
 
     ! Order begins at zero, so need to subtract one
     order(:) = order(:) - 1
@@ -87,7 +87,7 @@ module dgm
         if ((truncation_map(cg) < order(cg)) .and. (truncation_map(cg) >= 0)) then
           order(cg) = truncation_map(cg)
         end if
-      end do
+      end do  ! End cg loop
     end if
 
     expansion_order = MAXVAL(order)
@@ -136,8 +136,8 @@ module dgm
         if (order(cg) < i) then
           exit
         end if
-      end do
-    end do
+      end do  ! End gp loop
+    end do  ! End g loop
 
     ! clean up
     close(unit=5)
@@ -180,9 +180,9 @@ module dgm
           cg = energy_group_map(g)
           expanded_sig_t(:, cg, m, i) = expanded_sig_t(:, cg, m, i) &
                                       + basis(g, i) * sig_t(g, m) * basis(g, :)
-        end do
-      end do
-    end do
+        end do  ! End g loop
+      end do  ! End m loop
+    end do  ! End i loop
 
     ! Fill the expanded fission cross section
     do m = 1, number_materials
@@ -190,8 +190,8 @@ module dgm
         cg = energy_group_map(g)
         expanded_nu_sig_f(:, cg, m) = expanded_nu_sig_f(:, cg, m) &
                                     + nu_sig_f(g, m) * basis(g, :)
-      end do
-    end do
+      end do  ! End g loop
+    end do  ! End m loop
 
     ! Fill the expanded scatter cross section
     do i = 0, expansion_order
@@ -203,11 +203,11 @@ module dgm
             do l = 0, scatter_leg_order
               expanded_sig_s(:, l, cgp, cg, m, i) = expanded_sig_s(:, l, cgp, cg, m, i) &
                                                   + basis(g, i) * sig_s(l, gp, g, m) * basis(gp, :)
-            end do
-          end do
-        end do
-      end do
-    end do
+            end do  ! End l loop
+          end do  ! End gp loop
+        end do  ! End g loop
+      end do  ! End m loop
+    end do  ! End i loop
 
   end subroutine compute_expanded_cross_sections
 

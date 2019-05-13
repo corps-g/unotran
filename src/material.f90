@@ -104,15 +104,15 @@ module material
           nu_sig_f(g, mat) = 0.0
           chi(g, mat) = 0.0
         end if
-      end do
+      end do  ! End g loop
       ! Read scattering cross section
       do l = 0, number_legendre
         do g = 1, number_groups
           read(1,*) array1
           sig_s(l, g, :, mat) = array1(:)
-        end do
-      end do
-    end do
+        end do  ! End g loop
+      end do  ! End l loop
+    end do  ! End mat loop
 
     ! Close the file and clean up
     close(unit=1)

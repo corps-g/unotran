@@ -68,11 +68,11 @@ module sources
         if (dgm_switch) then
           do g = 1, number_groups
             sigphi(:,g,c) = sum(phi_m(0, 0:ord,:,c) * mg_sig_s(:,:,g,mat), 2)
-          end do
+          end do  ! End g loop
         else
           do g = 1, number_groups
             sigphi(:,g,c) = sum(mg_phi(0:ord,:,c) * mg_sig_s(:,:,g,mat), 2)
-          end do
+          end do  ! End g loop
         end if
         do l = 0, scatter_leg_order
           sigphi(l,:,c) = sigphi(l,:,c) * (2 * l + 1) * scaling
@@ -85,9 +85,9 @@ module sources
               do m = -l, l
                 sigphi(ll,g,c) = dot_product(phi_m(0,ll,:,c), mg_sig_s(l,:,g,mat)) * scaling
                 ll = ll + 1
-              end do
-            end do
-          end do
+              end do  ! End m loop
+            end do  ! End l loop
+          end do  ! End g loop
         else
           do g = 1, number_groups
             ll = 0
@@ -95,12 +95,12 @@ module sources
               do m = -l, l
                 sigphi(ll,g,c) = dot_product(mg_phi(ll,:,c), mg_sig_s(l,:,g,mat)) * scaling
                 ll = ll + 1
-              end do
-            end do
-          end do
+              end do  ! End m loop
+            end do  ! End l loop
+          end do  ! End g loop
         end if
       end if
-    end do
+    end do  ! End c loop
 
 
 

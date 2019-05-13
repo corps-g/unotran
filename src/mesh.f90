@@ -80,12 +80,12 @@ module mesh
             dx(cx) = ddx  ! Store cell size in x direction
             cx = cx + 1  ! Increment x cells
             c = c + 1  ! Increment all cells
-          end do
-        end do
+          end do  ! End jx loop
+        end do  ! End ix loop
         dy(cy) = ddy  ! Store cell size in y direction
         cy = cy + 1  ! Increment y cells
-      end do
-    end do
+      end do  ! End jy loop
+    end do  ! End iy loop
 
     ! Store the total width of the problem
     width_x = coarse_mesh_x(nx + 1) - coarse_mesh_x(1)

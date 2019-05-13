@@ -111,7 +111,7 @@ module dgmsolver
           print *, dgm_order, mg_phi
         end if
 
-      end do
+      end do  ! End dgm_order loop
 
       ! Update flux using krasnoselskii iteration
       phi_m = (1.0 - lamb) * old_phi_m + lamb * phi_m
@@ -146,7 +146,7 @@ module dgmsolver
         exit
       end if
 
-    end do
+    end do  ! End recon_count loop
 
     ! Unfold to fine-group flux
     call unfold_flux_moments()
@@ -191,8 +191,8 @@ module dgmsolver
     do c = 1, number_cells
       do g = 1, number_fine_groups
         phi(:, g, c) = matmul(basis(g, :), phi_m(:, :, energy_group_map(g), c))
-      end do
-    end do
+      end do  ! End g loop
+    end do  ! End c loop
 
     if (store_psi) then
       do c = 1, number_cells
@@ -205,9 +205,9 @@ module dgmsolver
               tmp_psi_m = psi_m(:, energy_group_map(g), a, c)
             end if
             psi(g, a, c) = dot_product(basis(g, :), tmp_psi_m)
-          end do
-        end do
-      end do
+          end do  ! End g loop
+        end do  ! End a loop
+      end do  ! End c loop
     end if
 
   end subroutine unfold_flux_moments
@@ -284,10 +284,10 @@ module dgmsolver
           end if
           do j = 0, expansion_order
             psi_m(j, cg, a, c) = psi_m(j, cg, a, c) + basis(g, j) * tmp_psi
-          end do
-        end do
-      end do
-    end do
+          end do  ! End j loop
+        end do  ! End g loop
+      end do  ! End a loop
+    end do  ! End c loop
 
     !TODO: Integrate psi_m_zero over angle to get phi_m_zero
 
@@ -297,9 +297,9 @@ module dgmsolver
         cg = energy_group_map(g)
         do j = 0, expansion_order
           phi_m(j, :, cg, c) = phi_m(j, :, cg, c) + basis(g, j) * phi(:, g, c)
-        end do
-      end do
-    end do
+        end do  ! End j loop
+      end do  ! End g loop
+    end do  ! End c loop
 
   end subroutine compute_flux_moments
 
@@ -381,8 +381,8 @@ module dgmsolver
         r = mg_mMap(c)
         homog_phi(0:, :, r) = homog_phi(0:, :, r) + dx(cx) * dy(cy) * phi_m(0, 0:, :, c)
         c = c + 1
-      end do
-    end do
+      end do  ! End cx loop
+    end do  ! End cy loop
 
     ! Compute the total cross section moments
     mg_sig_t = 0.0
@@ -396,10 +396,10 @@ module dgmsolver
           if (homog_phi(0, cg, r) /= 0.0)  then
             mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
           end if
-        end do
+        end do  ! End cg loop
         c = c + 1
-      end do
-    end do
+      end do  ! End cx loop
+    end do  ! End cy loop
 
     ! Compute the fission cross section moments
     mg_nu_sig_f = 0.0
@@ -413,10 +413,10 @@ module dgmsolver
           if (homog_phi(0, cg, r) /= 0.0)  then
             mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
           end if
-        end do
+        end do  ! End cg loop
         c = c + 1
-      end do
-    end do
+      end do  ! End cx loop
+    end do  ! End cy loop
 
     ! Compute the scattering cross section moments
     do o = 0, expansion_order
@@ -434,13 +434,13 @@ module dgmsolver
                     sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
                                               + dx(cx) * dy(cy) * float / homog_phi(l, cgp, r)
                 end if
-              end do
-            end do
-          end do
+              end do  ! End l loop
+            end do  ! End cgp loop
+          end do  ! End cg loop
           c = c + 1
-        end do
-      end do
-    end do
+        end do  ! End cx loop
+      end do  ! End cy loop
+    end do  ! End o loop
 
     ! Compute delta
     ord = delta_leg_order
@@ -470,12 +470,12 @@ module dgmsolver
                 delta_m(cg, a, r, o) = delta_m(cg, a, r, o) &
                                      + dx(cx) * dy(cy) * float / tmp_psi_m(0) * phi_m(0, 0, cg, c) / homog_phi(0, cg, r)
               end if
-            end do
-          end do
+            end do  ! End cg loop
+          end do  ! End a loop
           c = c + 1
-        end do
-      end do
-    end do
+        end do  ! End cx loop
+      end do  ! End cy loop
+    end do  ! End o loop
 
 
   end subroutine compute_xs_moments
@@ -520,8 +520,8 @@ module dgmsolver
         r = mg_mMap(c)
         lengths(r) = lengths(r) + dx(cx) * dy(cy)
         c = c + 1
-      end do
-    end do
+      end do  ! End cx loop
+    end do  ! End cy loop
 
     ! chi moment
     do order = 0, expansion_order
@@ -533,19 +533,19 @@ module dgmsolver
           do g = 1, number_fine_groups
             cg = energy_group_map(g)
             chi_m(cg, r, order) = chi_m(cg, r, order) + basis(g, order) * chi(g, mat) * dx(cx) * dy(cy) / lengths(r)
-          end do
+          end do  ! End g loop
           c = c + 1
-        end do
-      end do
-    end do
+        end do  ! End cx loop
+      end do  ! End cy loop
+    end do  ! End order loop
 
     ! Source moment
     do order = 0, expansion_order
       do g = 1, number_fine_groups
         cg = energy_group_map(g)
         source_m(cg, order) = source_m(cg, order) + basis(g, order) * mg_constant_source
-      end do
-    end do
+      end do  ! End g loop
+    end do  ! End order loop
 
   end subroutine compute_source_moments
 

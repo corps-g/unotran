@@ -35,7 +35,7 @@ module solver
       mg_chi(:,r) = chi(:,r)
       mg_sig_s(:,:,:,r) = sig_s(:scatter_leg_order,:,:,r)
       mg_sig_t(:,r) = sig_t(:,r)
-    end do
+    end do  ! End r loop
     mg_phi(:, :, :) = phi(:, :, :)
     if (store_psi) then
       mg_psi(:, :, :) = psi(:, :, :)
@@ -128,7 +128,7 @@ module solver
           eigen_converged = .false.
         end if
 
-      end do
+      end do  ! End eigen_count loop
 
       if (eigen_count == max_eigen_iters) then
         if (.not. ignore_warnings) then

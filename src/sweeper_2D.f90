@@ -199,8 +199,7 @@ module sweeper_2D
       ! Diamond Difference relationship
       coef_x = 2.0 * mua / dx
       coef_y = 2.0 * eta / dy
-      coef = 1.0 / (sig(:) + coef_x + coef_y)
-      cellPsi(:) = coef * (S(:) + coef_x * inc_x(:) + coef_y * inc_y(:))
+      cellPsi(:) = (S(:) + coef_x * inc_x(:) + coef_y * inc_y(:)) / (sig(:) + coef_x + coef_y)
       inc_x(:) = 2 * cellPsi(:) - inc_x(:)
       inc_y(:) = 2 * cellPsi(:) - inc_y(:)
     else if (equation_type == 'SC') then

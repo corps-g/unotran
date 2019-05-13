@@ -100,7 +100,7 @@ module state
         number_regions = number_cells
         do c = 1, number_cells
           homogenization_map(c) = c
-        end do
+        end do  ! End c loop
       end if
     end if
 
@@ -131,7 +131,7 @@ module state
         phi = 0.0
         do c = 1, number_cells
           phi(0, :, c) = nu_sig_f(:, mMap(c))
-        end do
+        end do  ! End c loop
       end if
     else
       read(10) phi ! read the data in array x to the file
@@ -158,8 +158,8 @@ module state
           do c = 1, number_cells
             do a = 1, number_angles
               psi(:, a, c) = phi(0, :, c) * scaling
-            end do
-          end do
+            end do  ! End a loop
+          end do  ! End c loop
         end if
       else
         read(10) psi ! read the data in array x to the file
@@ -373,17 +373,17 @@ module state
       ! Compute fission density using fine flux
       do c = 1, number_cells
         mg_density(c) = sum(nu_sig_f(:, mMap(c)) * phi(0,:,c))
-      end do
+      end do  ! End c loop
     else if (use_DGM .and. dgm_order > 0) then
       ! Compute the fission density using the mg_flux for higher moments
       do c = 1, number_cells
         mg_density(c) = sum(mg_nu_sig_f(:, mg_mMap(c)) * phi_m(0, 0,:,c))
-      end do
+      end do  ! End c loop
     else
       ! Compute the fission density using the mg_flux normally
       do c = 1, number_cells
         mg_density(c) = sum(mg_nu_sig_f(:, mg_mMap(c)) * mg_phi(0,:,c))
-      end do
+      end do  ! End c loop
     end if
 
   end subroutine update_fission_density

@@ -101,10 +101,10 @@ module sweeper_1D
 
             ! Increment the legendre expansions of the scalar flux
             phi_update(:, g, c) = phi_update(:, g, c) + M(:) * psi_center(g)
-          end do
-        end do
-      end do
-    end do
+          end do  ! End g loop
+        end do  ! End a loop
+      end do  ! End c loop
+    end do  ! End o loop
 
     phi = phi_update
 

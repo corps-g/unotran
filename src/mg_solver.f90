@@ -79,8 +79,7 @@ module mg_solver
         exit
       end if
       
-      
-    end do
+    end do  ! End outer_count loop
 
     if (outer_count == max_outer_iters) then
       if (.not. ignore_warnings) then

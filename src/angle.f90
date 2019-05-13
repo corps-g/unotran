@@ -54,7 +54,7 @@ module angle
         do a = 1, number_angles_per_octant / 2
           mu(number_angles_per_octant - a + 1) = 1 - mu(a)
           wt(number_angles_per_octant - a + 1) = wt(a)
-        end do
+        end do  ! End a loop
       else
         stop "Invalid quadrature option."
       end if
@@ -296,8 +296,8 @@ module angle
           eta(a) = mu_vals(j + 1)
           wt(a) = wt_vals(wt_map(a) + 1)
           a = a + 1
-        end do
-      end do
+        end do  ! End j loop
+      end do  ! End i loop
 
       wt(:) = 0.5 * PI * wt(:)
 
@@ -356,9 +356,9 @@ module angle
         end if
         ! Newton step
         x(i) = x(i) - p / dp
-      end do
+      end do  ! End j loop
       w(i) = 2.0_8 / ((1.0 - x(i) ** 2) * d_legendre_p(m, x(i)) ** 2)
-    end do
+    end do  ! End i loop
 
   end subroutine generate_gl_parameters
 
@@ -390,15 +390,15 @@ module angle
         do l = 0, number_legendre
           p_leg(l, a) = legendre_p(l, mu(a))
           p_leg(l, number_angles - a + 1) = legendre_p(l, -mu(a))
-        end do
-      end do
+        end do  ! End l loop
+      end do  ! End a loop
     else if (spatial_dimension == 2) then
       ll = 0
       do l = 0, number_legendre
         do m = -l, l
           ll = ll + 1
-        end do
-      end do
+        end do  ! End m loop
+      end do  ! End l loop
 
       allocate(p_leg(0:(number_legendre + 1) ** 2 - 1, number_angles))
 
@@ -415,10 +415,10 @@ module angle
               p_leg(ll, an) = p_leg(ll, an) + generate_y_lm(l, m, mu_sign * mu(a), eta_sign * eta(a), -xi)
               p_leg(ll, an) = p_leg(ll, an) * 0.5
               ll = ll + 1
-            end do
-          end do
-        end do
-      end do
+            end do  ! End m loop
+          end do  ! End l loop
+        end do  ! End a loop
+      end do  ! End o loop
     end if
 
   end subroutine initialize_polynomials
@@ -450,7 +450,7 @@ module angle
         P_2 = P_1
         P_1 = P_0
         P_0 = ((2 * m - 1) * x * P_1 - (m - 1) * P_2) / m
-      end do
+      end do  ! End m loop
     end if
     legendre_p = P_0
 
