@@ -12,11 +12,11 @@ module sweeper_1D
     ! Use Statements
     use angle, only : p_leg, wt, mu
     use mesh, only : dx
-    use control, only : store_psi, number_angles, number_cells, scatter_leg_order, &
-                        number_legendre, number_groups, use_DGM, boundary_east, &
+    use control, only : store_psi, number_angles_per_octant, number_cells, scatter_leg_order, &
+                        number_legendre, number_groups, use_DGM, boundary_east, number_angles, &
                         boundary_west
     use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident_x, mg_psi, &
-                      mg_source, sigphi, scaling
+                      mg_source, sigphi
     use sources, only : compute_source
     use omp_lib, only : omp_get_wtime
     use dgm, only : delta_m, psi_m, dgm_order
@@ -59,8 +59,8 @@ module sweeper_1D
     do o = 1, 2  ! Sweep over octants
       ! Sweep in the correct direction within the octant
       octant = o == 1
-      amin = merge(1, number_angles, octant)
-      amax = merge(number_angles, 1, octant)
+      amin = merge(1, number_angles_per_octant, octant)
+      amax = merge(number_angles_per_octant, 1, octant)
       astep = merge(1, -1, octant)
       cmin = merge(1, number_cells, octant)
       cmax = merge(number_cells, 1, octant)
@@ -78,7 +78,7 @@ module sweeper_1D
 
         do a = amin, amax, astep  ! Sweep over angle
           ! Get the correct angle index
-          an = merge(a, 2 * number_angles - a + 1, octant)
+          an = merge(a, number_angles - a + 1, octant)
 
           ! legendre polynomial integration vector
           M = wt(a) * p_leg(:, an)

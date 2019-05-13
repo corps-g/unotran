@@ -52,9 +52,8 @@ module control
       number_cells_y,             & ! Total number of spatial cells in the y direction
       number_cells,               & ! Total number of spatial cells in the mesh
       number_regions,             & ! Number of unique material regions
-      number_angles,              & ! Total number of angles per *half space*
-      number_angles_azi,          & ! Number angles per *half space* in azimuthal direction
-      number_angles_pol,          & ! Number angles per *half space* in polar direction
+      number_angles_per_octant,   & ! Number of angles per octant (half space in 1D, quadrant in 2D)
+      number_angles,              & ! Total number of angles
       number_groups,              & ! Number of groups for the MG problem
       number_fine_groups,         & ! Number of groups in the cross section library
       number_coarse_groups,       & ! Number of groups in the expansion

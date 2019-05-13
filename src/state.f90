@@ -41,8 +41,8 @@ module state
 
     ! Use Statements
     use control, only : number_fine_groups, number_coarse_groups, number_groups, &
-                        use_DGM, ignore_warnings, initial_keff, initial_phi, &
-                        initial_psi, number_angles, number_cells, number_legendre, &
+                        use_DGM, ignore_warnings, initial_keff, initial_phi, number_angles, &
+                        initial_psi, number_angles_per_octant, number_cells, number_legendre, &
                         solver_type, source_value, store_psi, check_inputs, &
                         verify_control, homogenization_map, number_regions, &
                         scatter_leg_order, delta_leg_order, truncate_delta, &
@@ -56,7 +56,6 @@ module state
     integer :: &
         ios = 0, & ! I/O error status
         c,       & ! Cell index
-        ord,     & ! Total legendre moments
         a          ! Angle index
 
     ! Initialize the sub-modules
@@ -141,7 +140,7 @@ module state
 
     ! Only allocate psi if the option is to store psi
     if (store_psi) then
-      allocate(psi(number_fine_groups, 2 * spatial_dimension * number_angles, number_cells))
+      allocate(psi(number_fine_groups, number_angles, number_cells))
 
       ! Initialize psi
       ! Attempt to read file or use default if file does not exist
@@ -157,7 +156,7 @@ module state
           ! default to isotropic distribution
           psi = 0.0
           do c = 1, number_cells
-            do a = 1, 2 * spatial_dimension * number_angles
+            do a = 1, number_angles
               psi(:, a, c) = phi(0, :, c) * scaling
             end do
           end do
@@ -170,11 +169,11 @@ module state
 
     ! Initialize the angular flux incident on the boundary
     if (spatial_dimension == 1) then
-      allocate(mg_incident_x(number_groups, number_angles, number_cells_y, 1))
-      allocate(mg_incident_y(number_groups, number_angles, number_cells_x, 1))
+      allocate(mg_incident_x(number_groups, number_angles_per_octant, number_cells_y, 1))
+      allocate(mg_incident_y(number_groups, number_angles_per_octant, number_cells_x, 1))
     else if (spatial_dimension == 2) then
-      allocate(mg_incident_x(number_groups, number_angles, number_cells_y, 4))
-      allocate(mg_incident_y(number_groups, number_angles, number_cells_x, 4))
+      allocate(mg_incident_x(number_groups, number_angles_per_octant, number_cells_y, 4))
+      allocate(mg_incident_y(number_groups, number_angles_per_octant, number_cells_x, 4))
     end if
     ! Assume vacuum conditions for incident flux
     mg_incident_x(:, :, :, :) = 0.0
@@ -210,7 +209,7 @@ module state
       allocate(sigphi(0:(scatter_leg_order + 1) ** 2 - 1, number_groups, number_cells))
     end if
     if (store_psi) then
-      allocate(mg_psi(number_groups, 2 * spatial_dimension * number_angles, number_cells))
+      allocate(mg_psi(number_groups, number_angles, number_cells))
     end if
 
   end subroutine initialize_state

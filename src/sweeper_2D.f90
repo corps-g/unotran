@@ -12,11 +12,11 @@ module sweeper_2D
     ! Use Statements
     use angle, only : p_leg, wt, mu, eta, PI
     use mesh, only : dx, dy
-    use control, only : store_psi, number_angles, number_cells, number_cells_x, number_cells_y, &
-                        number_legendre, number_groups, use_DGM, scatter_leg_order, &
+    use control, only : store_psi, number_angles_per_octant, number_cells, number_cells_x, &
+                        number_cells_y, number_groups, use_DGM, scatter_leg_order, &
                         boundary_east, boundary_west, boundary_north, boundary_south, number_moments
     use state, only : mg_sig_t, sweep_count, mg_mMap, mg_incident_x, mg_incident_y, &
-                      mg_psi, mg_source, sigphi, scaling
+                      mg_psi, mg_source, sigphi
     use sources, only : compute_source
     use omp_lib, only : omp_get_wtime
     use dgm, only : delta_m, psi_m, dgm_order
@@ -27,7 +27,6 @@ module sweeper_2D
     double precision, dimension(0:number_moments, number_groups, number_cells) :: &
         phi_update    ! Container to hold the updated scalar flux
     integer :: &
-        g,          & ! Group index
         o,          & ! Octant index
         oo,         & ! Octant interation variable
         c,          & ! Cell index
@@ -122,8 +121,8 @@ module sweeper_2D
           c = (cy - 1) * number_cells_x + cx
           mat = mg_mMap(c)
 
-          do a = 1, number_angles  ! Sweep over angle
-            an = (o - 1) * number_angles + a
+          do a = 1, number_angles_per_octant  ! Sweep over angle
+            an = (o - 1) * number_angles_per_octant + a
 
             ! Get the source in this cell, group, and angle
             source(:) = mg_source(:, c)

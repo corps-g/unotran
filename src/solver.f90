@@ -56,7 +56,7 @@ module solver
     use state, only : mg_phi, mg_psi, keff, normalize_flux, &
                       phi, psi, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
-                        eigen_tolerance, number_cells, number_groups, number_legendre, &
+                        eigen_tolerance, number_cells, number_groups, &
                         use_DGM, min_eigen_iters, store_psi, eigen_converged, &
                         outer_converged, number_moments
     use dgm, only : dgm_order
@@ -75,7 +75,7 @@ module solver
     ave_sweep_time = 0.0
 
     ! Initialize the eigen convergence flag to False
-    eigen_converged = .False.
+    eigen_converged = .false.
 
     ! Run eigen loop only if eigen problem
     if (solver_type == 'fixed' .or. dgm_order > 0) then

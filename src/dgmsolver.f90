@@ -35,7 +35,7 @@ module dgmsolver
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
                         ignore_warnings, lamb, number_cells, spatial_dimension, &
-                        number_moments, number_angles, min_recon_iters, number_coarse_groups
+                        number_moments, number_angles_per_octant, min_recon_iters, number_coarse_groups
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments, recon_convergence_rate, &
                       mg_incident_x, mg_incident_y
@@ -58,7 +58,8 @@ module dgmsolver
         ave_sweep_time    ! Average time in seconds per sweep
     double precision, dimension(0:expansion_order, 0:number_moments, number_coarse_groups, number_cells) :: &
         old_phi_m         ! Scalar flux from previous iteration
-    double precision, dimension(0:expansion_order, number_coarse_groups, 2 * spatial_dimension * number_angles, number_cells) :: &
+    double precision, dimension(0:expansion_order, number_coarse_groups, 2 * spatial_dimension * &
+                                number_angles_per_octant, number_cells) :: &
         old_psi_m         ! Angular flux from previous iteration
     double precision, dimension(3) :: &
         past_error        ! Container to hold the error for last 3 iterations
@@ -172,11 +173,9 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_fine_groups, number_angles, number_cells, &
-                        energy_group_map, spatial_dimension
+    use control, only : number_fine_groups, number_angles_per_octant, number_cells, &
+                        energy_group_map, spatial_dimension, store_psi, truncate_delta, delta_leg_order
     use angle, only : p_leg
-    use control, only : store_psi, number_angles, truncate_delta, &
-                        delta_leg_order
     use dgm, only : basis, expansion_order, phi_m, psi_m
     use state, only : phi, psi
 
@@ -197,7 +196,7 @@ module dgmsolver
 
     if (store_psi) then
       do c = 1, number_cells
-        do a = 1, number_angles * 2 * spatial_dimension
+        do a = 1, number_angles_per_octant * 2 * spatial_dimension
           do g = 1, number_fine_groups
             if (truncate_delta) then
               tmp_psi_m = matmul(phi_m(:, :delta_leg_order, energy_group_map(g), c), &
@@ -245,7 +244,7 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_fine_groups, number_cells, &
+    use control, only : number_angles_per_octant, number_fine_groups, number_cells, &
                         energy_group_map, delta_leg_order, truncate_delta, spatial_dimension
     use state, only : phi, psi
     use dgm, only : phi_m, psi_m, basis, expansion_order
@@ -269,7 +268,7 @@ module dgmsolver
 
     ! Get moments for the Angular flux
     do c = 1, number_cells
-      do a = 1, number_angles * 2 * spatial_dimension
+      do a = 1, number_angles_per_octant * 2 * spatial_dimension
         do g = 1, number_fine_groups
           cg = energy_group_map(g)
 
@@ -328,9 +327,9 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_cells_x, number_cells_y, number_moments, &
+    use control, only : number_angles_per_octant, number_cells_x, number_cells_y, number_moments, &
                         number_groups, delta_leg_order, truncate_delta, number_regions, &
-                        scatter_leg_order, number_coarse_groups, spatial_dimension
+                        scatter_leg_order, number_coarse_groups, spatial_dimension, number_angles
     use state, only : mg_sig_t, mg_nu_sig_f, mg_mMap
     use mesh, only : mMap, dx, dy
     use dgm, only : phi_m, psi_m, sig_s_m, delta_m, expansion_order, &
@@ -365,7 +364,7 @@ module dgmsolver
       deallocate(sig_s_m)
     end if
 
-    allocate(delta_m(number_groups, 2 * spatial_dimension * number_angles, number_regions, 0:expansion_order))
+    allocate(delta_m(number_groups, number_angles, number_regions, 0:expansion_order))
     allocate(sig_s_m(0:scatter_leg_order, number_groups, number_groups, number_regions, 0:expansion_order))
 
     ! initialize all moments and mg containers to zero
@@ -453,7 +452,7 @@ module dgmsolver
           ! get the material for the current cell
           mat = mMap(c)
           r = mg_mMap(c)
-          do a = 1, number_angles * 2 * spatial_dimension
+          do a = 1, number_angles_per_octant * 2 * spatial_dimension
             do cg = 1, number_coarse_groups
               if (truncate_delta) then
                 ! If we are truncating the delta term, then first truncate

@@ -25,7 +25,7 @@ module angle
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : spatial_dimension, angle_option, number_angles, angle_order
+    use control, only : spatial_dimension, angle_option, number_angles, number_angles_per_octant, angle_order
 
     ! Variable definitions
     integer :: &
@@ -40,19 +40,20 @@ module angle
 
     if (spatial_dimension == 1) then
 
-      number_angles = angle_order
-      allocate(mu(number_angles), wt(number_angles))
+      number_angles_per_octant = angle_order
+      number_angles = 2 * number_angles_per_octant
+      allocate(mu(number_angles_per_octant), wt(number_angles_per_octant))
 
       ! Generate the Legendre quadrature
       if (angle_option == GL) then
-        call generate_gl_parameters(2 * number_angles, mu, wt)
-      else if (angle_option == DGL) then
         call generate_gl_parameters(number_angles, mu, wt)
+      else if (angle_option == DGL) then
+        call generate_gl_parameters(number_angles_per_octant, mu, wt)
         mu = 0.5 * mu + 0.5
         wt = 0.5 * wt
-        do a = 1, number_angles / 2
-          mu(number_angles - a + 1) = 1 - mu(a)
-          wt(number_angles - a + 1) = wt(a)
+        do a = 1, number_angles_per_octant / 2
+          mu(number_angles_per_octant - a + 1) = 1 - mu(a)
+          wt(number_angles_per_octant - a + 1) = wt(a)
         end do
       else
         stop "Invalid quadrature option."
@@ -67,8 +68,10 @@ module angle
       end if
 
       ! Compute the total number of angles
-      number_angles = angle_order * (angle_order + 2) / 8
-      allocate(mu(number_angles), eta(number_angles), wt(number_angles), wt_map(number_angles))
+      number_angles_per_octant = angle_order * (angle_order + 2) / 8
+      number_angles = 4 * number_angles_per_octant
+      allocate(mu(number_angles_per_octant), eta(number_angles_per_octant), &
+               wt(number_angles_per_octant), wt_map(number_angles_per_octant))
       if (angle_order == 2) then
         allocate(mu_vals(1), wt_vals(1))
         mu_vals(1) = 0.577350269189625764509149
@@ -282,6 +285,8 @@ module angle
                   12, 14, 15, 14, 12, 8, 3, 4, 9, 13, 15, 15, 13, 9, 4, 5, 10, &
                   13, 14, 13, 10, 5, 5, 9, 12, 12, 9, 5, 4, 8, 11, 8, 4, 3, 7, &
                   7, 3, 2, 6, 2, 1, 1, 0]
+      else
+        allocate(mu_vals(0), wt_vals(0))
       end if
 
       a = 1
@@ -363,7 +368,7 @@ module angle
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_legendre, spatial_dimension
+    use control, only : number_angles, number_legendre, spatial_dimension, number_angles_per_octant
 
     ! Variable definitions
     integer :: &
@@ -379,12 +384,12 @@ module angle
         xi               ! direction cosine w/r to z axis
 
     if (spatial_dimension == 1) then
-      allocate(p_leg(0:number_legendre, number_angles * 2))
+      allocate(p_leg(0:number_legendre, number_angles))
 
-      do a = 1, number_angles
+      do a = 1, number_angles_per_octant
         do l = 0, number_legendre
           p_leg(l, a) = legendre_p(l, mu(a))
-          p_leg(l, 2 * number_angles - a + 1) = legendre_p(l, -mu(a))
+          p_leg(l, number_angles - a + 1) = legendre_p(l, -mu(a))
         end do
       end do
     else if (spatial_dimension == 2) then
@@ -395,13 +400,13 @@ module angle
         end do
       end do
 
-      allocate(p_leg(0:(number_legendre + 1) ** 2 - 1, number_angles * 4))
+      allocate(p_leg(0:(number_legendre + 1) ** 2 - 1, number_angles))
 
       do o = 1, 4
         mu_sign = merge(1, -1, o ==1 .or. o == 2)
         eta_sign = merge(1, -1, o == 1 .or. o == 4)
-        do a = 1, number_angles
-          an = (o - 1) * number_angles + a
+        do a = 1, number_angles_per_octant
+          an = (o - 1) * number_angles_per_octant + a
           xi = abs(sqrt(1 - mu(a) ** 2 - eta(a) ** 2))
           ll = 0
           do l = 0, number_legendre

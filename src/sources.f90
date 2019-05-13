@@ -17,7 +17,7 @@ module sources
                       mg_mMap, mg_phi, keff, mg_chi, mg_density, mg_constant_source, &
                       scaling
     use control, only : number_cells, allow_fission, solver_type, number_groups, &
-                        scatter_leg_order, use_DGM, spatial_dimension, number_moments
+                        scatter_leg_order, use_DGM, spatial_dimension
     use dgm, only : dgm_order, phi_m, source_m
 
     ! Variable definitions

@@ -38,7 +38,7 @@ class TestSOLVER(unittest.TestCase):
         '''
         Generic tester for the angular flux
         '''
-        nAngles = pydgm.control.number_angles
+        nAngles = pydgm.control.number_angles_per_octant
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for c in range(pydgm.control.number_cells):
             for a in range(nAngles):
@@ -892,7 +892,7 @@ class TestSOLVER_2D(unittest.TestCase):
 
     def angular_test(self):
         # Test the angular flux
-        nAngles = pydgm.control.number_angles
+        nAngles = pydgm.control.number_angles_per_octant
         phi_test = np.zeros((pydgm.control.number_groups, pydgm.control.number_cells))
         for o in range(4):
             for c in range(pydgm.control.number_cells):
