@@ -69,7 +69,7 @@ module angle
 
       ! Compute the total number of angles
       number_angles_per_octant = angle_order * (angle_order + 2) / 8
-      number_angles = 4 * number_angles_per_octant
+      number_angles = number_angles_per_octant * 2 ** spatial_dimension
       allocate(mu(number_angles_per_octant), eta(number_angles_per_octant), &
                wt(number_angles_per_octant), wt_map(number_angles_per_octant))
       if (angle_order == 2) then
