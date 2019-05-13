@@ -29,6 +29,7 @@ module sweeper_2D
     integer :: &
         g,          & ! Group index
         o,          & ! Octant index
+        oo,         & ! Octant interation variable
         c,          & ! Cell index
         cx,         & ! x cell index
         cy,         & ! y cell index
@@ -48,6 +49,8 @@ module sweeper_2D
         cy_start,   & ! Lower cell number in y direction
         cy_stop,    & ! Upper cell number in y direction
         cy_step       ! Cell stepping direction in y direction
+    integer, dimension(4) :: &
+        octant_map    ! Order for octant interation
     double precision, dimension(number_groups) :: &
         psi_center, & ! Angular flux at cell center
         source        ! Fission, In-Scattering, External source in group g
@@ -58,10 +61,27 @@ module sweeper_2D
     ! Reset phi
     phi_update = 0.0
 
+    ! Set octant ordering
+    if (boundary_east == 0) then
+      if (boundary_south == 0) then
+        octant_map = [3, 2, 4, 1]
+      else
+        octant_map = [4, 3, 1, 2]
+      end if
+    else
+      if (boundary_south == 0) then
+        octant_map = [2, 1, 3, 4]
+      else
+        octant_map = [1, 2, 4, 3]
+      end if
+    end if
+
+
     ! Update the forcing function
     call compute_source()
 
-    do o = 1, 4  ! Sweep over octants
+    do oo = 1, 4  ! Sweep over octants
+      o = octant_map(oo)
 
       ! Get sweep direction and set boundary condition for x cells
       if (o == 1 .or. o == 2) then

@@ -83,7 +83,7 @@ module control
     ! ##########################################################################
 
     ! Input variables
-    character(len=32768) :: &
+    character(len=524288) :: &
         buffer, & ! Buffer to hold read-in strings
         label     ! Contains the read-variable name
     character(len=*), intent(in) :: &
