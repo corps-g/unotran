@@ -132,8 +132,8 @@ module sweeper_2D
               do m = -l, l
                 source(:) = source(:) + sigphi(ll,:,c) * p_leg(ll,an) * (2 * l + 1)
                 ll = ll + 1
-              end do
-            end do
+              end do  ! End m loop
+            end do  ! End l loop
 
             if (use_DGM) then
               source(:) = source(:) - delta_m(:, an, mg_mMap(c), dgm_order) * psi_m(0, :, an, c)
@@ -151,12 +151,11 @@ module sweeper_2D
             ! Increment the legendre expansions of the scalar flux
             do ll = 0, number_moments
               phi_update(ll, :, c) = phi_update(ll, :, c) + wt(a) * p_leg(ll,an) * psi_center(:)
-            end do
-          end do
-        end do
-      end do
-
-    end do
+            end do  ! End ll loop
+          end do  ! End a loop
+        end do  ! End cx loop
+      end do  ! End cy loop
+    end do  ! End oo loop
 
     phi = phi_update
 
@@ -172,8 +171,8 @@ module sweeper_2D
 
     ! Variable definitions
     double precision, dimension(:), intent(inout) :: &
-        inc_x,   & ! Angular flux incident on the cell from x direction
-        inc_y      ! Angular flux incident on the cell from y direction
+        inc_x,        & ! Angular flux incident on the cell from x direction
+        inc_y           ! Angular flux incident on the cell from y direction
     double precision, dimension(:), intent(in) :: &
         S,            & ! Source within the cell
         sig             ! Total cross section within the cell
@@ -185,11 +184,16 @@ module sweeper_2D
     double precision, dimension(:), intent(inout) :: &
         cellPsi         ! Angular flux at cell center
     double precision, allocatable, dimension(:) :: &
-        tau,          & ! Parameter used in step characteristics
-        A               ! Parameter used in step characteristics
+        out_y,        & ! Outgoing flux in y direction
+        out_x,        & ! Outgoing flux in x direction
+        Q               ! Source used in step characteristics
     double precision :: &
         coef_x,       & ! Parameter used in diamond and step differences
         coef_y,       & ! Parameter used in diamond and step differences
+        rho,          & ! Ratio used in step characteristics
+        expf,         &
+        one_m_exp_x,  &
+        one_m_exp_y,  &
         coef(size(sig)) ! Parameter used in diamond and step differences
 
     if (equation_type == 'DD') then
@@ -200,19 +204,37 @@ module sweeper_2D
       cellPsi(:) = coef * (S(:) + coef_x * inc_x(:) + coef_y * inc_y(:))
       inc_x(:) = 2 * cellPsi(:) - inc_x(:)
       inc_y(:) = 2 * cellPsi(:) - inc_y(:)
-!    else if (equation_type == 'SC') then
-!      ! Step Characteristics relationship
-!      allocate(tau(size(sig)), A(size(sig)))
-!      tau = sig(:) * dx / mua
-!      A = exp(-tau)
-!      cellPsi = incident * (1.0 - A) / tau + S * (sig * dx + mua * (A - 1.0)) / (sig ** 2 * dx)
-!      incident = A * incident + S * (1.0 - A) / sig
-!      deallocate(tau, A)
-!    else if (equation_type == 'SD') then
-!      ! Step Difference relationship
-!      invmu = dx / (abs(mua))
-!      cellPsi = (incident + invmu * S) / (1 + invmu * sig)
-!      incident = cellPsi
+    else if (equation_type == 'SC') then
+      ! Step Characteristics relationship
+      allocate(out_y(size(inc_y)), out_x(size(inc_x)), Q(size(S)))
+      Q(:) = S(:) / sig(:)
+      coef_x = dx / mua
+      coef_y = dy / eta
+      rho = coef_x / coef_y
+      if (rho <= 1) then
+        expf = exp(-coef_x)
+        one_m_exp_x = (1.0 - expf) / coef_x
+        out_y(:) = Q(:) + (inc_y(:) - Q(:)) * (1.0 - rho) * expf + (inc_x(:) - Q(:)) * rho * one_m_exp_x
+        out_x(:) = Q(:) + (inc_y(:) - Q(:)) * one_m_exp_x
+      else
+        expf = exp(-coef_y)
+        one_m_exp_y = (1 - expf) / coef_y
+        out_y(:) = Q(:) + (inc_x(:) - Q(:)) * one_m_exp_y
+        out_x(:) = Q(:) + (inc_y(:) - Q(:)) * one_m_exp_y / rho + (inc_x(:) - Q(:)) * (1.0 - 1.0 / rho) * expf
+      end if
+
+      cellPsi(:) = Q(:) - (out_x(:) - inc_x(:)) / coef_y - (out_y(:) - inc_y(:)) / coef_x
+      inc_x(:) = out_x(:)
+      inc_y(:) = out_y(:)
+      deallocate(out_y, out_x, Q)
+    else if (equation_type == 'SD') then
+      ! Step Difference relationship
+      coef_x = mua / dx
+      coef_y = eta / dy
+      coef = 1 / (sig + coef_x + coef_y)
+      cellPsi = coef * (S + coef_x * inc_y + coef_y * inc_x)
+      inc_x = cellPsi
+      inc_y = cellPsi
     else
       print *, 'ERROR : Equation not implemented'
       stop
