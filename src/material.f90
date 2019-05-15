@@ -3,20 +3,22 @@ module material
   ! Initialize the material properties
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
 
   integer :: &
       number_materials, & ! Number of materials in the cross section library
       debugFlag           ! Unused flag in the cross section library
-  double precision, allocatable, dimension(:) :: &
+  real(kind=dp), allocatable, dimension(:) :: &
       ebounds,          & ! Bounds for the energy groups
       velocity            ! Velocity within each energy group
-  double precision, allocatable, dimension(:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:) :: &
       sig_t,            & ! Total cross section
       sig_f,            & ! Fission cross section
       nu_sig_f,         & ! Fission cross section times nu
       chi                 ! Chi spectrum
-  double precision, allocatable, dimension(:,:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:,:) :: &
       sig_s               ! Scattering cross section
 
   contains
@@ -39,7 +41,7 @@ module material
         L,             & ! Legendre moment index
         number_groups, & ! Number of groups in the cross section library
         dataPresent      ! Flag deciding which cross sections are present
-    double precision :: &
+    real(kind=dp) :: &
         t,             & ! Total cross section value
         f,             & ! fission cross section value
         vf,            & ! nu times fission cross section value
@@ -47,7 +49,7 @@ module material
         energyFission, & ! Energy per fission event (unused)
         energyCapture, & ! Energy per capture event (unused)
         gramAtomWeight   ! Atomic weight
-    double precision, allocatable, dimension(:) :: &
+    real(kind=dp), allocatable, dimension(:) :: &
         array1           ! Temp array for storing scattering XS values
     
     ! Read the file parameters

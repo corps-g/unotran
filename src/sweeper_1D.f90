@@ -1,5 +1,7 @@
 module sweeper_1D
 
+  use control, only : dp
+
   implicit none
 
   contains
@@ -22,9 +24,9 @@ module sweeper_1D
     use dgm, only : delta_m, psi_m, dgm_order
 
     ! Variable definitions
-    double precision, intent(inout), dimension(:,:,:) :: &
+    real(kind=dp), intent(inout), dimension(:,:,:) :: &
         phi           ! Scalar flux for current iteration and group g
-    double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
+    real(kind=dp), dimension(0:number_legendre, number_groups, number_cells) :: &
         phi_update    ! Container to hold the updated scalar flux
     integer :: &
         g,          & ! Group index
@@ -39,9 +41,9 @@ module sweeper_1D
         amin,       & ! Lower angle number
         amax,       & ! Upper angle number
         astep         ! Angle stepping direction
-    double precision, dimension(0:number_legendre) :: &
+    real(kind=dp), dimension(0:number_legendre) :: &
         M           ! Legendre polynomial integration vector
-    double precision, dimension(number_groups) :: &
+    real(kind=dp), dimension(number_groups) :: &
         psi_center, & ! Angular flux at cell center
         source        ! Fission, In-Scattering, External source in group g
     logical :: &
@@ -51,7 +53,7 @@ module sweeper_1D
     sweep_count = sweep_count + 1
 
     ! Reset phi
-    phi_update = 0.0
+    phi_update = 0.0_8
 
     ! Update the forcing function
     call compute_source()
@@ -119,39 +121,39 @@ module sweeper_1D
     use control, only : equation_type
 
     ! Variable definitions
-    double precision, dimension(:), intent(inout) :: &
+    real(kind=dp), dimension(:), intent(inout) :: &
         incident ! Angular flux incident on the cell
-    double precision, dimension(:), intent(in) :: &
+    real(kind=dp), dimension(:), intent(in) :: &
         S,     & ! Source within the cell
         sig      ! Total cross section within the cell
-    double precision, intent(in) :: &
+    real(kind=dp), intent(in) :: &
         dx,    & ! Width of the cell
         mua      ! Angle for the cell
-    double precision, dimension(:), intent(inout) :: &
+    real(kind=dp), dimension(:), intent(inout) :: &
         cellPsi  ! Angular flux at cell center
-    double precision, allocatable, dimension(:) :: &
+    real(kind=dp), allocatable, dimension(:) :: &
         tau,   & ! Parameter used in step characteristics
         A        ! Parameter used in step characteristics
-    double precision :: &
+    real(kind=dp) :: &
         invmu    ! Parameter used in diamond and step differences
 
     if (equation_type == 'DD') then
       ! Diamond Difference relationship
-      invmu = dx / (2 * abs(mua))
-      cellPsi(:) = (incident(:) + invmu * S(:)) / (1 + invmu * sig(:))
-      incident(:) = 2 * cellPsi(:) - incident(:)
+      invmu = dx / (2.0_8 * abs(mua))
+      cellPsi(:) = (incident(:) + invmu * S(:)) / (1.0_8 + invmu * sig(:))
+      incident(:) = 2.0_8 * cellPsi(:) - incident(:)
     else if (equation_type == 'SC') then
       ! Step Characteristics relationship
       allocate(tau(size(sig)), A(size(sig)))
       tau = sig(:) * dx / mua
       A = exp(-tau)
-      cellPsi = incident * (1.0 - A) / tau + S * (sig * dx + mua * (A - 1.0)) / (sig ** 2 * dx)
-      incident = A * incident + S * (1.0 - A) / sig
+      cellPsi = incident * (1.0_8 - A) / tau + S * (sig * dx + mua * (A - 1.0_8)) / (sig ** 2.0_8 * dx)
+      incident = A * incident + S * (1.0_8 - A) / sig
       deallocate(tau, A)
     else if (equation_type == 'SD') then
       ! Step Difference relationship
       invmu = dx / (abs(mua))
-      cellPsi = (incident + invmu * S) / (1 + invmu * sig)
+      cellPsi = (incident + invmu * S) / (1.0_8 + invmu * sig)
       incident = cellPsi
     else
       print *, 'ERROR : Equation not implemented'

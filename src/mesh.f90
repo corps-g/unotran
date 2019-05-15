@@ -3,12 +3,14 @@ module mesh
   ! Create the cell indexing for the problem
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
 
-  double precision :: &
+  real(kind=dp) :: &
       width_x,   & ! Total width of the problem in x direction
       width_y      ! Total width of the problem in y direction
-  double precision, allocatable, dimension(:) :: &
+  real(kind=dp), allocatable, dimension(:) :: &
       dx,         & ! Width of each cell in EW direction
       dy            ! Width of each cell in NS direction
   integer, allocatable, dimension(:) :: &
@@ -28,7 +30,7 @@ module mesh
                         spatial_dimension, boundary_north, boundary_south
 
     ! Variable definitions
-    double precision :: &
+    real(kind=dp) :: &
         ddx, & ! Temporary variable for x cell width
         ddy    ! Temporary variable for y cell width
     integer :: &
@@ -45,15 +47,15 @@ module mesh
     ! Check for 1D problem
     if (spatial_dimension == 1) then
       ! Set the y direction to a single spatial cell with reflective contitions
-      boundary_north = 1.0
-      boundary_south = 1.0
+      boundary_north = 1.0_8
+      boundary_south = 1.0_8
 
       if (allocated(fine_mesh_y)) deallocate(fine_mesh_y)
       if (allocated(coarse_mesh_y)) deallocate(coarse_mesh_y)
 
       allocate(fine_mesh_y(1), coarse_mesh_y(2))
       fine_mesh_y(1) = 1
-      coarse_mesh_y = [0.0, 1.0]
+      coarse_mesh_y = [0.0_8, 1.0_8]
 
     end if
 

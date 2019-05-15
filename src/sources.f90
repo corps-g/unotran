@@ -3,6 +3,8 @@ module sources
   ! Compute the sources for the solver
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
 
   contains
@@ -33,7 +35,7 @@ module sources
       dgm_switch    !
 
     ! Reset the sources
-    mg_source = 0.0
+    mg_source = 0.0_8
 
     ! Update the fission density if needed
     if (allow_fission .or. solver_type == 'eigen') then
@@ -44,7 +46,7 @@ module sources
 
     dgm_switch = use_DGM .and. dgm_order > 0
 
-    sigphi = 0.0
+    sigphi = 0.0_8
     ord = scatter_leg_order
 
     ! Compute the source
@@ -75,7 +77,7 @@ module sources
           end do  ! End g loop
         end if
         do l = 0, scatter_leg_order
-          sigphi(l,:,c) = sigphi(l,:,c) * (2 * l + 1) * scaling
+          sigphi(l,:,c) = sigphi(l,:,c) * (2.0_8 * l + 1.0_8) * scaling
         end do
       else
         if (dgm_switch) then

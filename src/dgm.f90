@@ -3,22 +3,24 @@ module dgm
   ! Compute the DGM Moments for fluxes and cross sections
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
 
-  double precision, allocatable, dimension(:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:) :: &
       basis,                & ! Basis for expansion in energy
       source_m                ! Source moments
-  double precision, allocatable, dimension(:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:) :: &
       chi_m,                & ! Chi spectrum moments
       expanded_nu_sig_f       ! Expanded fission cross sections
-  double precision, allocatable, dimension(:,:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:,:) :: &
       delta_m,              & ! Angular total XS moments
       phi_m,                & ! Scalar flux moments
       psi_m,                & ! Angular flux moments
       expanded_sig_t          ! Expanded total cross sections
-  double precision, allocatable, dimension(:,:,:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:,:,:) :: &
       sig_s_m                 ! Scattering XS moments
-  double precision, allocatable, dimension(:,:,:,:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:,:,:,:) :: &
       expanded_sig_s          ! Expanded scattering cross sections
   integer :: &
       expansion_order,      & ! Maximum expansion order
@@ -107,7 +109,7 @@ module dgm
     use control, only : dgm_basis_name, number_fine_groups, energy_group_map
 
     ! Variable definitions
-    double precision, dimension(number_fine_groups) :: &
+    real(kind=dp), dimension(number_fine_groups) :: &
         array1 ! Temporary array
     integer :: &
         g,   & ! Fine group index
@@ -119,13 +121,13 @@ module dgm
     allocate(basis(number_fine_groups, 0:expansion_order))
 
     ! initialize the basis to zero
-    basis = 0.0
+    basis = 0.0_8
 
     ! open the file and read into the basis container
     open(unit=5, file=dgm_basis_name)
     do g = 1, number_fine_groups
       cg = energy_group_map(g)
-      array1(:) = 0.0
+      array1(:) = 0.0_8
       read(5,*) array1
       i = 0
       do gp = 1, number_fine_groups
@@ -169,9 +171,9 @@ module dgm
     allocate(expanded_sig_s(0:expansion_order, 0:scatter_leg_order, number_coarse_groups, &
                             number_coarse_groups, number_materials, 0:expansion_order))
 
-    expanded_sig_t = 0.0
-    expanded_nu_sig_f = 0.0
-    expanded_sig_s = 0.0
+    expanded_sig_t = 0.0_8
+    expanded_nu_sig_f = 0.0_8
+    expanded_sig_s = 0.0_8
 
     ! Fill the expanded total cross section
     do i = 0, expansion_order

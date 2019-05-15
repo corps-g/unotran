@@ -6,7 +6,8 @@ module control
   implicit none
 
   ! control variables
-  double precision, allocatable, dimension(:) :: &
+  integer, parameter :: dp = selected_real_kind(15, 307)
+  real(kind=dp), allocatable, dimension(:) :: &
       coarse_mesh,                & ! Coarse mesh boundaries
       coarse_mesh_x,              & ! Coarse mesh boundaries in x direction
       coarse_mesh_y                 ! Coarse mesh boundaries in y direction
@@ -18,17 +19,17 @@ module control
       energy_group_map,           & ! Coarse energy group boundaries
       truncation_map,             & ! Expansion order within each coarse group (optional)
       homogenization_map            ! Map of which fine cells to homogenize for DGM (optional)
-  double precision :: &
+  real(kind=dp) :: &
       boundary_east,              & ! Albedo value at east boundary
       boundary_west,              & ! Albedo value at west boundary
       boundary_north,             & ! Albedo value at north boundary
       boundary_south,             & ! Albedo value at south boundary
-      recon_tolerance=1e-8,       & ! Convergance criteria for recon iteration
-      eigen_tolerance=1e-8,       & ! Convergance criteria for eigen iteration
-      outer_tolerance=1e-8,       & ! Convergance criteria for outer iteration
-      lamb=1.0,                   & ! Parameter (0 < lamb <= 1.0) for krasnoselskii iteration
-      source_value=0.0,           & ! Value of external source for the problem
-      initial_keff=1.0              ! Initial value for the eigenvalue
+      recon_tolerance=1e-8_8,     & ! Convergance criteria for recon iteration
+      eigen_tolerance=1e-8_8,     & ! Convergance criteria for eigen iteration
+      outer_tolerance=1e-8_8,     & ! Convergance criteria for outer iteration
+      lamb=1.0_8,                 & ! Parameter (0 < lamb <= 1.0) for krasnoselskii iteration
+      source_value=0.0_8,         & ! Value of external source for the problem
+      initial_keff=1.0_8            ! Initial value for the eigenvalue
   character(len=256) :: &
       xs_name,                    & ! Name of the cross section file
       dgm_basis_name,             & ! Name of file containing energy basis

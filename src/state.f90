@@ -3,28 +3,30 @@ module state
   ! Define the container classes for fluxes and cross sections
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
 
-  double precision, allocatable, dimension(:,:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:,:) :: &
       mg_incident_x,       & ! Angular flux incident on the current cell in x direction
       mg_incident_y,       & ! Angular flux incident on the current cell in y direction
       mg_sig_s               ! Scattering cross section moments
-  double precision, allocatable, dimension(:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:) :: &
       psi,                 & ! Angular flux
       phi,                 & ! Scalar Flux
       mg_phi,              & ! Scalar flux mg container
       mg_psi,              & ! Angular flux mg container
       sigphi                 ! Scalar flux container
-  double precision, allocatable, dimension(:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:) :: &
       mg_nu_sig_f,         & ! Fission cross section mg container (times nu)
       mg_chi,              & ! Chi spectrum mg container
       mg_source,           & ! External source mg container
       mg_sig_t               ! Scalar total cross section mg container
-  double precision, allocatable, dimension(:) :: &
+  real(kind=dp), allocatable, dimension(:) :: &
       mg_density             ! Fission density
   integer, allocatable, dimension(:) :: &
       mg_mMap                ! material map mg container
-  double precision :: &
+  real(kind=dp) :: &
       mg_constant_source,  & ! Constant multigroup source
       keff,                & ! k-eigenvalue
       norm_frac,           & ! Fraction of normalization for eigenvalue problems
@@ -105,9 +107,9 @@ module state
     end if
 
     if (spatial_dimension == 1) then
-      scaling = 0.5
+      scaling = 0.5_8
     else
-      scaling = 1.0 / (2 * PI)
+      scaling = 1.0_8 / (2.0_8 * PI)
     end if
 
     ! Initialize the constant source
@@ -126,9 +128,9 @@ module state
         print *, "initial phi file, ", initial_phi, " is missing, using default value"
       end if
       if (solver_type == 'fixed') then
-        phi = 1.0  ! default value
+        phi = 1.0_8  ! default value
       else if (solver_type == 'eigen') then
-        phi = 0.0
+        phi = 0.0_8
         do c = 1, number_cells
           phi(0, :, c) = nu_sig_f(:, mMap(c))
         end do  ! End c loop
@@ -151,10 +153,10 @@ module state
         end if
         if (solver_type == 'fixed') then
           ! default to isotropic distribution
-          psi = 0.5
+          psi = 0.5_8
         else
           ! default to isotropic distribution
-          psi = 0.0
+          psi = 0.0_8
           do c = 1, number_cells
             do a = 1, number_angles
               psi(:, a, c) = phi(0, :, c) * scaling
@@ -176,13 +178,13 @@ module state
       allocate(mg_incident_y(number_groups, number_angles_per_octant, number_cells_x, 4))
     end if
     ! Assume vacuum conditions for incident flux
-    mg_incident_x(:, :, :, :) = 0.0
-    mg_incident_y(:, :, :, :) = 0.0
+    mg_incident_x(:, :, :, :) = 0.0_8
+    mg_incident_y(:, :, :, :) = 0.0_8
 
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen
     if (solver_type == 'fixed') then
-      keff = 1.0
+      keff = 1.0_8
     else
       keff = initial_keff
     end if
@@ -317,7 +319,7 @@ module state
     use control, only : number_cells, solver_type, store_psi
 
     ! Variable definitions
-    double precision, intent(inout), dimension(:,:,:) :: &
+    real(kind=dp), intent(inout), dimension(:,:,:) :: &
         phi,         & ! Scalar flux
         psi            ! Angular flux
     integer :: &
@@ -366,7 +368,7 @@ module state
     end if
 
     ! Reset the fission density
-    mg_density = 0.0
+    mg_density = 0.0_8
 
     ! Sum the fission reaction rate over groups for each cell
     if (fine_flag_val) then

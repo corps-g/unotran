@@ -3,6 +3,8 @@ module solver
   ! Solve the transport equation using discrete ordinates
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
   
   contains
@@ -63,16 +65,16 @@ module solver
     use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
-    double precision :: &
+    real(kind=dp) :: &
         eigen_error,  & ! Error between successive iterations
         start,        & ! Start time of the sweep function
         ave_sweep_time  ! Average time in seconds per sweep
     integer :: &
         eigen_count     ! Iteration counter
-    double precision, dimension(0:number_moments, number_groups, number_cells) :: &
+    real(kind=dp), dimension(0:number_moments, number_groups, number_cells) :: &
         old_phi         ! Scalar flux from previous iteration
 
-    ave_sweep_time = 0.0
+    ave_sweep_time = 0.0_8
 
     ! Initialize the eigen convergence flag to False
     eigen_converged = .false.

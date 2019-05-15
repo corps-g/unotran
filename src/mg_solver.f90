@@ -1,5 +1,7 @@
 module mg_solver
 
+  use control, only : dp
+
   implicit none
   
   contains
@@ -21,15 +23,15 @@ module mg_solver
     ! Variable definitions
     integer :: &
         outer_count    ! Counter for the outer loop
-    double precision :: &
+    real(kind=dp) :: &
         outer_error    ! Residual error between iterations
-    double precision, dimension(number_groups, number_cells) :: &
+    real(kind=dp), dimension(number_groups, number_cells) :: &
         old_phi
-    double precision :: &
+    real(kind=dp) :: &
         start,       & ! Start time of the sweep function
         ave_sweep_time ! Average time in seconds per sweep
 
-    ave_sweep_time = 0.0
+    ave_sweep_time = 0.0_8
 
     ! Initialize the outer convergence flag to False
     outer_converged = .false.

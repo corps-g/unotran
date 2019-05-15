@@ -1,5 +1,7 @@
 module sweeper_2D
 
+  use control, only : dp
+
   implicit none
 
   contains
@@ -22,13 +24,12 @@ module sweeper_2D
     use dgm, only : delta_m, psi_m, dgm_order
 
     ! Variable definitions
-    double precision, intent(inout), dimension(:,:,:) :: &
+    real(kind=dp), intent(inout), dimension(:,:,:) :: &
         phi           ! Scalar flux for current iteration and group g
-    double precision, dimension(0:number_moments, number_groups, number_cells) :: &
+    real(kind=dp), dimension(0:number_moments, number_groups, number_cells) :: &
         phi_update    ! Container to hold the updated scalar flux
     integer :: &
         o,          & ! Octant index
-        oo,         & ! Octant interation variable
         c,          & ! Cell index
         cx,         & ! x cell index
         cy,         & ! y cell index
@@ -48,9 +49,7 @@ module sweeper_2D
         cy_start,   & ! Lower cell number in y direction
         cy_stop,    & ! Upper cell number in y direction
         cy_step       ! Cell stepping direction in y direction
-    integer, dimension(4) :: &
-        octant_map    ! Order for octant interation
-    double precision, dimension(number_groups) :: &
+    real(kind=dp), dimension(number_groups) :: &
         psi_center, & ! Angular flux at cell center
         source        ! Fission, In-Scattering, External source in group g
 
@@ -58,29 +57,12 @@ module sweeper_2D
     sweep_count = sweep_count + 1
 
     ! Reset phi
-    phi_update = 0.0
-
-    ! Set octant ordering
-    if (boundary_east == 0) then
-      if (boundary_south == 0) then
-        octant_map = [3, 2, 4, 1]
-      else
-        octant_map = [4, 3, 1, 2]
-      end if
-    else
-      if (boundary_south == 0) then
-        octant_map = [2, 1, 3, 4]
-      else
-        octant_map = [1, 2, 4, 3]
-      end if
-    end if
-
+    phi_update = 0.0_8
 
     ! Update the forcing function
     call compute_source()
 
-    do oo = 1, 4  ! Sweep over octants
-      o = octant_map(oo)
+    do o = 1, 4  ! Sweep over octants
 
       ! Get sweep direction and set boundary condition for x cells
       if (o == 1 .or. o == 2) then
@@ -129,7 +111,7 @@ module sweeper_2D
             ll = 0
             do l = 0, scatter_leg_order
               do m = -l, l
-                source(:) = source(:) + sigphi(ll,:,c) * p_leg(ll,an) * (2 * l + 1)
+                source(:) = source(:) + sigphi(ll,:,c) * p_leg(ll,an) * (2.0_8 * l + 1.0_8)
                 ll = ll + 1
               end do  ! End m loop
             end do  ! End l loop
@@ -169,24 +151,24 @@ module sweeper_2D
     use control, only : equation_type
 
     ! Variable definitions
-    double precision, dimension(:), intent(inout) :: &
+    real(kind=dp), dimension(:), intent(inout) :: &
         inc_x,        & ! Angular flux incident on the cell from x direction
         inc_y           ! Angular flux incident on the cell from y direction
-    double precision, dimension(:), intent(in) :: &
+    real(kind=dp), dimension(:), intent(in) :: &
         S,            & ! Source within the cell
         sig             ! Total cross section within the cell
-    double precision, intent(in) :: &
+    real(kind=dp), intent(in) :: &
         dx,           & ! Width of the cell in x direction
         dy,           & ! Width of the cell in y direction
         eta,          & ! Angle for the cell
         mua             ! Angle for the cell
-    double precision, dimension(:), intent(inout) :: &
+    real(kind=dp), dimension(:), intent(inout) :: &
         cellPsi         ! Angular flux at cell center
-    double precision, allocatable, dimension(:) :: &
+    real(kind=dp), allocatable, dimension(:) :: &
         out_y,        & ! Outgoing flux in y direction
         out_x,        & ! Outgoing flux in x direction
         Q               ! Source used in step characteristics
-    double precision :: &
+    real(kind=dp) :: &
         coef_x,       & ! Parameter used in diamond and step differences
         coef_y,       & ! Parameter used in diamond and step differences
         rho,          & ! Ratio used in step characteristics
@@ -197,11 +179,11 @@ module sweeper_2D
 
     if (equation_type == 'DD') then
       ! Diamond Difference relationship
-      coef_x = 2.0 * mua / dx
-      coef_y = 2.0 * eta / dy
+      coef_x = 2.0_8 * mua / dx
+      coef_y = 2.0_8 * eta / dy
       cellPsi(:) = (S(:) + coef_x * inc_x(:) + coef_y * inc_y(:)) / (sig(:) + coef_x + coef_y)
-      inc_x(:) = 2 * cellPsi(:) - inc_x(:)
-      inc_y(:) = 2 * cellPsi(:) - inc_y(:)
+      inc_x(:) = 2_8 * cellPsi(:) - inc_x(:)
+      inc_y(:) = 2_8 * cellPsi(:) - inc_y(:)
     else if (equation_type == 'SC') then
       ! Step Characteristics relationship
       allocate(out_y(size(inc_y)), out_x(size(inc_x)), Q(size(S)))
@@ -211,14 +193,14 @@ module sweeper_2D
       rho = coef_x / coef_y
       if (rho <= 1) then
         expf = exp(-coef_x)
-        one_m_exp_x = (1.0 - expf) / coef_x
-        out_y(:) = Q(:) + (inc_y(:) - Q(:)) * (1.0 - rho) * expf + (inc_x(:) - Q(:)) * rho * one_m_exp_x
+        one_m_exp_x = (1.0_8 - expf) / coef_x
+        out_y(:) = Q(:) + (inc_y(:) - Q(:)) * (1.0_8 - rho) * expf + (inc_x(:) - Q(:)) * rho * one_m_exp_x
         out_x(:) = Q(:) + (inc_y(:) - Q(:)) * one_m_exp_x
       else
         expf = exp(-coef_y)
-        one_m_exp_y = (1 - expf) / coef_y
+        one_m_exp_y = (1.0_8 - expf) / coef_y
         out_y(:) = Q(:) + (inc_x(:) - Q(:)) * one_m_exp_y
-        out_x(:) = Q(:) + (inc_y(:) - Q(:)) * one_m_exp_y / rho + (inc_x(:) - Q(:)) * (1.0 - 1.0 / rho) * expf
+        out_x(:) = Q(:) + (inc_y(:) - Q(:)) * one_m_exp_y / rho + (inc_x(:) - Q(:)) * (1.0_8 - 1.0_8 / rho) * expf
       end if
 
       cellPsi(:) = Q(:) - (out_x(:) - inc_x(:)) / coef_y - (out_y(:) - inc_y(:)) / coef_x
@@ -229,7 +211,7 @@ module sweeper_2D
       ! Step Difference relationship
       coef_x = mua / dx
       coef_y = eta / dy
-      coef = 1 / (sig + coef_x + coef_y)
+      coef = 1.0_8 / (sig + coef_x + coef_y)
       cellPsi = coef * (S + coef_x * inc_y + coef_y * inc_x)
       inc_x = cellPsi
       inc_y = cellPsi
