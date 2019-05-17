@@ -104,8 +104,6 @@ module sources
       end if
     end do  ! End c loop
 
-
-
   end subroutine compute_source
 
 end module sources
