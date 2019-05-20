@@ -641,7 +641,7 @@ module angle
         generate_y_lm = -8.25*sqrt(7.0)*eta*mu*(eta - mu)*(eta + mu)*(xi**2 - 1.0/11)
       else if (m == -3) then
         ! R_6^-3 = -2.0625*sqrt(210)*eta*xi*(1.0/3*eta**2 - mu**2)*(xi**2 - 3/11)
-        generate_y_lm = -2.0625*sqrt(210.0)*eta*xi*(1.0/3*eta**2 - mu**2)*(xi**2 - 3/11)
+        generate_y_lm = -2.0625*sqrt(210.0)*eta*xi*(1.0/3*eta**2 - mu**2)*(xi**2 - 3.0/11)
       else if (m == -2) then
         ! R_6^-2 = sqrt(210)*eta*mu*(2.0625*xi**4 - 1.125*xi**2 + 0.0625)
         generate_y_lm = sqrt(210.0)*eta*mu*(2.0625*xi**4 - 1.125*xi**2 + 0.0625)
@@ -656,10 +656,10 @@ module angle
         generate_y_lm = sqrt(21.0)*mu*xi*(4.125*xi**4 - 3.75*xi**2 + 0.625)
       else if (m == 2) then
         ! R_6^2 = -1.03125*sqrt(210)*(eta - mu)*(eta + mu)*(xi**4 - 6/11*xi**2 + 1.0/33)
-        generate_y_lm = -1.03125*sqrt(210.0)*(eta - mu)*(eta + mu)*(xi**4 - 6/11*xi**2 + 1.0/33)
+        generate_y_lm = -1.03125*sqrt(210.0)*(eta - mu)*(eta + mu)*(xi**4 - 6.0/11*xi**2 + 1.0/33)
       else if (m == 3) then
         ! R_6^3 = -2.0625*sqrt(210)*mu*xi*(eta**2 - 1.0/3*mu**2)*(xi**2 - 3/11)
-        generate_y_lm = -2.0625*sqrt(210.0)*mu*xi*(eta**2 - 1.0/3*mu**2)*(xi**2 - 3/11)
+        generate_y_lm = -2.0625*sqrt(210.0)*mu*xi*(eta**2 - 1.0/3*mu**2)*(xi**2 - 3.0/11)
       else if (m == 4) then
         ! R_6^4 = -8.25*sqrt(7)*(xi**2 - 1.0/11)*(-0.5*eta**2 + eta*mu + 0.5*mu**2)*(0.5*eta**2 + eta*mu - 0.5*mu**2)
         generate_y_lm = -8.25*sqrt(7.0)*(xi**2 - 1.0/11)*(-0.5*eta**2 + eta*mu + 0.5*mu**2)*(0.5*eta**2 + eta*mu - 0.5*mu**2)
@@ -682,10 +682,10 @@ module angle
         generate_y_lm = 4.0625*sqrt(231.0)*eta*(xi**2 - 1.0/13)*(0.1*eta**4 - eta**2*mu**2 + 0.5*mu**4)
       else if (m == -4) then
         ! R_7^-4 = -3.25*sqrt(231)*eta*mu*xi*(eta - mu)*(eta + mu)*(xi**2 - 3/13)
-        generate_y_lm = -3.25*sqrt(231.0)*eta*mu*xi*(eta - mu)*(eta + mu)*(xi**2 - 3/13)
+        generate_y_lm = -3.25*sqrt(231.0)*eta*mu*xi*(eta - mu)*(eta + mu)*(xi**2 - 3.0/13)
       else if (m == -3) then
         ! R_7^-3 = -13.40625*sqrt(21)*eta*(1.0/3*eta**2 - mu**2)*(xi**4 - 6/13*xi**2 + 3/143)
-        generate_y_lm = -13.40625*sqrt(21.0)*eta*(1.0/3*eta**2 - mu**2)*(xi**4 - 6/13*xi**2 + 3/143)
+        generate_y_lm = -13.40625*sqrt(21.0)*eta*(1.0/3*eta**2 - mu**2)*(xi**4 - 6.0/13*xi**2 + 3.0/143)
       else if (m == -2) then
         ! R_7^-2 = sqrt(42)*eta*mu*xi*(8.9375*xi**4 - 6.875*xi**2 + 0.9375)
         generate_y_lm = sqrt(42.0)*eta*mu*xi*(8.9375*xi**4 - 6.875*xi**2 + 0.9375)
@@ -703,10 +703,10 @@ module angle
         generate_y_lm = -4.46875*sqrt(42.0)*xi*(eta - mu)*(eta + mu)*(xi**4 - 10.0/13.0*xi**2 + 15.0/143.0)
       else if (m == 3) then
         ! R_7^3 = -13.40625*sqrt(21)*mu*(eta**2 - 1.0/3*mu**2)*(xi**4 - 6/13*xi**2 + 3/143)
-        generate_y_lm = -13.40625*sqrt(21.0)*mu*(eta**2 - 1.0/3*mu**2)*(xi**4 - 6/13*xi**2 + 3/143)
+        generate_y_lm = -13.40625*sqrt(21.0)*mu*(eta**2 - 1.0/3*mu**2)*(xi**4 - 6.0/13*xi**2 + 3.0/143)
       else if (m == 4) then
         ! R_7^4 = -3.25*sqrt(231)*xi*(xi**2 - 3/13)*(-0.5*eta**2 + eta*mu + 0.5*mu**2)*(0.5*eta**2 + eta*mu - 0.5*mu**2)
-        generate_y_lm = -3.25*sqrt(231.0)*xi*(xi**2 - 3/13)*(-0.5*eta**2 + eta*mu + 0.5*mu**2)*(0.5*eta**2 + eta*mu - 0.5*mu**2)
+        generate_y_lm = -3.25*sqrt(231.0)*xi*(xi**2 - 3.0/13)*(-0.5*eta**2 + eta*mu + 0.5*mu**2)*(0.5*eta**2 + eta*mu - 0.5*mu**2)
       else if (m == 5) then
         ! R_7^5 = 4.0625*sqrt(231)*mu*(xi**2 - 1.0/13)*(0.5*eta**4 - eta**2*mu**2 + 0.1*mu**4)
         generate_y_lm = 4.0625*sqrt(231.0)*mu*(xi**2 - 1.0/13)*(0.5*eta**4 - eta**2*mu**2 + 0.1*mu**4)
