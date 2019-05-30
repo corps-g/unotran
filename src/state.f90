@@ -30,9 +30,13 @@ module state
       mg_constant_source,  & ! Constant multigroup source
       keff,                & ! k-eigenvalue
       norm_frac,           & ! Fraction of normalization for eigenvalue problems
-      sweep_count,         & ! Counter for the number of transport sweeps
       scaling,             & ! Scaling factor for source terms
       recon_convergence_rate ! Approximate rate of convergence for recon iters
+  integer :: &
+      sweep_count,         & ! Counter for the number of transport sweeps
+      recon_count,         & ! Number of recon iterations
+      eigen_count,         & ! Number of eigen iterations
+      outer_count            ! Number of outer iterations
   
   contains
   

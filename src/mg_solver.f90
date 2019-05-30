@@ -17,12 +17,10 @@ module mg_solver
                         outer_converged, eigen_converged
     use sweeper_1D, only : apply_transport_operator_1D
     use sweeper_2D, only : apply_transport_operator_2D
-    use state, only : mg_phi
+    use state, only : mg_phi, outer_count
     use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
-    integer :: &
-        outer_count    ! Counter for the outer loop
     real(kind=dp) :: &
         outer_error    ! Residual error between iterations
     real(kind=dp), dimension(number_groups, number_cells) :: &

@@ -55,8 +55,8 @@ module solver
 
     ! Use Statements
     use mg_solver, only : mg_solve
-    use state, only : mg_phi, mg_psi, keff, normalize_flux, &
-                      phi, psi, update_fission_density
+    use state, only : mg_phi, mg_psi, keff, normalize_flux, phi, psi, &
+                      outer_count, eigen_count, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, &
                         use_DGM, min_eigen_iters, store_psi, eigen_converged, &
@@ -69,8 +69,6 @@ module solver
         eigen_error,  & ! Error between successive iterations
         start,        & ! Start time of the sweep function
         ave_sweep_time  ! Average time in seconds per sweep
-    integer :: &
-        eigen_count     ! Iteration counter
     real(kind=dp), dimension(0:number_moments, number_groups, number_cells) :: &
         old_phi         ! Scalar flux from previous iteration
 
