@@ -31,6 +31,7 @@ module sweeper_1D
     integer :: &
         g,          & ! Group index
         o,          & ! Octant index
+        oo,         & ! Octant order index
         c,          & ! Cell index
         mat,        & ! Material index
         a,          & ! Angle index
@@ -46,6 +47,8 @@ module sweeper_1D
     real(kind=dp), dimension(number_groups) :: &
         psi_center, & ! Angular flux at cell center
         source        ! Fission, In-Scattering, External source in group g
+    integer, dimension(2) :: &
+        octant_map    ! Map of the octant order
     logical :: &
         octant        ! Positive/Negative octant flag
 
@@ -58,7 +61,15 @@ module sweeper_1D
     ! Update the forcing function
     call compute_source()
 
-    do o = 1, 2  ! Sweep over octants
+    ! Change octant order if right boundary is vacuum
+    if (boundary_east == 0.0 .and. boundary_west /= 0.0) then
+      octant_map = [2, 1]
+    else
+      octant_map = [1, 2]
+    end if
+
+    do oo = 1, 2  ! Sweep over octants
+      o = octant_map(oo)
       ! Sweep in the correct direction within the octant
       octant = o == 1
       amin = merge(1, number_angles_per_octant, octant)
