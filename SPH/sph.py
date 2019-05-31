@@ -87,13 +87,15 @@ class DGMSOLVER():
         Set the options for the Unotran solve
         '''
 
-        pydgm.control.fine_mesh = self.fm
-        pydgm.control.coarse_mesh = self.cm
+        pydgm.control.spatial_dimension = 1
+        pydgm.control.fine_mesh_x = self.fm
+        pydgm.control.coarse_mesh_x = self.cm
         pydgm.control.material_map = self.mm
         pydgm.control.xs_name = self.fname.ljust(256)
         pydgm.control.angle_order = 1
         pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_type = [1.0, 1.0]
+        pydgm.control.boundary_west = 1.0
+        pydgm.control.boundary_east = 1.0
         pydgm.control.allow_fission = False
         pydgm.control.eigen_print = 0
         pydgm.control.outer_print = 0
@@ -107,7 +109,7 @@ class DGMSOLVER():
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
         pydgm.control.equation_type = 'DD'
-        pydgm.control.scatter_legendre_order = 0
+        pydgm.control.scatter_leg_order = 0
         pydgm.control.ignore_warnings = True
 
     def solve(self):

@@ -157,4 +157,4 @@ if __name__ == '__main__':
     print('Error in reaction rates')
     print((rxn_homo - rxn_ref) / rxn_ref * 100)
 
-    # plot(ref, homo)
+    plot(ref, homo)
