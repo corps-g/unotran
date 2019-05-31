@@ -70,9 +70,9 @@ module sweeper_1D
 
       ! set boundary conditions
       if (o == 1) then
-        mg_incident_x = boundary_east * mg_incident_x  ! Set albedo conditions
-      else
         mg_incident_x = boundary_west * mg_incident_x  ! Set albedo conditions
+      else
+        mg_incident_x = boundary_east * mg_incident_x  ! Set albedo conditions
       end if
 
       do c = cmin, cmax, cstep  ! Sweep over cells

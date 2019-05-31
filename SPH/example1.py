@@ -132,12 +132,23 @@ if __name__ == '__main__':
     G = 1
 
     # Get the reference solution
-    pin_map = [1, 1, 3, 1, 1, 3, 1, 1, 0, 0, 3, 0, 0, 3, 0, 0]
+    yamamoto = 2
+    if yamamoto == 0:
+        CS1 = [1, 1, 2, 1, 1, 2, 1, 1]
+        CS2 = [0, 0, 3, 0, 0, 3, 0, 0]
+    elif yamamoto == 1:
+        CS1 = [1, 1, 3, 1, 1, 3, 1, 1]
+        CS2 = [0, 0, 3, 0, 0, 3, 0, 0]
+    elif yamamoto == 2:
+        CS1 = [1, 1, 1, 1, 1, 1, 1, 1]
+        CS2 = [0, 0, 0, 0, 0, 0, 0, 0]
+
+    pin_map = CS1 + CS2
     ref = makeColorset(1, pin_map, xs_name, False)
 
     # Get the homogenized cross sections
-    uo2low = runSPH(G, [1, 1, 3, 1, 1, 3, 1, 1], xs_name)
-    uo2high = runSPH(G, [0, 0, 3, 0, 0, 3, 0, 0], xs_name)
+    uo2low = runSPH(G, CS1, xs_name)
+    uo2high = runSPH(G, CS2, xs_name)
     uo2XS = uo2low + uo2high
 
     # Write the SPH cross sections

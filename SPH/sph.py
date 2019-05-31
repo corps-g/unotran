@@ -4,8 +4,10 @@ import numpy as np
 
 class XS():
 
+    # Hold the cross section values with routines for outputting to txt file
     def __init__(self, sig_t, sig_f, chi, sig_s, mu=None):
         self.sig_t = sig_t
+        self.D = 1.0 / (3 * self.sig_t)
         self.sig_f = sig_f
         self.chi = chi
         self.sig_s = sig_s
@@ -53,7 +55,7 @@ class XS():
 
 class DGMSOLVER():
 
-    # Solve the problem specified for the options
+    # Solve the problem using unotran
     def __init__(self, G, fname, fm, cm, mm, nPin, norm=None):
         '''
         Inputs:
@@ -64,7 +66,6 @@ class DGMSOLVER():
             mm    - Material map 
             nPin  - Number of pincells 
         '''
-
         self.G = G
         self.fname = fname
         self.fm = fm
@@ -103,8 +104,8 @@ class DGMSOLVER():
         pydgm.control.eigen_tolerance = 1e-16
         pydgm.control.outer_tolerance = 1e-16
         pydgm.control.inner_tolerance = 1e-16
-        pydgm.control.max_eigen_iters = 1000
-        pydgm.control.max_outer_iters = 1000
+        pydgm.control.max_eigen_iters = 10000
+        pydgm.control.max_outer_iters = 1
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
