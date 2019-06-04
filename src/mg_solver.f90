@@ -14,11 +14,12 @@ module mg_solver
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
                         min_outer_iters, number_cells, number_groups, spatial_dimension, &
-                        outer_converged, eigen_converged
+                        outer_converged, eigen_converged, max_eigen_iters
     use sweeper_1D, only : apply_transport_operator_1D
     use sweeper_2D, only : apply_transport_operator_2D
     use state, only : mg_phi, outer_count
     use omp_lib, only : omp_get_wtime
+    use dgm, only : dgm_order
 
     ! Variable definitions
     real(kind=dp) :: &
@@ -28,14 +29,22 @@ module mg_solver
     real(kind=dp) :: &
         start,       & ! Start time of the sweep function
         ave_sweep_time ! Average time in seconds per sweep
+    integer :: &
+        outer_iters    ! Number of outer iterations to do
 
     ave_sweep_time = 0.0_8
 
     ! Initialize the outer convergence flag to False
     outer_converged = .false.
 
+    if (dgm_order > 0) then
+      outer_iters = max(max_eigen_iters, max_outer_iters)
+    else
+      outer_iters = max_outer_iters * merge(100, 1, eigen_converged)
+    end if
+
     ! Begin loop to converge on the in-scattering source
-    do outer_count = 1, max_outer_iters * merge(100, 1, eigen_converged)
+    do outer_count = 1, outer_iters
 
       start = omp_get_wtime()
 

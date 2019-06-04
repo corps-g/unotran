@@ -96,6 +96,9 @@ module solver
 
         ! Compute new eigenvalue if eigen problem
         keff = keff * sum(abs(mg_phi(0,:,:))) / sum(abs(old_phi(0,:,:)))
+        if (keff > 1e5) then
+          keff = 1.0
+        end if
 
         ! Normalize the fluxes
         call normalize_flux(mg_phi, mg_psi)

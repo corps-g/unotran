@@ -58,7 +58,7 @@ class TestDGMSOLVER(unittest.TestCase):
             pydgm.control.allow_fission = True
             pydgm.control.max_recon_iters = 10000
             pydgm.control.max_eigen_iters = 10000
-            pydgm.control.max_outer_iters = 1000
+            pydgm.control.max_outer_iters = 1
 
     def setMesh(self, mesh):
         if mesh.isdigit():
@@ -634,7 +634,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.material_map = [5, 1, 5]
         pydgm.control.angle_order = 10
         pydgm.control.allow_fission = True
-        pydgm.control.lamb = 0.55
+        pydgm.control.lamb = 0.6
         pydgm.control.source_value = 1.0
 
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -693,7 +693,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('1')
         self.setBoundary('vacuum')
         pydgm.control.material_map = [1]
-        pydgm.control.lamb = 0.76
+        pydgm.control.lamb = 0.9
         pydgm.control.allow_fission = True
         phi_test = np.array([1.0781901438738859, 1.5439788126739036, 1.0686290157458673, 1.0348940034466163, 1.0409956199943164, 1.670442207080332, 0.2204360523334687])
 
@@ -726,7 +726,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setBoundary('reflect')
         pydgm.control.material_map = [1]
         pydgm.control.equation_type = 'DD'
-        pydgm.control.lamb = 0.4
+        pydgm.control.lamb = 0.45
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -816,7 +816,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('10')
         self.setBoundary('vacuum')
         pydgm.control.material_map = [1]
-        pydgm.control.lamb = 0.4
+        pydgm.control.lamb = 0.45
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -848,7 +848,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setSolver('eigen')
         self.setMesh('10')
         self.setBoundary('reflect')
-        pydgm.control.lamb = 0.7
+        pydgm.control.lamb = 0.74
         pydgm.control.material_map = [1]
 
         # Initialize the dependancies
@@ -889,6 +889,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setSolver('eigen')
         self.setMesh('10')
         self.setBoundary('reflect')
+        pydgm.control.lamb = 0.95
         pydgm.control.material_map = [1]
 
         # Initialize the dependancies
@@ -1008,6 +1009,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('coarse_pin')
         self.setBoundary('reflect')
         pydgm.control.material_map = [2, 1, 2]
+        pydgm.control.lamb = 1.4
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -1041,7 +1043,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('coarse_pin')
         self.setBoundary('reflect')
         pydgm.control.material_map = [5, 1, 5]
-        pydgm.control.lamb = 0.43
+        pydgm.control.lamb = 0.42
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -1234,9 +1236,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.dgm_basis_name = 'test/2gbasis'.ljust(256)
         pydgm.control.energy_group_map = [1, 1]
         pydgm.control.angle_order = 8
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
         self.setBoundary('reflect')
         pydgm.control.scatter_leg_order = 0
 
@@ -1281,9 +1281,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.dgm_basis_name = 'test/2gbasis'.ljust(256)
         pydgm.control.energy_group_map = [1, 1]
         pydgm.control.angle_order = 8
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
         self.setBoundary('reflect')
         pydgm.control.scatter_leg_order = 3
         pydgm.control.lamb = 0.95
@@ -1329,9 +1327,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.dgm_basis_name = 'test/2gbasis'.ljust(256)
         pydgm.control.energy_group_map = [1, 1]
         pydgm.control.angle_order = 8
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
         self.setBoundary('reflect')
         pydgm.control.scatter_leg_order = 7
         pydgm.control.lamb = 1.0
@@ -1378,9 +1374,7 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.dgm_basis_name = 'test/2gbasis'.ljust(256)
         pydgm.control.energy_group_map = [1, 1]
         pydgm.control.angle_order = 8
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
         self.setBoundary('reflect')
         pydgm.control.scatter_leg_order = 7
         pydgm.control.lamb = 1.0
@@ -1480,7 +1474,7 @@ class TestDGMSOLVER_2D(unittest.TestCase):
             pydgm.control.allow_fission = True
             pydgm.control.max_recon_iters = 10000
             pydgm.control.max_eigen_iters = 10000
-            pydgm.control.max_outer_iters = 1000
+            pydgm.control.max_outer_iters = 10
 
     def tearDown(self):
         pydgm.solver.finalize_solver()
