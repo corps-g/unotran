@@ -14,7 +14,7 @@ module mg_solver
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
                         min_outer_iters, number_cells, number_groups, spatial_dimension, &
-                        outer_converged, eigen_converged, max_eigen_iters
+                        outer_converged, eigen_converged, max_eigen_iters, number_moments
     use sweeper_1D, only : apply_transport_operator_1D
     use sweeper_2D, only : apply_transport_operator_2D
     use state, only : mg_phi, outer_count
@@ -24,7 +24,7 @@ module mg_solver
     ! Variable definitions
     real(kind=dp) :: &
         outer_error    ! Residual error between iterations
-    real(kind=dp), dimension(number_groups, number_cells) :: &
+    real(kind=dp), dimension(0:number_moments, number_groups, number_cells) :: &
         old_phi
     real(kind=dp) :: &
         start,       & ! Start time of the sweep function
@@ -49,7 +49,7 @@ module mg_solver
       start = omp_get_wtime()
 
       ! Save the old flux
-      old_phi = mg_phi(0,:,:)
+      old_phi = mg_phi
 
       ! Update the scalar flux
       if (spatial_dimension == 1) then
@@ -62,7 +62,7 @@ module mg_solver
       end if
 
       ! Update the error
-      outer_error = maxval(abs(mg_phi(0,:,:) - old_phi(:,:)))
+      outer_error = maxval(abs(mg_phi - old_phi))
 
       ! Check for NaN during convergence
       if (outer_error /= outer_error) then
