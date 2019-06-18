@@ -3,20 +3,22 @@ module material
   ! Initialize the material properties
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
 
   integer :: &
       number_materials, & ! Number of materials in the cross section library
       debugFlag           ! Unused flag in the cross section library
-  double precision, allocatable, dimension(:) :: &
+  real(kind=dp), allocatable, dimension(:) :: &
       ebounds,          & ! Bounds for the energy groups
       velocity            ! Velocity within each energy group
-  double precision, allocatable, dimension(:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:) :: &
       sig_t,            & ! Total cross section
       sig_f,            & ! Fission cross section
       nu_sig_f,         & ! Fission cross section times nu
       chi                 ! Chi spectrum
-  double precision, allocatable, dimension(:,:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:,:) :: &
       sig_s               ! Scattering cross section
 
   contains
@@ -29,7 +31,7 @@ module material
     ! Use Statements
     use control, only : allow_fission, number_fine_groups, &
                         number_legendre, xs_name, number_coarse_groups, &
-                        scatter_legendre_order
+                        scatter_leg_order
     ! Variable definitions
     character(256) :: &
         materialName     ! Name of each material
@@ -39,7 +41,7 @@ module material
         L,             & ! Legendre moment index
         number_groups, & ! Number of groups in the cross section library
         dataPresent      ! Flag deciding which cross sections are present
-    double precision :: &
+    real(kind=dp) :: &
         t,             & ! Total cross section value
         f,             & ! fission cross section value
         vf,            & ! nu times fission cross section value
@@ -47,7 +49,7 @@ module material
         energyFission, & ! Energy per fission event (unused)
         energyCapture, & ! Energy per capture event (unused)
         gramAtomWeight   ! Atomic weight
-    double precision, allocatable, dimension(:) :: &
+    real(kind=dp), allocatable, dimension(:) :: &
         array1           ! Temp array for storing scattering XS values
     
     ! Read the file parameters
@@ -63,13 +65,13 @@ module material
     read(1,*) number_legendre, dataPresent, energyFission, energyCapture, gramAtomWeight
     ! Count the highest order + zeroth order
     number_legendre = number_legendre - 1
-    if (scatter_legendre_order > number_legendre) then
+    if (scatter_leg_order > number_legendre) then
       print *, 'Requesting higher scattering order than the cross sections provided'
       print *, 'Reducing the scattering order to ', number_legendre
-      scatter_legendre_order = number_legendre
-    else if (scatter_legendre_order == -1) then
+      scatter_leg_order = number_legendre
+    else if (scatter_leg_order == -1) then
       print *, 'No scattering order defined.  Defaulting to order ', number_legendre
-      scatter_legendre_order = number_legendre
+      scatter_leg_order = number_legendre
     end if
 
     ! Make space for cross sections
@@ -104,15 +106,15 @@ module material
           nu_sig_f(g, mat) = 0.0
           chi(g, mat) = 0.0
         end if
-      end do
+      end do  ! End g loop
       ! Read scattering cross section
       do l = 0, number_legendre
         do g = 1, number_groups
           read(1,*) array1
           sig_s(l, g, :, mat) = array1(:)
-        end do
-      end do
-    end do
+        end do  ! End g loop
+      end do  ! End l loop
+    end do  ! End mat loop
 
     ! Close the file and clean up
     close(unit=1)

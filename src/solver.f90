@@ -3,6 +3,8 @@ module solver
   ! Solve the transport equation using discrete ordinates
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
   
   contains
@@ -15,15 +17,14 @@ module solver
 
     ! Use Statements
     use state, only : initialize_state, mg_nu_sig_f, mg_chi, mg_sig_s, mg_sig_t, &
-                      mg_phi, phi, mg_psi, psi, mg_incident, mg_mMap, &
+                      mg_phi, phi, mg_psi, psi, mg_mMap, &
                       update_fission_density
     use material, only : nu_sig_f, chi, sig_s, sig_t
     use mesh, only : mMap
-    use control, only : store_psi, number_angles, number_regions,scatter_legendre_order
+    use control, only : store_psi, number_regions,scatter_leg_order
 
     ! Variable definitions
     integer :: &
-        a,  & ! Angle index
         r     ! Region index
 
     ! allocate the solutions variables
@@ -34,19 +35,12 @@ module solver
     do r = 1, number_regions
       mg_nu_sig_f(:,r) = nu_sig_f(:,r)
       mg_chi(:,r) = chi(:,r)
-      mg_sig_s(:,:,:,r) = sig_s(:scatter_legendre_order,:,:,r)
+      mg_sig_s(:,:,:,r) = sig_s(:scatter_leg_order,:,:,r)
       mg_sig_t(:,r) = sig_t(:,r)
-    end do
+    end do  ! End r loop
     mg_phi(:, :, :) = phi(:, :, :)
     if (store_psi) then
       mg_psi(:, :, :) = psi(:, :, :)
-      ! Default the incoming flux to be equal to the outgoing if present
-      mg_incident = psi(:, (number_angles + 1):, 1)
-    else
-      ! Assume isotropic scalar flux for incident flux
-      do a = 1, number_angles
-        mg_incident(:, a) = phi(0, :, 1) / 2
-      end do
     end if
 
     ! Update the fission density
@@ -61,25 +55,27 @@ module solver
 
     ! Use Statements
     use mg_solver, only : mg_solve
-    use state, only : mg_phi, mg_psi, keff, normalize_flux, &
-                      phi, psi, update_fission_density
+    use state, only : mg_phi, mg_psi, keff, normalize_flux, phi, psi, &
+                      outer_count, eigen_count, update_fission_density
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
-                        eigen_tolerance, number_cells, number_groups, number_legendre, &
-                        use_DGM, min_eigen_iters, store_psi
+                        eigen_tolerance, number_cells, number_groups, &
+                        use_DGM, min_eigen_iters, store_psi, eigen_converged, &
+                        outer_converged, number_moments
     use dgm, only : dgm_order
     use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
-    double precision :: &
+    real(kind=dp) :: &
         eigen_error,  & ! Error between successive iterations
         start,        & ! Start time of the sweep function
         ave_sweep_time  ! Average time in seconds per sweep
-    integer :: &
-        eigen_count     ! Iteration counter
-    double precision, dimension(0:number_legendre, number_groups, number_cells) :: &
+    real(kind=dp), dimension(0:number_moments, number_groups, number_cells) :: &
         old_phi         ! Scalar flux from previous iteration
 
-    ave_sweep_time = 0.0
+    ave_sweep_time = 0.0_8
+
+    ! Initialize the eigen convergence flag to False
+    eigen_converged = .false.
 
     ! Run eigen loop only if eigen problem
     if (solver_type == 'fixed' .or. dgm_order > 0) then
@@ -111,8 +107,9 @@ module solver
 
         ! Print output
         if (eigen_print > 0) then
-          write(*, 1001) eigen_count, eigen_error, keff, ave_sweep_time
-          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f14.10, " ave sweep time: ", f5.2, " s")
+          write(*, 1001) eigen_count, eigen_error, keff, ave_sweep_time, outer_converged
+          1001 format ( "  eigen: ", i4, " Error: ", es12.5E2, " Eigenvalue: ", f14.10, " AveSweepTime: ", f5.2, " s", &
+                        " OuterConverged: ", L1)
           if (eigen_print > 1) then
             print *, mg_phi
           end if
@@ -120,10 +117,18 @@ module solver
 
         ! Check if tolerance is reached
         if (eigen_error < eigen_tolerance .and. eigen_count >= min_eigen_iters) then
-          exit
+          ! Set the eigen convergence flag to True
+          eigen_converged = .true.
+          ! If the inner iterations are converged, exit
+          if (outer_converged) then
+            exit
+          end if
+        else
+          ! Set the eigen convergence flag to False
+          eigen_converged = .false.
         end if
 
-      end do
+      end do  ! End eigen_count loop
 
       if (eigen_count == max_eigen_iters) then
         if (.not. ignore_warnings) then

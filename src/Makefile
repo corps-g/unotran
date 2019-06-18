@@ -24,7 +24,8 @@ mg_solver.o      \
 solver.o         \
 sources.o        \
 state.o          \
-sweeper.o        
+sweeper_1D.o     \
+sweeper_2D.o       
 
  
 #===============================================================================
@@ -54,13 +55,15 @@ test_sources: pydgm
 	python test/test_sources.py
 test_state: pydgm
 	python test/test_state.py
-test_sweeper: pydgm
-	python test/test_sweeper.py
+test_sweeper_1D: pydgm
+	python test/test_sweeper_1D.py
+test_sweeper_2D: pydgm
+	python test/test_sweeper_2D.py
 test: pydgm
 	python test/test_all.py
 
 # f2py module
-pydgm: control.f90 angle.f90 material.f90 mesh.f90 dgm.f90 state.f90 sources.f90 sweeper.f90 mg_solver.f90 solver.f90 dgmsolver.f90 
+pydgm: control.f90 angle.f90 material.f90 mesh.f90 dgm.f90 state.f90 sources.f90 sweeper_1D.f90 sweeper_2D.f90 mg_solver.f90 solver.f90 dgmsolver.f90 
 	@rm -f pydgm*so
 	f2py --f90flags="$(F90FLAGS)" -c -lgomp -m $@ $^
 
@@ -111,14 +114,16 @@ mg_solver.o: material.o
 mg_solver.o: mesh.o
 mg_solver.o: sources.o
 mg_solver.o: state.o
-mg_solver.o: sweeper.o
+mg_solver.o: sweeper_1D.o
+mg_solver.o: sweeper_2D.o
 solver.o: angle.o
 solver.o: control.o
 solver.o: material.o
 solver.o: mesh.o
 solver.o: mg_solver.o
 solver.o: state.o
-solver.o: sweeper.o
+solver.o: sweeper_1D.o
+solver.o: sweeper_2D.o
 sources.o: angle.o
 sources.o: control.o
 sources.o: dgm.o
@@ -128,8 +133,13 @@ state.o: control.o
 state.o: dgm.o
 state.o: material.o
 state.o: mesh.o
-sweeper.o: angle.o
-sweeper.o: control.o
-sweeper.o: material.o
-sweeper.o: mesh.o
-sweeper.o: state.o
+sweeper_1D.o: angle.o
+sweeper_1D.o: control.o
+sweeper_1D.o: material.o
+sweeper_1D.o: mesh.o
+sweeper_1D.o: state.o
+sweeper_2D.o: angle.o
+sweeper_2D.o: control.o
+sweeper_2D.o: material.o
+sweeper_2D.o: mesh.o
+sweeper_2D.o: state.o

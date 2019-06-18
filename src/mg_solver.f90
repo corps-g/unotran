@@ -1,5 +1,7 @@
 module mg_solver
 
+  use control, only : dp
+
   implicit none
   
   contains
@@ -11,26 +13,29 @@ module mg_solver
 
     ! Use Statements
     use control, only : ignore_warnings, max_outer_iters, outer_print, outer_tolerance, &
-                        min_outer_iters, number_cells, number_groups
-    use sweeper, only : apply_transport_operator
-    use state, only : mg_phi
+                        min_outer_iters, number_cells, number_groups, spatial_dimension, &
+                        outer_converged, eigen_converged
+    use sweeper_1D, only : apply_transport_operator_1D
+    use sweeper_2D, only : apply_transport_operator_2D
+    use state, only : mg_phi, outer_count
     use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
-    integer :: &
-        outer_count    ! Counter for the outer loop
-    double precision :: &
+    real(kind=dp) :: &
         outer_error    ! Residual error between iterations
-    double precision, dimension(number_groups, number_cells) :: &
+    real(kind=dp), dimension(number_groups, number_cells) :: &
         old_phi
-    double precision :: &
+    real(kind=dp) :: &
         start,       & ! Start time of the sweep function
         ave_sweep_time ! Average time in seconds per sweep
 
-    ave_sweep_time = 0.0
+    ave_sweep_time = 0.0_8
+
+    ! Initialize the outer convergence flag to False
+    outer_converged = .false.
 
     ! Begin loop to converge on the in-scattering source
-    do outer_count = 1, max_outer_iters
+    do outer_count = 1, max_outer_iters * merge(100, 1, eigen_converged)
 
       start = omp_get_wtime()
 
@@ -38,7 +43,14 @@ module mg_solver
       old_phi = mg_phi(0,:,:)
 
       ! Update the scalar flux
-      call apply_transport_operator(mg_phi)
+      if (spatial_dimension == 1) then
+        call apply_transport_operator_1D(mg_phi)
+      else if (spatial_dimension == 2) then
+        call apply_transport_operator_2D(mg_phi)
+      else
+        print *, "Dimension ", spatial_dimension, " has not been implemented"
+        stop
+      end if
 
       ! Update the error
       outer_error = maxval(abs(mg_phi(0,:,:) - old_phi(:,:)))
@@ -62,11 +74,12 @@ module mg_solver
 
       ! Check if tolerance is reached
       if ((outer_error < outer_tolerance .and. outer_count >= min_outer_iters)) then
+        ! Set the converged flag to True
+        outer_converged = .true.
         exit
       end if
       
-      
-    end do
+    end do  ! End outer_count loop
 
     if (outer_count == max_outer_iters) then
       if (.not. ignore_warnings) then
