@@ -17,7 +17,7 @@ module mg_solver
                         outer_converged, eigen_converged, max_eigen_iters, number_moments
     use sweeper_1D, only : apply_transport_operator_1D
     use sweeper_2D, only : apply_transport_operator_2D
-    use state, only : mg_phi, outer_count
+    use state, only : mg_phi, outer_count, exit_status
     use omp_lib, only : omp_get_wtime
     use dgm, only : dgm_order
 
@@ -67,7 +67,8 @@ module mg_solver
       ! Check for NaN during convergence
       if (outer_error /= outer_error) then
         print *, "NaN detected...exiting"
-        stop
+        exit_status = 1
+        return
       end if
 
       ave_sweep_time = ((outer_count - 1) * ave_sweep_time + (omp_get_wtime() - start)) / outer_count

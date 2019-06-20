@@ -40,7 +40,7 @@ module dgmsolver
                         number_moments, number_angles_per_octant, min_recon_iters, number_coarse_groups
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments, recon_convergence_rate, &
-                      mg_incident_x, mg_incident_y, eigen_count, recon_count
+                      mg_incident_x, mg_incident_y, eigen_count, recon_count, exit_status
     use dgm, only : expansion_order, phi_m, psi_m, dgm_order
     use solver, only : solve
     use omp_lib, only : omp_get_wtime
@@ -101,6 +101,10 @@ module dgmsolver
         call slice_xs_moments(order=dgm_order)
 
         call solve()
+        
+        if (exit_status == 1) then
+            return
+        end if
 
         ! Save the new flux moments
         phi_m(dgm_order,:,:,:) = mg_phi

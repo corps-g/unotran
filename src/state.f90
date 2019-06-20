@@ -33,6 +33,7 @@ module state
       scaling,             & ! Scaling factor for source terms
       recon_convergence_rate ! Approximate rate of convergence for recon iters
   integer :: &
+      exit_status,         & ! Allows setting exit signals
       sweep_count,         & ! Counter for the number of transport sweeps
       recon_count,         & ! Number of recon iterations
       eigen_count,         & ! Number of eigen iterations
