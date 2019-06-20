@@ -3,22 +3,24 @@ module dgm
   ! Compute the DGM Moments for fluxes and cross sections
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
 
-  double precision, allocatable, dimension(:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:) :: &
       basis,                & ! Basis for expansion in energy
       source_m                ! Source moments
-  double precision, allocatable, dimension(:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:) :: &
       chi_m,                & ! Chi spectrum moments
       expanded_nu_sig_f       ! Expanded fission cross sections
-  double precision, allocatable, dimension(:,:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:,:) :: &
       delta_m,              & ! Angular total XS moments
       phi_m,                & ! Scalar flux moments
       psi_m,                & ! Angular flux moments
       expanded_sig_t          ! Expanded total cross sections
-  double precision, allocatable, dimension(:,:,:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:,:,:) :: &
       sig_s_m                 ! Scattering XS moments
-  double precision, allocatable, dimension(:,:,:,:,:,:) :: &
+  real(kind=dp), allocatable, dimension(:,:,:,:,:,:) :: &
       expanded_sig_s          ! Expanded scattering cross sections
   integer :: &
       expansion_order,      & ! Maximum expansion order
@@ -35,9 +37,8 @@ module dgm
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : energy_group_map, truncation_map, number_angles, &
-                        number_groups, number_coarse_groups, number_cells, &
-                        number_legendre, number_fine_groups
+    use control, only : energy_group_map, truncation_map, number_groups, number_coarse_groups, &
+                        number_cells, number_angles, number_moments, number_fine_groups
 
     ! Variable definitions
     integer :: &
@@ -61,13 +62,13 @@ module dgm
     ! Compute the order within each coarse group
     do g = 1, number_fine_groups
       order(energy_group_map(g)) = order(energy_group_map(g)) + 1
-    end do
+    end do  ! End g loop
 
     ! The basis map is the index to start reading the basis from the file
     basisMap(1) = 1
     do cg = 2, number_coarse_groups
       basisMap(cg) = sum(order(1:(cg-1))) + 1
-    end do
+    end do  ! End cg loop
 
     ! Order begins at zero, so need to subtract one
     order(:) = order(:) - 1
@@ -88,14 +89,14 @@ module dgm
         if ((truncation_map(cg) < order(cg)) .and. (truncation_map(cg) >= 0)) then
           order(cg) = truncation_map(cg)
         end if
-      end do
+      end do  ! End cg loop
     end if
 
     expansion_order = MAXVAL(order)
 
     ! Form the containers to hold the zeroth moments
-    allocate(phi_m(0:expansion_order, 0:number_legendre, number_coarse_groups, number_cells))
-    allocate(psi_m(0:expansion_order, number_coarse_groups, 2 * number_angles, number_cells))
+    allocate(phi_m(0:expansion_order, 0:number_moments, number_coarse_groups, number_cells))
+    allocate(psi_m(0:expansion_order, number_coarse_groups, number_angles, number_cells))
 
   end subroutine initialize_moments
 
@@ -108,7 +109,7 @@ module dgm
     use control, only : dgm_basis_name, number_fine_groups, energy_group_map
 
     ! Variable definitions
-    double precision, dimension(number_fine_groups) :: &
+    real(kind=dp), dimension(number_fine_groups) :: &
         array1 ! Temporary array
     integer :: &
         g,   & ! Fine group index
@@ -120,13 +121,13 @@ module dgm
     allocate(basis(number_fine_groups, 0:expansion_order))
 
     ! initialize the basis to zero
-    basis = 0.0
+    basis = 0.0_8
 
     ! open the file and read into the basis container
     open(unit=5, file=dgm_basis_name)
     do g = 1, number_fine_groups
       cg = energy_group_map(g)
-      array1(:) = 0.0
+      array1(:) = 0.0_8
       read(5,*) array1
       i = 0
       do gp = 1, number_fine_groups
@@ -137,8 +138,8 @@ module dgm
         if (order(cg) < i) then
           exit
         end if
-      end do
-    end do
+      end do  ! End gp loop
+    end do  ! End g loop
 
     ! clean up
     close(unit=5)
@@ -151,7 +152,7 @@ module dgm
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_coarse_groups, scatter_legendre_order, number_fine_groups, &
+    use control, only : number_coarse_groups, scatter_leg_order, number_fine_groups, &
                         energy_group_map
     use material, only : number_materials, sig_t, nu_sig_f, sig_s
 
@@ -167,12 +168,12 @@ module dgm
 
     allocate(expanded_sig_t(0:expansion_order, number_coarse_groups, number_materials, 0:expansion_order))
     allocate(expanded_nu_sig_f(0:expansion_order, number_coarse_groups, number_materials))
-    allocate(expanded_sig_s(0:expansion_order, 0:scatter_legendre_order, number_coarse_groups, &
+    allocate(expanded_sig_s(0:expansion_order, 0:scatter_leg_order, number_coarse_groups, &
                             number_coarse_groups, number_materials, 0:expansion_order))
 
-    expanded_sig_t = 0.0
-    expanded_nu_sig_f = 0.0
-    expanded_sig_s = 0.0
+    expanded_sig_t = 0.0_8
+    expanded_nu_sig_f = 0.0_8
+    expanded_sig_s = 0.0_8
 
     ! Fill the expanded total cross section
     do i = 0, expansion_order
@@ -181,9 +182,9 @@ module dgm
           cg = energy_group_map(g)
           expanded_sig_t(:, cg, m, i) = expanded_sig_t(:, cg, m, i) &
                                       + basis(g, i) * sig_t(g, m) * basis(g, :)
-        end do
-      end do
-    end do
+        end do  ! End g loop
+      end do  ! End m loop
+    end do  ! End i loop
 
     ! Fill the expanded fission cross section
     do m = 1, number_materials
@@ -191,8 +192,8 @@ module dgm
         cg = energy_group_map(g)
         expanded_nu_sig_f(:, cg, m) = expanded_nu_sig_f(:, cg, m) &
                                     + nu_sig_f(g, m) * basis(g, :)
-      end do
-    end do
+      end do  ! End g loop
+    end do  ! End m loop
 
     ! Fill the expanded scatter cross section
     do i = 0, expansion_order
@@ -201,14 +202,14 @@ module dgm
           cg = energy_group_map(g)
           do gp = 1, number_fine_groups
             cgp = energy_group_map(gp)
-            do l = 0, scatter_legendre_order
+            do l = 0, scatter_leg_order
               expanded_sig_s(:, l, cgp, cg, m, i) = expanded_sig_s(:, l, cgp, cg, m, i) &
                                                   + basis(g, i) * sig_s(l, gp, g, m) * basis(gp, :)
-            end do
-          end do
-        end do
-      end do
-    end do
+            end do  ! End l loop
+          end do  ! End gp loop
+        end do  ! End g loop
+      end do  ! End m loop
+    end do  ! End i loop
 
   end subroutine compute_expanded_cross_sections
 

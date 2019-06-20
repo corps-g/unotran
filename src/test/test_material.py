@@ -24,7 +24,7 @@ class TestMATERIAL(unittest.TestCase):
         pydgm.control.store_psi = False
         pydgm.control.solver_type = 'fixed'.ljust(256)
         pydgm.control.source_value = 1.0
-        pydgm.control.scatter_legendre_order = 7
+        pydgm.control.scatter_leg_order = 7
         pydgm.control.use_DGM = False
 
         # Initialize the dependancies

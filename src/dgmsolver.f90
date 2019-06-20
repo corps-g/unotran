@@ -3,6 +3,8 @@ module dgmsolver
   ! Solve discrete ordinates using the Discrete Generalized Multigroup Method
   ! ############################################################################
 
+  use control, only : dp
+
   implicit none
 
   contains
@@ -20,7 +22,6 @@ module dgmsolver
 
     ! allocate the solutions variables
     call initialize_state()
-
     ! Fill the multigroup material map
     mg_mMap = homogenization_map
 
@@ -35,14 +36,14 @@ module dgmsolver
 
     ! Use Statements
     use control, only : max_recon_iters, recon_print, recon_tolerance, store_psi, &
-                        ignore_warnings, lamb, number_cells, &
-                        number_legendre, number_angles, min_recon_iters, number_coarse_groups, &
-                        truncate_delta, delta_legendre_order
+                        ignore_warnings, lamb, number_cells, spatial_dimension, &
+                        number_moments, number_angles_per_octant, min_recon_iters, number_coarse_groups
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
-                      update_fission_density, output_moments, mg_incident
+                      update_fission_density, output_moments, recon_convergence_rate, &
+                      mg_incident_x, mg_incident_y, eigen_count, recon_count
     use dgm, only : expansion_order, phi_m, psi_m, dgm_order
-    use angle, only : p_leg
     use solver, only : solve
+    use omp_lib, only : omp_get_wtime
 
     ! Variable definitions
     logical, intent(in), optional :: &
@@ -51,15 +52,17 @@ module dgmsolver
         bypass_default = .false.  ! Default value of bypass_arg
     logical :: &
         bypass_flag       ! Local variable to signal an eigen loop bypass
-    integer :: &
-        recon_count,    & ! Iteration counter
-        a                 ! Angle index
-    double precision :: &
-        recon_error       ! Error between successive iterations
-    double precision, dimension(0:expansion_order, 0:number_legendre, number_coarse_groups, number_cells) :: &
+    real(kind=dp) :: &
+        recon_error,    & ! Error between successive iterations
+        start,          & ! Start time of the sweep function
+        ave_sweep_time    ! Average time in seconds per sweep
+    real(kind=dp), dimension(0:expansion_order, 0:number_moments, number_coarse_groups, number_cells) :: &
         old_phi_m         ! Scalar flux from previous iteration
-    double precision, dimension(0:expansion_order, number_coarse_groups, 2 * number_angles, number_cells) :: &
+    real(kind=dp), dimension(0:expansion_order, number_coarse_groups, 2 * spatial_dimension * &
+                                number_angles_per_octant, number_cells) :: &
         old_psi_m         ! Angular flux from previous iteration
+    real(kind=dp), dimension(3) :: &
+        past_error        ! Container to hold the error for last 3 iterations
 
     if (present(bypass_arg)) then
       bypass_flag = bypass_arg
@@ -70,7 +73,12 @@ module dgmsolver
     ! Expand the fluxes into moment form
     call compute_flux_moments()
 
+    past_error = 0.0_8
+    ave_sweep_time = 0.0_8
+
     do recon_count = 1, max_recon_iters
+      start = omp_get_wtime()
+    
       ! Save the old value of the scalar flux
       old_phi_m = phi_m
       old_psi_m = psi_m
@@ -85,15 +93,9 @@ module dgmsolver
       ! Solve for each order
       do dgm_order = 0, expansion_order
 
-        ! Set incident flux to the proper order
-        if (truncate_delta) then
-          do a = 1, number_angles
-            mg_incident(:, a) = matmul(transpose(phi_m(dgm_order, :delta_legendre_order, :, 1)), &
-                                       p_leg(:delta_legendre_order, a+number_angles))
-          end do
-        else
-          mg_incident(:, :) = psi_m(dgm_order, :, (number_angles+1):, 1)
-        end if
+        ! Reset the incident conditions to vacuum
+        mg_incident_x(:,:,:,:) = 0.0_8
+        mg_incident_y(:,:,:,:) = 0.0_8
 
         ! Compute the cross section moments
         call slice_xs_moments(order=dgm_order)
@@ -109,12 +111,12 @@ module dgmsolver
           print *, dgm_order, mg_phi
         end if
 
-      end do
+      end do  ! End dgm_order loop
 
       ! Update flux using krasnoselskii iteration
-      phi_m = (1.0 - lamb) * old_phi_m + lamb * phi_m
+      phi_m = (1.0_8 - lamb) * old_phi_m + lamb * phi_m
       if (store_psi) then
-        psi_m = (1.0 - lamb) * old_psi_m + lamb * psi_m
+        psi_m = (1.0_8 - lamb) * old_psi_m + lamb * psi_m
       end if
 
       ! Compute the fission density
@@ -122,11 +124,18 @@ module dgmsolver
 
       ! Update the error
       recon_error = maxval(abs(old_phi_m - phi_m))
+      past_error(3) = past_error(2)
+      past_error(2) = past_error(1)
+      past_error(1) = log10(recon_error)
+      recon_convergence_rate = exp((past_error(1) - past_error(3)) / 2.0_8)
+
+      ave_sweep_time = ((recon_count - 1) * ave_sweep_time + (omp_get_wtime() - start)) / recon_count
 
       ! Print output
       if (recon_print > 0) then
-        write(*, 1001) recon_count, recon_error, keff
-        1001 format ( "recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9)
+        write(*, 1001) recon_count, recon_error, keff, eigen_count, ave_sweep_time
+        1001 format ("recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9, &
+                     " eigen sweeps: ", i5, " ave sweep time: ", f5.2, " s")
         if (recon_print > 1) then
           call output_moments()
         end if
@@ -137,7 +146,7 @@ module dgmsolver
         exit
       end if
 
-    end do
+    end do  ! End recon_count loop
 
     ! Unfold to fine-group flux
     call unfold_flux_moments()
@@ -164,15 +173,14 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_fine_groups, number_angles, number_cells, energy_group_map
+    use control, only : number_fine_groups, number_angles, number_cells, &
+                        energy_group_map, store_psi, truncate_delta, delta_leg_order
     use angle, only : p_leg
-    use control, only : store_psi, number_angles, truncate_delta, &
-                        delta_legendre_order
     use dgm, only : basis, expansion_order, phi_m, psi_m
     use state, only : phi, psi
 
     ! Variable definitions
-    double precision, dimension(0:expansion_order) :: &
+    real(kind=dp), dimension(0:expansion_order) :: &
         tmp_psi_m     ! Legendre polynomial integration vector
     integer :: &
         a,          & ! Angle index
@@ -183,23 +191,23 @@ module dgmsolver
     do c = 1, number_cells
       do g = 1, number_fine_groups
         phi(:, g, c) = matmul(basis(g, :), phi_m(:, :, energy_group_map(g), c))
-      end do
-    end do
+      end do  ! End g loop
+    end do  ! End c loop
 
     if (store_psi) then
       do c = 1, number_cells
-        do a = 1, number_angles * 2
+        do a = 1, number_angles
           do g = 1, number_fine_groups
             if (truncate_delta) then
-              tmp_psi_m = matmul(phi_m(:, :delta_legendre_order, energy_group_map(g), c), &
-                                 p_leg(:delta_legendre_order, a))
+              tmp_psi_m = matmul(phi_m(:, :delta_leg_order, energy_group_map(g), c), &
+                                 p_leg(:delta_leg_order, a))
             else
               tmp_psi_m = psi_m(:, energy_group_map(g), a, c)
             end if
             psi(g, a, c) = dot_product(basis(g, :), tmp_psi_m)
-          end do
-        end do
-      end do
+          end do  ! End g loop
+        end do  ! End a loop
+      end do  ! End c loop
     end if
 
   end subroutine unfold_flux_moments
@@ -237,7 +245,7 @@ module dgmsolver
 
     ! Use Statements
     use control, only : number_angles, number_fine_groups, number_cells, &
-                        energy_group_map, delta_legendre_order, truncate_delta
+                        energy_group_map, delta_leg_order, truncate_delta
     use state, only : phi, psi
     use dgm, only : phi_m, psi_m, basis, expansion_order
     use angle, only : p_leg
@@ -250,17 +258,17 @@ module dgmsolver
         cg,   & ! Outer coarse group index
         ord,  & ! Delta truncation order
         g       ! Outer fine group index
-    double precision :: &
+    real(kind=dp) :: &
         tmp_psi ! temporary angular
 
 
     ! initialize all moments to zero
-    phi_m = 0.0
-    psi_m = 0.0
+    phi_m = 0.0_8
+    psi_m = 0.0_8
 
     ! Get moments for the Angular flux
     do c = 1, number_cells
-      do a = 1, number_angles * 2
+      do a = 1, number_angles
         do g = 1, number_fine_groups
           cg = energy_group_map(g)
 
@@ -269,29 +277,29 @@ module dgmsolver
             ! the angular flux (because the idea is that we would only store
             ! the angular moments and then the discrete delta term would be
             ! generated on the fly from the corresponding delta moments)
-            ord = delta_legendre_order
+            ord = delta_leg_order
             tmp_psi = dot_product(p_leg(:ord, a), phi(:ord, g, c))
           else
             tmp_psi = psi(g, a, c)
           end if
           do j = 0, expansion_order
             psi_m(j, cg, a, c) = psi_m(j, cg, a, c) + basis(g, j) * tmp_psi
-          end do
-        end do
-      end do
-    end do
+          end do  ! End j loop
+        end do  ! End g loop
+      end do  ! End a loop
+    end do  ! End c loop
 
     !TODO: Integrate psi_m_zero over angle to get phi_m_zero
 
     ! Get moments for the Scalar flux
     do c = 1, number_cells
       do g = 1, number_fine_groups
+        cg = energy_group_map(g)
         do j = 0, expansion_order
-          cg = energy_group_map(g)
           phi_m(j, :, cg, c) = phi_m(j, :, cg, c) + basis(g, j) * phi(:, g, c)
-        end do
-      end do
-    end do
+        end do  ! End j loop
+      end do  ! End g loop
+    end do  ! End c loop
 
   end subroutine compute_flux_moments
 
@@ -319,11 +327,11 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_angles, number_cells, number_legendre, number_groups, &
-                        delta_legendre_order, truncate_delta, number_regions, &
-                        scatter_legendre_order, number_coarse_groups
+    use control, only : number_angles, number_cells_x, number_cells_y, number_moments, &
+                        number_groups, delta_leg_order, truncate_delta, number_regions, &
+                        scatter_leg_order, number_coarse_groups
     use state, only : mg_sig_t, mg_nu_sig_f, mg_mMap
-    use mesh, only : mMap, dx
+    use mesh, only : mMap, dx, dy
     use dgm, only : phi_m, psi_m, sig_s_m, delta_m, expansion_order, &
                     expanded_sig_t, expanded_nu_sig_f, expanded_sig_s
     use angle, only : p_leg
@@ -333,17 +341,19 @@ module dgmsolver
         o,           & ! Order index
         a,           & ! Angle index
         c,           & ! Cell index
+        cx,          & ! Cell index for x cells
+        cy,          & ! Cell index for y cells
         cg,          & ! Outer coarse group index
         cgp,         & ! Inner coarse group index
         l,           & ! Legendre moment index
         r,           & ! Region index
         ord,         & ! Delta truncation order
         mat            ! Material index
-    double precision :: &
+    real(kind=dp) :: &
         float          ! temporary double precision number
-    double precision, dimension(0:expansion_order) :: &
+    real(kind=dp), dimension(0:expansion_order) :: &
         tmp_psi_m      ! flux arrays
-    double precision, dimension(0:number_legendre, number_groups, number_regions) :: &
+    real(kind=dp), dimension(0:number_moments, number_groups, number_regions) :: &
         homog_phi      ! Homogenization container
 
     ! Reset the moment containers if need be
@@ -354,98 +364,118 @@ module dgmsolver
       deallocate(sig_s_m)
     end if
 
-    allocate(delta_m(number_groups, 2 * number_angles, number_regions, 0:expansion_order))
-    allocate(sig_s_m(0:scatter_legendre_order, number_groups, number_groups, number_regions, 0:expansion_order))
+    allocate(delta_m(number_groups, number_angles, number_regions, 0:expansion_order))
+    allocate(sig_s_m(0:scatter_leg_order, number_groups, number_groups, number_regions, 0:expansion_order))
 
     ! initialize all moments and mg containers to zero
-    sig_s_m = 0.0
-    mg_sig_t = 0.0
-    delta_m = 0.0
-    mg_nu_sig_f = 0.0
+    sig_s_m = 0.0_8
+    mg_sig_t = 0.0_8
+    delta_m = 0.0_8
+    mg_nu_sig_f = 0.0_8
 
     ! Compute the denominator for spatial homogenization
-    homog_phi = 0.0
-    do c = 1, number_cells
-      r = mg_mMap(c)
-      homog_phi(0:, :, r) = homog_phi(0:, :, r) + dx(c) * phi_m(0, 0:, :, c)
-    end do
+    homog_phi = 0.0_8
+    c = 1
+    do cy = 1, number_cells_y
+      do cx = 1, number_cells_x
+        r = mg_mMap(c)
+        homog_phi(0:, :, r) = homog_phi(0:, :, r) + dx(cx) * dy(cy) * phi_m(0, 0:, :, c)
+        c = c + 1
+      end do  ! End cx loop
+    end do  ! End cy loop
 
     ! Compute the total cross section moments
-    mg_sig_t = 0.0
-    do c = 1, number_cells
-      mat = mMap(c)
-      r = mg_mMap(c)
-      do cg = 1, number_coarse_groups
-        float = dot_product(phi_m(:, 0, cg, c), expanded_sig_t(:, cg, mat, 0))
-        if (homog_phi(0, cg, r) /= 0.0)  then
-          mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(c) * float / homog_phi(0, cg, r)
-        end if
-      end do
-    end do
-
-    ! Compute the fission cross section moments
-    mg_nu_sig_f = 0.0
-    do c = 1, number_cells
-      mat = mMap(c)
-      r = mg_mMap(c)
-      do cg = 1, number_coarse_groups
-        float = dot_product(phi_m(:, 0, cg, c), expanded_nu_sig_f(:, cg, mat))
-        if (homog_phi(0, cg, r) /= 0.0)  then
-          mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(c) * float / homog_phi(0, cg, r)
-        end if
-      end do
-    end do
-
-    ! Compute the scattering cross section moments
-    do o = 0, expansion_order
-      do c = 1, number_cells
-        ! get the material for the current cell
+    mg_sig_t = 0.0_8
+    c = 1
+    do cy = 1, number_cells_y
+      do cx = 1, number_cells_x
         mat = mMap(c)
         r = mg_mMap(c)
         do cg = 1, number_coarse_groups
-          do cgp = 1, number_coarse_groups
-            do l = 0, scatter_legendre_order
-              float = dot_product(phi_m(:, l, cgp, c), expanded_sig_s(:, l, cgp, cg, mat, o))
-              if (homog_phi(l, cgp, r) /= 0.0) then
-                  sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
-                                            + dx(c) * float / homog_phi(l, cgp, r)
-              end if
-            end do
-          end do
-        end do
-      end do
-    end do
+          float = dot_product(phi_m(:, 0, cg, c), expanded_sig_t(:, cg, mat, 0))
+          if (homog_phi(0, cg, r) /= 0.0_8)  then
+            mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
+          end if
+        end do  ! End cg loop
+        c = c + 1
+      end do  ! End cx loop
+    end do  ! End cy loop
 
-    ! Compute delta
-    ord = delta_legendre_order
-    do o = 0, expansion_order
-      ! Add angular total cross section moment (delta) to the external source
-      do c = 1, number_cells
-        ! get the material for the current cell
+    ! Compute the fission cross section moments
+    mg_nu_sig_f = 0.0_8
+    c = 1
+    do cy = 1, number_cells_y
+      do cx = 1, number_cells_x
         mat = mMap(c)
         r = mg_mMap(c)
-        do a = 1, number_angles * 2
+        do cg = 1, number_coarse_groups
+          float = dot_product(phi_m(:, 0, cg, c), expanded_nu_sig_f(:, cg, mat))
+          if (homog_phi(0, cg, r) /= 0.0_8)  then
+            mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
+          end if
+        end do  ! End cg loop
+        c = c + 1
+      end do  ! End cx loop
+    end do  ! End cy loop
+
+    ! Compute the scattering cross section moments
+    do o = 0, expansion_order
+      c = 1
+      do cy = 1, number_cells_y
+        do cx = 1, number_cells_x
+          ! get the material for the current cell
+          mat = mMap(c)
+          r = mg_mMap(c)
           do cg = 1, number_coarse_groups
-            if (truncate_delta) then
-              ! If we are truncating the delta term, then first truncate
-              ! the angular flux (because the idea is that we would only store
-              ! the angular moments and then the discrete delta term would be
-              ! generated on the fly from the corresponding delta moments)
-              tmp_psi_m = matmul(phi_m(:, :ord, cg, c), p_leg(:ord, a))
-            else
-              tmp_psi_m = psi_m(:, cg, a, c)
-            end if
-            ! Check if producing nan and not computing with a nan
-            float = dot_product(tmp_psi_m(:), expanded_sig_t(:, cg, mat, o))
-            float = float - mg_sig_t(cg, r) * tmp_psi_m(o)
-            if ((homog_phi(0, cg, r) /= 0.0) .and. (tmp_psi_m(0) /= 0)) then
-              delta_m(cg, a, r, o) = delta_m(cg, a, r, o) &
-                                   + dx(c) * float / tmp_psi_m(0) * phi_m(0, 0, cg, c) / homog_phi(0, cg, r)
-            end if
-          end do
-        end do
-      end do
-    end do
+            do cgp = 1, number_coarse_groups
+              do l = 0, scatter_leg_order
+                float = dot_product(phi_m(:, l, cgp, c), expanded_sig_s(:, l, cgp, cg, mat, o))
+                if (homog_phi(l, cgp, r) /= 0.0_8) then
+                    sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
+                                              + dx(cx) * dy(cy) * float / homog_phi(l, cgp, r)
+                end if
+              end do  ! End l loop
+            end do  ! End cgp loop
+          end do  ! End cg loop
+          c = c + 1
+        end do  ! End cx loop
+      end do  ! End cy loop
+    end do  ! End o loop
+
+    ! Compute delta
+    ord = delta_leg_order
+    do o = 0, expansion_order
+      ! Add angular total cross section moment (delta) to the external source
+      c = 1
+      do cy = 1, number_cells_y
+        do cx = 1, number_cells_x
+          ! get the material for the current cell
+          mat = mMap(c)
+          r = mg_mMap(c)
+          do a = 1, number_angles
+            do cg = 1, number_coarse_groups
+              if (truncate_delta) then
+                ! If we are truncating the delta term, then first truncate
+                ! the angular flux (because the idea is that we would only store
+                ! the angular moments and then the discrete delta term would be
+                ! generated on the fly from the corresponding delta moments)
+                tmp_psi_m = matmul(phi_m(:, :ord, cg, c), p_leg(:ord, a))
+              else
+                tmp_psi_m = psi_m(:, cg, a, c)
+              end if
+              ! Check if producing nan and not computing with a nan
+              float = dot_product(tmp_psi_m(:), expanded_sig_t(:, cg, mat, o))
+              float = float - mg_sig_t(cg, r) * tmp_psi_m(o)
+              if ((homog_phi(0, cg, r) /= 0.0_8) .and. (tmp_psi_m(0) /= 0.0_8)) then
+                delta_m(cg, a, r, o) = delta_m(cg, a, r, o) &
+                                     + dx(cx) * dy(cy) * float / tmp_psi_m(0) * phi_m(0, 0, cg, c) / homog_phi(0, cg, r)
+              end if
+            end do  ! End cg loop
+          end do  ! End a loop
+          c = c + 1
+        end do  ! End cx loop
+      end do  ! End cy loop
+    end do  ! End o loop
 
 
   end subroutine compute_xs_moments
@@ -456,56 +486,66 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : number_cells, number_regions, number_fine_groups, &
+    use control, only : number_cells_x, number_cells_y, number_regions, number_fine_groups, &
                         number_groups, energy_group_map
     use material, only : chi
     use state, only : mg_constant_source, mg_mMap
-    use mesh, only : mMap, dx
+    use mesh, only : mMap, dx, dy
     use dgm, only : chi_m, source_m, expansion_order, basis
 
     ! Variable definitions
     integer :: &
         order, & ! Expansion order index
         c,     & ! Cell index
+        cx,    & ! Cell index for x cells
+        cy,    & ! Cell index for y cells
         g,     & ! Fine group index
         cg,    & ! Coarse group index
         r,     & ! Region index
         mat      ! Material index
-    double precision, dimension(number_regions) :: &
+    real(kind=dp), dimension(number_regions) :: &
         lengths  ! Length of each region
 
     allocate(chi_m(number_groups, number_regions, 0:expansion_order))
     allocate(source_m(number_groups, 0:expansion_order))
 
-    chi_m = 0.0
-    source_m = 0.0
+    chi_m = 0.0_8
+    source_m = 0.0_8
 
     ! Get the length of each region
-    lengths = 0.0
-    do c = 1, number_cells
-      r = mg_mMap(c)
-      lengths(r) = lengths(r) + dx(c)
-    end do
+    lengths = 0.0_8
+    c = 1
+    do cy = 1, number_cells_y
+      do cx = 1, number_cells_x
+        r = mg_mMap(c)
+        lengths(r) = lengths(r) + dx(cx) * dy(cy)
+        c = c + 1
+      end do  ! End cx loop
+    end do  ! End cy loop
 
     ! chi moment
     do order = 0, expansion_order
-      do c = 1, number_cells
-        mat = mMap(c)
-        r = mg_mMap(c)
-        do g = 1, number_fine_groups
-          cg = energy_group_map(g)
-          chi_m(cg, r, order) = chi_m(cg, r, order) + basis(g, order) * chi(g, mat) * dx(c) / lengths(r)
-        end do
-      end do
-    end do
+      c = 1
+      do cy = 1, number_cells_y
+        do cx = 1, number_cells_x
+          mat = mMap(c)
+          r = mg_mMap(c)
+          do g = 1, number_fine_groups
+            cg = energy_group_map(g)
+            chi_m(cg, r, order) = chi_m(cg, r, order) + basis(g, order) * chi(g, mat) * dx(cx) * dy(cy) / lengths(r)
+          end do  ! End g loop
+          c = c + 1
+        end do  ! End cx loop
+      end do  ! End cy loop
+    end do  ! End order loop
 
     ! Source moment
     do order = 0, expansion_order
       do g = 1, number_fine_groups
         cg = energy_group_map(g)
         source_m(cg, order) = source_m(cg, order) + basis(g, order) * mg_constant_source
-      end do
-    end do
+      end do  ! End g loop
+    end do  ! End order loop
 
   end subroutine compute_source_moments
 

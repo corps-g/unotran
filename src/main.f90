@@ -25,14 +25,22 @@ program main
   ! Initialize the solver using options set in the input file
   call initialize_control(inputfile)
 
+  print *, 'Successfully read ', inputfile
+
   ! Call the correct solver
   if (use_DGM) then
+    print *, 'Initializing solver'
     call initialize_dgmsolver()
+    print *, 'Success'
+    print *, 'Running solver'
     call dgmsolve()
     !call dgmoutput()
     call finalize_dgmsolver()
   else
+    print *, 'Initializing solver'
     call initialize_solver()
+    print *, 'Success'
+    print *, 'Running solver'
     call solve()
     !call output()
     call finalize_solver()

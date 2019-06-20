@@ -6,22 +6,30 @@ module control
   implicit none
 
   ! control variables
-  double precision, allocatable, dimension(:) :: &
-      coarse_mesh                   ! Coarse mesh boundaries
+  integer, parameter :: dp = selected_real_kind(15, 307)
+  real(kind=dp), allocatable, dimension(:) :: &
+      coarse_mesh,                & ! Coarse mesh boundaries
+      coarse_mesh_x,              & ! Coarse mesh boundaries in x direction
+      coarse_mesh_y                 ! Coarse mesh boundaries in y direction
   integer, allocatable, dimension(:) :: &
       fine_mesh,                  & ! Number of fine cells per coarse region
+      fine_mesh_x,                & ! Number of fine cells per coarse region in x direction
+      fine_mesh_y,                & ! Number of fine cells per coarse region in y direction
       material_map,               & ! Material ID within each coarse region
       energy_group_map,           & ! Coarse energy group boundaries
       truncation_map,             & ! Expansion order within each coarse group (optional)
       homogenization_map            ! Map of which fine cells to homogenize for DGM (optional)
-  double precision :: &
-      boundary_type(2),           & ! Albedo value at [left, right] boundary
-      recon_tolerance=1e-8,       & ! Convergance criteria for recon iteration
-      eigen_tolerance=1e-8,       & ! Convergance criteria for eigen iteration
-      outer_tolerance=1e-8,       & ! Convergance criteria for outer iteration
-      lamb=1.0,                   & ! Parameter (0 < lamb <= 1.0) for krasnoselskii iteration
-      source_value=0.0,           & ! Value of external source for the problem
-      initial_keff=1.0              ! Initial value for the eigenvalue
+  real(kind=dp) :: &
+      boundary_east,              & ! Albedo value at east boundary
+      boundary_west,              & ! Albedo value at west boundary
+      boundary_north,             & ! Albedo value at north boundary
+      boundary_south,             & ! Albedo value at south boundary
+      recon_tolerance=1e-8_8,     & ! Convergance criteria for recon iteration
+      eigen_tolerance=1e-8_8,     & ! Convergance criteria for eigen iteration
+      outer_tolerance=1e-8_8,     & ! Convergance criteria for outer iteration
+      lamb=1.0_8,                 & ! Parameter (0 < lamb <= 1.0) for krasnoselskii iteration
+      source_value=0.0_8,         & ! Value of external source for the problem
+      initial_keff=1.0_8            ! Initial value for the eigenvalue
   character(len=256) :: &
       xs_name,                    & ! Name of the cross section file
       dgm_basis_name,             & ! Name of file containing energy basis
@@ -32,6 +40,7 @@ module control
   character(len=2) :: &
       equation_type="DD"            ! Closure equation for discrete ordinates [DD, SC, SD]
   integer :: &
+      spatial_dimension,          & ! Dimension of the spatial variable (1 for 1D, 2 for 2D)
       angle_order,                & ! Number of angles per octant
       angle_option,               & ! Quadrature option [gl=0, dgl=1]
       max_recon_iters=1000,       & ! Maximum iterations for recon loop
@@ -40,23 +49,29 @@ module control
       min_recon_iters=1,          & ! Minimum iterations for recon loop
       min_eigen_iters=1,          & ! Minimum iterations for eigen loop
       min_outer_iters=1,          & ! Minimum iterations for outer loop
-      number_cells,               & ! Total number of cells in the mesh
+      number_cells_x,             & ! Total number of spatial cells in the x direction
+      number_cells_y,             & ! Total number of spatial cells in the y direction
+      number_cells,               & ! Total number of spatial cells in the mesh
       number_regions,             & ! Number of unique material regions
-      number_angles,              & ! Number angles per *half space*
+      number_angles_per_octant,   & ! Number of angles per octant (half space in 1D, quadrant in 2D)
+      number_angles,              & ! Total number of angles
       number_groups,              & ! Number of groups for the MG problem
       number_fine_groups,         & ! Number of groups in the cross section library
       number_coarse_groups,       & ! Number of groups in the expansion
-      number_legendre,            & ! Number of anisotropic scattering moments
+      number_legendre,            & ! Number of anisotropic scattering orders
+      number_moments,             & ! Total number of legendre moments (equal to number_legendre in 1D)
       recon_print=1,              & ! Enable/Disable recon iteration printing
       eigen_print=1,              & ! Enable/Disable eigen iteration printing
       outer_print=1,              & ! Enable/Disable outer iteration printing
-      scatter_legendre_order=-1,  & ! Legendre order for anisotropic scattering
-      delta_legendre_order=-1       ! Legendre order for truncated expansion of delta term
+      scatter_leg_order=-1,       & ! Legendre order for anisotropic scattering
+      delta_leg_order=-1            ! Legendre order for truncated expansion of delta term
   logical :: &
       allow_fission=.false.,      & ! Enable/Disable fission in the problem
       use_dgm=.false.,            & ! Enable/Disable DGM solver
       store_psi=.false.,          & ! Enable/Disable storing the angular flux
       ignore_warnings=.true.,     & ! Enable/Disable warning messages
+      outer_converged=.false.,    & ! Flag to state if the outer iterations have converged
+      eigen_converged=.false.,    & ! Flag to state if the eigen iterations have converged
       truncate_delta=.false.,     & ! Enable/Disable truncated expansion of delta term
       verify_control=.true.         ! Enable/Disable checking control variables
 
@@ -68,7 +83,7 @@ module control
     ! ##########################################################################
 
     ! Input variables
-    character(len=32768) :: &
+    character(len=524288) :: &
         buffer, & ! Buffer to hold read-in strings
         label     ! Contains the read-variable name
     character(len=*), intent(in) :: &
@@ -120,6 +135,18 @@ module control
         case ('coarse_mesh')
           allocate(coarse_mesh(nitems(buffer)))
           read(buffer, *, iostat=ios) coarse_mesh
+        case ('fine_mesh_x')
+          allocate(fine_mesh_x(nitems(buffer)))
+          read(buffer, *, iostat=ios) fine_mesh_x
+        case ('fine_mesh_y')
+          allocate(fine_mesh_y(nitems(buffer)))
+          read(buffer, *, iostat=ios) fine_mesh_y
+        case ('coarse_mesh_x')
+          allocate(coarse_mesh_x(nitems(buffer)))
+          read(buffer, *, iostat=ios) coarse_mesh_x
+        case ('coarse_mesh_y')
+          allocate(coarse_mesh_y(nitems(buffer)))
+          read(buffer, *, iostat=ios) coarse_mesh_y
         case ('material_map')
           allocate(material_map(nitems(buffer)))
           read(buffer, *, iostat=ios) material_map
@@ -138,8 +165,14 @@ module control
           read(buffer, *, iostat=ios) angle_order
         case ('angle_option')
           read(buffer, *, iostat=ios) angle_option
-        case ('boundary_type')
-          read(buffer, *, iostat=ios) boundary_type
+        case ('boundary_east')
+          read(buffer, *, iostat=ios) boundary_east
+        case ('boundary_west')
+          read(buffer, *, iostat=ios) boundary_west
+        case ('boundary_north')
+          read(buffer, *, iostat=ios) boundary_north
+        case ('boundary_south')
+          read(buffer, *, iostat=ios) boundary_south
         case ('allow_fission')
           read(buffer, *, iostat=ios) allow_fission
         case ('energy_group_map')
@@ -177,13 +210,19 @@ module control
         case ('source')
           read(buffer, *, iostat=ios) source_value
         case ('scatter_legendre_order')
-          read(buffer, *, iostat=ios) scatter_legendre_order
+          read(buffer, *, iostat=ios) scatter_leg_order
+        case ('delta_legendre_order')
+          read(buffer, *, iostat=ios) delta_leg_order
+        case ('truncate_delta')
+          read(buffer, *, iostat=ios) truncate_delta
         case ('max_recon_iters')
           read(buffer, *, iostat=ios) max_recon_iters
         case ('max_eigen_iters')
           read(buffer, *, iostat=ios) max_eigen_iters
         case ('max_outer_iters')
           read(buffer, *, iostat=ios) max_outer_iters
+        case ('spatial_dimension')
+          read(buffer, *, iostat=ios) spatial_dimension
         case default
           print *, 'Skipping invalid label at line', line
         end select
@@ -209,14 +248,25 @@ module control
     ! ##########################################################################
 
     print *, 'MESH VARIABLES'
-    print *, '  fine_mesh          = [', fine_mesh, ']'
-    print *, '  coarse_mesh        = [', coarse_mesh, ']'
+    print *, '  spatial_dimension  = [', spatial_dimension, ']'
+    print *, '  fine_mesh_x        = [', fine_mesh_x, ']'
+    if (spatial_dimension == 2) then
+      print *, '  fine_mesh_y        = [', fine_mesh_y, ']'
+    end if
+    print *, '  coarse_mesh_x      = [', coarse_mesh_x, ']'
+    if (spatial_dimension == 2) then
+      print *, '  coarse_mesh_y      = [', coarse_mesh_y, ']'
+    end if
     print *, '  material_map       = [', material_map, ']'
-    print *, '  boundary_type      = [', boundary_type, ']'
+    print *, '  boundary_east      = [', boundary_east, ']'
+    print *, '  boundary_west      = [', boundary_west, ']'
+    if (spatial_dimension == 2) then
+      print *, '  boundary_north      = [', boundary_north, ']'
+      print *, '  boundary_south      = [', boundary_south, ']'
+    end if
     print *, 'MATERIAL VARIABLES'
     print *, '  xs_file_name       = "', trim(xs_name), '"'
     print *, 'ANGLE VARIABLES'
-    print *, '  angle_order        = ', angle_order
     print *, '  angle_option       = ', angle_option
     print *, 'SOURCE'
     print *, '  constant source    = ', source_value
@@ -238,8 +288,8 @@ module control
     print *, '  max_outer_iters    = ', max_outer_iters
     print *, '  lambda             = ', lamb
     print *, '  ignore_warnings    = ', ignore_warnings
-    if (scatter_legendre_order > -1) then
-      print *, '  scatter_order      = ', scatter_legendre_order
+    if (scatter_leg_order > -1) then
+      print *, '  scatter_order      = ', scatter_leg_order
     else
       print *, '  scatter_order     = DEFAULT'
     end if
@@ -270,6 +320,12 @@ module control
     ! Verify the inputs are defined correctly
     ! ##########################################################################
 
+    ! Check spatial dimension
+    if (.not. (spatial_dimension == 1 .or. spatial_dimension == 2)) then
+      print *, 'INPUT ERROR : Invalid spatial dimension [', spatial_dimension, '] selected.  Only 1D and 2D supported'
+      stop
+    end if
+
     ! Check solver type
     if (.not. (solver_type == 'eigen' .or. solver_type == 'fixed')) then
       print *, 'INPUT ERROR : Invalid solver type'
@@ -278,9 +334,16 @@ module control
 
     ! Check that the homogenization_map is provided correctly
     if (allocated(homogenization_map)) then
-      if (sum(fine_mesh) /= size(homogenization_map)) then
-        print *, 'INPUT ERROR : homogenization map is the wrong size'
-        stop
+      if (spatial_dimension == 1) then
+        if (sum(fine_mesh_x) /= size(homogenization_map)) then
+          print *, 'INPUT ERROR : homogenization map is the wrong size'
+          stop
+        end if
+      else
+        if (sum(fine_mesh_x) * sum(fine_mesh_y) /= size(homogenization_map)) then
+          print *, 'INPUT ERROR : homogenization map is the wrong size'
+          stop
+        end if
       end if
       if (minval(homogenization_map) /= 1) then
         print *, 'INPUT ERROR : the first homogenization cell should be designated as 1'
@@ -310,8 +373,20 @@ module control
     if (allocated(fine_mesh)) then
       deallocate(fine_mesh)
     end if
+    if (allocated(fine_mesh_x)) then
+      deallocate(fine_mesh_x)
+    end if
+    if (allocated(fine_mesh_y)) then
+      deallocate(fine_mesh_y)
+    end if
     if (allocated(coarse_mesh)) then
       deallocate(coarse_mesh)
+    end if
+    if (allocated(coarse_mesh_x)) then
+      deallocate(coarse_mesh_x)
+    end if
+    if (allocated(coarse_mesh_y)) then
+      deallocate(coarse_mesh_y)
     end if
     if (allocated(material_map)) then
       deallocate(material_map)
