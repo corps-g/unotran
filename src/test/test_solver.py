@@ -26,13 +26,23 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.outer_tolerance = 1e-16
         pydgm.control.lamb = 1.0
         pydgm.control.store_psi = True
-        pydgm.control.solver_type = 'fixed'.ljust(256)
-        pydgm.control.source_value = 1.0
         pydgm.control.equation_type = 'DD'
         pydgm.control.scatter_leg_order = 0
         pydgm.control.use_DGM = False
-        pydgm.control.max_eigen_iters = 10000
-        pydgm.control.max_outer_iters = 1000
+
+    def setSolver(self, solver):
+        if solver == 'fixed':
+            pydgm.control.solver_type = 'fixed'.ljust(256)
+            pydgm.control.source_value = 1.0
+            pydgm.control.allow_fission = False
+            pydgm.control.max_eigen_iters = 1
+            pydgm.control.max_outer_iters = 10000
+        elif solver == 'eigen':
+            pydgm.control.solver_type = 'eigen'.ljust(256)
+            pydgm.control.source_value = 0.0
+            pydgm.control.allow_fission = True
+            pydgm.control.max_eigen_iters = 10000
+            pydgm.control.max_outer_iters = 1
 
     def angular_test(self):
         '''
@@ -51,6 +61,7 @@ class TestSOLVER(unittest.TestCase):
         Test fixed source problem with vacuum conditions
         '''
         # Activate fissioning
+        self.setSolver('fixed')
         pydgm.control.allow_fission = True
 
         # Initialize the dependancies
@@ -79,6 +90,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.boundary_west = 1.0
         pydgm.control.material_map = [1, 1, 1]
         pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
+        self.setSolver('fixed')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -110,6 +122,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.boundary_west = 1.0
         pydgm.control.material_map = [1, 1, 1]
         pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
+        self.setSolver('fixed')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -140,6 +153,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
         pydgm.control.material_map = [1, 1, 1]
+        self.setSolver('fixed')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -174,6 +188,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
         pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
+        self.setSolver('fixed')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -204,6 +219,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
         pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
+        self.setSolver('fixed')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -233,6 +249,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.angle_order = 4
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
+        self.setSolver('fixed')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -265,10 +282,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
-        pydgm.control.max_outer_iters = 1
+        self.setSolver('eigen')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -301,9 +315,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -335,9 +347,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.coarse_mesh_x = [0.0, 10.0]
         pydgm.control.material_map = [1]
         pydgm.control.angle_order = 2
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -370,8 +380,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.xs_name = 'test/1gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 2
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
+        self.setSolver('eigen')
         pydgm.control.source_value = 0.0
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
@@ -418,8 +427,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.xs_name = 'test/2gXS.anlxs'.ljust(256)
         pydgm.control.angle_order = 8
         pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
 
@@ -464,8 +472,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
         pydgm.control.angle_order = 2
         pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
 
@@ -512,9 +519,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.angle_order = 2
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -550,9 +555,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.angle_order = 2
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -587,9 +590,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.angle_order = 2
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -620,6 +621,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
         pydgm.control.angle_order = 8
         pydgm.control.scatter_leg_order = 7
+        self.setSolver('fixed')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -651,6 +653,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.angle_order = 4
         pydgm.control.scatter_leg_order = 1
         pydgm.control.boundary_type = [0.0, 0.0]
+        self.setSolver('fixed')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -672,6 +675,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.scatter_leg_order = 7
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
+        self.setSolver('fixed')
 
         # Initialize the dependancies
         pydgm.solver.initialize_solver()
@@ -705,10 +709,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1, 5]
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
         pydgm.control.angle_order = 8
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
-
+        self.setSolver('eigen')
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
         pydgm.control.scatter_leg_order = 0
@@ -754,9 +755,7 @@ class TestSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1, 5]
         pydgm.control.xs_name = 'test/partisn_cross_sections/anisotropic_2g'.ljust(256)
         pydgm.control.angle_order = 8
-        pydgm.control.allow_fission = True
-        pydgm.control.solver_type = 'eigen'.ljust(256)
-        pydgm.control.source_value = 0.0
+        self.setSolver('eigen')
         pydgm.control.boundary_east = 1.0
         pydgm.control.boundary_west = 1.0
         pydgm.control.scatter_leg_order = 7

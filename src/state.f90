@@ -181,10 +181,10 @@ module state
       allocate(mg_incident_x(number_groups, number_angles_per_octant, number_cells_y, 4))
       allocate(mg_incident_y(number_groups, number_angles_per_octant, number_cells_x, 4))
     end if
+
     ! Assume vacuum conditions for incident flux
     mg_incident_x(:, :, :, :) = 0.0_8
     mg_incident_y(:, :, :, :) = 0.0_8
-
 
     ! Initialize the eigenvalue to unity if fixed problem or default for eigen
     if (solver_type == 'fixed') then
