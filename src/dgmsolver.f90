@@ -333,7 +333,7 @@ module dgmsolver
     ! Use Statements
     use control, only : number_angles, number_cells_x, number_cells_y, number_moments, &
                         number_groups, delta_leg_order, truncate_delta, number_regions, &
-                        scatter_leg_order, number_coarse_groups
+                        scatter_leg_order, number_coarse_groups, recon_tolerance
     use state, only : mg_sig_t, mg_nu_sig_f, mg_mMap
     use mesh, only : mMap, dx, dy
     use dgm, only : phi_m, psi_m, sig_s_m, delta_m, expansion_order, &
@@ -373,9 +373,7 @@ module dgmsolver
 
     ! initialize all moments and mg containers to zero
     sig_s_m = 0.0_8
-    mg_sig_t = 0.0_8
     delta_m = 0.0_8
-    mg_nu_sig_f = 0.0_8
 
     ! Compute the denominator for spatial homogenization
     homog_phi = 0.0_8
@@ -397,7 +395,7 @@ module dgmsolver
         r = mg_mMap(c)
         do cg = 1, number_coarse_groups
           float = dot_product(phi_m(:, 0, cg, c), expanded_sig_t(:, cg, mat, 0))
-          if (homog_phi(0, cg, r) /= 0.0_8)  then
+          if (abs(homog_phi(0, cg, r)) > recon_tolerance) then
             mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
           end if
         end do  ! End cg loop
@@ -414,7 +412,7 @@ module dgmsolver
         r = mg_mMap(c)
         do cg = 1, number_coarse_groups
           float = dot_product(phi_m(:, 0, cg, c), expanded_nu_sig_f(:, cg, mat))
-          if (homog_phi(0, cg, r) /= 0.0_8)  then
+          if (abs(homog_phi(0, cg, r)) > recon_tolerance) then
             mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
           end if
         end do  ! End cg loop
@@ -434,7 +432,7 @@ module dgmsolver
             do cgp = 1, number_coarse_groups
               do l = 0, scatter_leg_order
                 float = dot_product(phi_m(:, l, cgp, c), expanded_sig_s(:, l, cgp, cg, mat, o))
-                if (homog_phi(l, cgp, r) /= 0.0_8) then
+                if (abs(homog_phi(l, cg, r)) > recon_tolerance) then
                     sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
                                               + dx(cx) * dy(cy) * float / homog_phi(l, cgp, r)
                 end if
@@ -470,7 +468,7 @@ module dgmsolver
               ! Check if producing nan and not computing with a nan
               float = dot_product(tmp_psi_m(:), expanded_sig_t(:, cg, mat, o))
               float = float - mg_sig_t(cg, r) * tmp_psi_m(o)
-              if ((homog_phi(0, cg, r) /= 0.0_8) .and. (tmp_psi_m(0) /= 0.0_8)) then
+              if (abs(homog_phi(0, cg, r)) > recon_tolerance .and. (tmp_psi_m(0) /= 0.0_8)) then
                 delta_m(cg, a, r, o) = delta_m(cg, a, r, o) &
                                      + dx(cx) * dy(cy) * float / tmp_psi_m(0) * phi_m(0, 0, cg, c) / homog_phi(0, cg, r)
               end if
