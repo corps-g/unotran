@@ -56,7 +56,7 @@ module solver
     ! Use Statements
     use mg_solver, only : mg_solve
     use state, only : mg_phi, mg_psi, keff, normalize_flux, phi, psi, &
-                      outer_count, eigen_count, update_fission_density, exit_status
+                      eigen_count, update_fission_density, exit_status
     use control, only : solver_type, eigen_print, ignore_warnings, max_eigen_iters, &
                         eigen_tolerance, number_cells, number_groups, &
                         use_DGM, min_eigen_iters, store_psi, eigen_converged, &
