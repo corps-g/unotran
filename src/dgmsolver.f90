@@ -16,16 +16,20 @@ module dgmsolver
     ! ##########################################################################
 
     ! Use Statements
-    use state, only : initialize_state
-    use state, only : mg_mMap
+    use state, only : initialize_state, mg_mMap
     use control, only : homogenization_map
+    use material, only : finalize_material
 
     ! allocate the solutions variables
     call initialize_state()
+
     ! Fill the multigroup material map
     mg_mMap = homogenization_map
 
     call compute_source_moments()
+
+    ! Delete the fine-group cross sections
+    call finalize_material()
 
   end subroutine initialize_dgmsolver
 
@@ -159,7 +163,7 @@ module dgmsolver
     call normalize_flux(phi, psi)
 
     ! Compute the fission density based on the fine-group flux
-    call update_fission_density(.true.)
+    call update_fission_density()
 
     if (recon_count == max_recon_iters) then
       if (.not. ignore_warnings) then

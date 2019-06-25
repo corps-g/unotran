@@ -220,7 +220,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.allow_fission = False
         nA = 2
 
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         ########################################################################
         order = 0
@@ -666,7 +668,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.angle_order = 10
         pydgm.control.lamb = 0.45
 
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
@@ -696,6 +700,8 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.lamb = 0.9
         pydgm.control.allow_fission = True
         phi_test = np.array([1.0781901438738859, 1.5439788126739036, 1.0686290157458673, 1.0348940034466163, 1.0409956199943164, 1.670442207080332, 0.2204360523334687])
+        # pydgm.control.recon_print = 1
+        # pydgm.control.eigen_print = 1
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -729,7 +735,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.lamb = 0.45
 
         # Initialize the dependancies
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
@@ -852,7 +860,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
 
         # Initialize the dependancies
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
@@ -893,7 +903,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
 
         # Initialize the dependancies
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
@@ -933,7 +945,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.lamb = 0.46
 
         # Initialize the dependancies
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
