@@ -146,7 +146,7 @@ module dgmsolver
                        recon_convergence_rate, recon_estimate
         1001 format ("recon: ", i5, " Error: ", es10.4E2, " k: ", f12.10, &
                      " eSweeps: ", i5, " sweepTime: ", f6.1, " s", &
-                     " rate: ", f4.2, "iterEst: ", i5)
+                     " rate: ", f4.2, " iterEst: ", i5)
         if (recon_print > 1) then
           call output_moments()
         end if
