@@ -56,6 +56,7 @@ module dgmsolver
         recon_error,    & ! Error between successive iterations
         start,          & ! Start time of the sweep function
         past_error,     & ! The error for last iteration
+        past_error2,    & ! The error for two iterations back
         ave_sweep_time    ! Average time in seconds per sweep
     real(kind=dp), dimension(0:expansion_order, 0:number_moments, number_coarse_groups, number_cells) :: &
         old_phi_m         ! Scalar flux from previous iteration
@@ -129,10 +130,11 @@ module dgmsolver
       call update_fission_density()
 
       ! Update the error
+      past_error2 = past_error
       past_error = recon_error
       recon_error = maxval(abs(old_phi_m - phi_m))
       
-      recon_convergence_rate = log10(recon_error / past_error)
+      recon_convergence_rate = log10(recon_error ** 3 / past_error ** 4 * past_error2) / 2
       recon_estimate = int(log10(recon_tolerance / recon_error) / recon_convergence_rate) + recon_count
       if (recon_estimate < 0) then
         recon_estimate = 1000000
@@ -146,7 +148,7 @@ module dgmsolver
                        recon_convergence_rate, recon_estimate
         1001 format ("recon: ", i5, " Error: ", es10.4E2, " k: ", f12.10, &
                      " eSweeps: ", i5, " sweepTime: ", f6.1, " s", &
-                     " rate: ", f4.2, " iterEst: ", i5)
+                     " rate: ", f6.3, " iterEst: ", i5)
         if (recon_print > 1) then
           call output_moments()
         end if
