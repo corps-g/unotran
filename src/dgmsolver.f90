@@ -134,7 +134,11 @@ module dgmsolver
       past_error = recon_error
       recon_error = maxval(abs(old_phi_m - phi_m))
       
-      recon_convergence_rate = log10(recon_error ** 3 / past_error ** 4 * past_error2) / 2
+      if (past_error2 == 0.0) then
+        recon_convergence_rate = log10(recon_error / past_error)
+      else
+        recon_convergence_rate = log10(recon_error ** 3 / past_error ** 4 * past_error2) / 2
+      end if
       recon_estimate = int(log10(recon_tolerance / recon_error) / recon_convergence_rate) + recon_count
       if (recon_estimate < 0) then
         recon_estimate = 1000000
