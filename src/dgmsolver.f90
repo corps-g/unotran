@@ -33,6 +33,62 @@ module dgmsolver
 
   end subroutine initialize_dgmsolver
 
+  subroutine initialize_dgmsolver_with_moments(sig_t_mass, nu_sig_f_mass, sig_s_mass, chi_in)
+    ! ##########################################################################
+    ! Initialize all of the variables and solvers
+    ! This however begins by requiring the input of mass matrices
+    ! The mg containers in state are set to coarse group size
+    ! ##########################################################################
+
+    use dgm, only : expanded_sig_t, expanded_nu_sig_f, expanded_sig_s, expansion_order
+    use control, only : number_coarse_groups, scatter_leg_order, number_fine_groups, homogenization_map
+    use material, only : number_materials, chi, finalize_material
+    use state, only : initialize_state, mg_mMap
+
+    real(kind=dp), dimension(:,:,:,:), intent(in) :: &
+      sig_t_mass     ! Input for the sig_t mass matrix
+    real(kind=dp), dimension(:,:,:), intent(in) :: &
+      nu_sig_f_mass  ! Input for the sig_f mass matrix
+    real(kind=dp), dimension(:,:,:,:,:,:), intent(in) :: &
+      sig_s_mass     ! Input for the sig_s mass matrix
+    real(kind=dp), dimension(:,:), intent(in) :: &
+      chi_in         ! Input for the chi values
+    integer, dimension(6) :: &
+      sizes          ! Container to hold the array sizes
+
+    sizes = shape(sig_s_mass)
+
+    expansion_order = sizes(1) - 1
+    scatter_leg_order = sizes(2) - 1
+    number_coarse_groups = sizes(3)
+    number_materials = sizes(5)
+    number_fine_groups = size(chi_in(:,1))
+
+
+    allocate(expanded_sig_t(0:expansion_order, number_coarse_groups, number_materials, 0:expansion_order))
+    allocate(expanded_nu_sig_f(0:expansion_order, number_coarse_groups, number_materials))
+    allocate(expanded_sig_s(0:expansion_order, 0:scatter_leg_order, number_coarse_groups, &
+                            number_coarse_groups, number_materials, 0:expansion_order))
+    allocate(chi(number_fine_groups, number_materials))
+
+    expanded_sig_t = reshape(sig_t_mass, shape(expanded_sig_t))
+    expanded_nu_sig_f = reshape(nu_sig_f_mass, shape(expanded_nu_sig_f))
+    expanded_sig_s = reshape(sig_s_mass, shape(expanded_sig_s))
+    chi = reshape(chi_in, shape(chi))
+
+    ! allocate the solutions variables
+    call initialize_state(.true.)
+
+    ! Fill the multigroup material map
+    mg_mMap = homogenization_map
+
+    call compute_source_moments()
+
+    ! Delete the fine-group cross sections
+    call finalize_material()
+
+  end subroutine initialize_dgmsolver_with_moments
+
   subroutine dgmsolve(bypass_arg)
     ! ##########################################################################
     ! Interate DGM equations to convergance

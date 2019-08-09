@@ -41,7 +41,7 @@ module state
   
   contains
   
-  subroutine initialize_state()
+  subroutine initialize_state(skip_init_material)
     ! ##########################################################################
     ! Initialize each of the container variables to default/entered values
     ! ##########################################################################
@@ -54,8 +54,8 @@ module state
                         verify_control, homogenization_map, number_regions, &
                         scatter_leg_order, delta_leg_order, truncate_delta, &
                         number_cells_x, number_cells_y, spatial_dimension, number_moments
-    use mesh, only : mMap, create_mesh
-    use material, only : nu_sig_f, create_material, number_materials
+    use mesh, only : create_mesh
+    use material, only : create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials, PI
     use dgm, only : initialize_moments, initialize_basis, compute_expanded_cross_sections
 
@@ -64,10 +64,23 @@ module state
         ios = 0, & ! I/O error status
         c,       & ! Cell index
         a          ! Angle index
+    logical, intent(in), optional :: &
+        skip_init_material                     ! Controls intializing the material
+    logical :: &
+        skip_init_material_default = .false., & ! Controls the default for intializing the material
+        skip_init_material_val                 ! Holds actual value of init_material_flag
+
+    if (present(skip_init_material)) then
+      skip_init_material_val = skip_init_material
+    else
+      skip_init_material_val = skip_init_material_default
+    end if
 
     ! Initialize the sub-modules
     ! read the material cross sections
-    call create_material()
+    if (.not. skip_init_material_val) then
+      call create_material()
+    end if
     ! Determine the Legendre order of phi to store
     if (delta_leg_order == -1) then
       delta_leg_order = scatter_leg_order
@@ -98,7 +111,9 @@ module state
       ! Initialize DGM moments
       call initialize_moments()
       call initialize_basis()
-      call compute_expanded_cross_sections()
+      if (.not. skip_init_material_val) then
+        call compute_expanded_cross_sections()
+      end if
       number_groups = number_coarse_groups
       if (allocated(homogenization_map)) then
         number_regions = maxval(homogenization_map)
@@ -135,10 +150,7 @@ module state
       if (solver_type == 'fixed') then
         phi = 1.0_8  ! default value
       else if (solver_type == 'eigen') then
-        phi = 0.0_8
-        do c = 1, number_cells
-          phi(0, :, c) = nu_sig_f(:, mMap(c))
-        end do  ! End c loop
+        phi = 1.0_8
       end if
     else
       read(10) phi ! read the data in array x to the file

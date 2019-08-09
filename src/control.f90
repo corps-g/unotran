@@ -354,6 +354,7 @@ module control
     ! Check that the energy_group_map is provided correctly
     if (allocated(energy_group_map)) then
       if (size(energy_group_map) /= number_fine_groups) then
+        print *, size(energy_group_map), number_fine_groups
         print *, 'INPUT ERROR : energy group map must have a coarse group for all fine groups'
         stop
       end if
