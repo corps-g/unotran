@@ -96,6 +96,7 @@ module solver
 
         ! Compute new eigenvalue if eigen problem
         keff = keff * sum(abs(mg_phi(0,:,:))) / sum(abs(old_phi(0,:,:)))
+        ! Check for infinity by comparing against the largest variable of the same type as keff
         if (keff > HUGE(keff)) then
             print *, "infinity detected...exiting"
             exit_status = 1
