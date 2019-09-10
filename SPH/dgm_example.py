@@ -80,20 +80,18 @@ def runSPH(G, pin_map, xs_name, mapping, dgmstructure):
     nPin, fm, cm, mm = buildGEO(pin_map, False)
 
     # Create the initial SPH factors
-    old_mu = np.ones((mapping.nCG, nPin))
     fname = '_homo.'.join(xs_name.split('.'))
 
     # Solve for the reference problem
     ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, dgmstructure, mapping=mapping)
 
-    print(ref.phi_homo * ref.sig_t_homo)
+    # print(np.sum(ref.phi_homo * ref.sig_t_homo[:,np.newaxis,:,:], axis=0))
 
-    exit()
+    mu = np.ones(ref.phi_homo.shape)
 
-    ref_XS = XS(ref.sig_t_homo, ref.sig_f_homo, ref.chi_homo, ref.sig_s_homo)
+    nCellPerPin = ref.phi.shape[2] // ref.npin
 
-    # Write the reference cross sections
-    ref_XS.write_homogenized_XS(fname, old_mu)
+    ref_XS = XS(G, nCellPerPin, ref.sig_t_homo, ref.sig_f_homo, ref.chi_homo, ref.sig_s_homo)
 
     # Build the homogenized geometry
     nPin, fm, cm, mm = buildGEO(pin_map, True)
@@ -103,21 +101,17 @@ def runSPH(G, pin_map, xs_name, mapping, dgmstructure):
     print('start')
 
     for i in range(1000):
+        XS_args = ref_XS.write_homogenized_XS(mu)
+
         # Get the homogenized solution
-        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, ref.norm, structure(nCG, nCG))
+        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, dgmstructure, ref.norm, mapping=mapping, XS=XS_args)
 
         # Compute the SPH factors
         mu = ref.phi_homo / homo.phi_homo
 
-        # Write the new cross sections adjusted by SPH
-        ref_XS.write_homogenized_XS(fname, mu)
-
         # Compute the error in reaction rates
-        err = np.sum(np.abs(homo.phi_homo * homo.sig_t_homo - ref.phi_homo * ref.sig_t_homo))
+        err = np.sum(np.abs(np.sum(homo.phi_homo[:,np.newaxis,:,:] * homo.sig_t_homo, axis=0) - np.sum(ref.phi_homo[:,np.newaxis,:,:] * ref.sig_t_homo, axis=0)))
         # err = np.linalg.norm(mu - old_mu, np.inf)
-
-        # Save the previous SPH factors
-        # old_mu = np.copy(mu)
 
         # Provide iteration output
         print('Iter: {}    Error: {:6.4e}'.format(i + 1, err))

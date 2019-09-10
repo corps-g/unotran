@@ -33,48 +33,54 @@ module dgmsolver
 
   end subroutine initialize_dgmsolver
 
-  subroutine initialize_dgmsolver_with_moments(sig_t_mass, nu_sig_f_mass, sig_s_mass, chi_in)
+  subroutine initialize_dgmsolver_with_moments(nFG, sig_t_mass, nu_sig_f_mass, sig_s_mass, chi_m_in)
     ! ##########################################################################
     ! Initialize all of the variables and solvers
     ! This however begins by requiring the input of mass matrices
     ! The mg containers in state are set to coarse group size
     ! ##########################################################################
 
-    use dgm, only : expanded_sig_t, expanded_nu_sig_f, expanded_sig_s, expansion_order
+    use dgm, only : expanded_sig_t, expanded_nu_sig_f, expanded_sig_s, expansion_order, chi_m
     use control, only : number_coarse_groups, scatter_leg_order, number_fine_groups, homogenization_map
-    use material, only : number_materials, chi, finalize_material
+    use material, only : number_materials, finalize_material
     use state, only : initialize_state, mg_mMap
 
     real(kind=dp), dimension(:,:,:,:), intent(in) :: &
-      sig_t_mass     ! Input for the sig_t mass matrix
+      sig_t_mass       ! Input for the sig_t mass matrix
     real(kind=dp), dimension(:,:,:), intent(in) :: &
-      nu_sig_f_mass  ! Input for the sig_f mass matrix
+      nu_sig_f_mass, & ! Input for the sig_f mass matrix
+      chi_m_in         ! Input for the chi moment values
     real(kind=dp), dimension(:,:,:,:,:,:), intent(in) :: &
-      sig_s_mass     ! Input for the sig_s mass matrix
-    real(kind=dp), dimension(:,:), intent(in) :: &
-      chi_in         ! Input for the chi values
+      sig_s_mass       ! Input for the sig_s mass matrix
+    integer, intent(in) :: &
+      nFG              ! Input for the number of fine groups
     integer, dimension(6) :: &
-      sizes          ! Container to hold the array sizes
+      size6            ! Container to hold the array sizes
+    integer, dimension(3) :: &
+      size3            ! Container
+    integer :: &
+      nC
 
-    sizes = shape(sig_s_mass)
+    size6 = shape(sig_s_mass)
+    size3 = shape(chi_m_in)
 
-    expansion_order = sizes(1) - 1
-    scatter_leg_order = sizes(2) - 1
-    number_coarse_groups = sizes(3)
-    number_materials = sizes(5)
-    number_fine_groups = size(chi_in(:,1))
-
+    expansion_order = size6(1) - 1
+    scatter_leg_order = size6(2) - 1
+    number_coarse_groups = size6(3)
+    number_materials = size6(5)
+    number_fine_groups = nFG
+    nC = size3(2)
 
     allocate(expanded_sig_t(0:expansion_order, number_coarse_groups, number_materials, 0:expansion_order))
     allocate(expanded_nu_sig_f(0:expansion_order, number_coarse_groups, number_materials))
     allocate(expanded_sig_s(0:expansion_order, 0:scatter_leg_order, number_coarse_groups, &
                             number_coarse_groups, number_materials, 0:expansion_order))
-    allocate(chi(number_fine_groups, number_materials))
+    allocate(chi_m(number_coarse_groups, nC, 0:expansion_order))
 
     expanded_sig_t = reshape(sig_t_mass, shape(expanded_sig_t))
     expanded_nu_sig_f = reshape(nu_sig_f_mass, shape(expanded_nu_sig_f))
     expanded_sig_s = reshape(sig_s_mass, shape(expanded_sig_s))
-    chi = reshape(chi_in, shape(chi))
+    chi_m = reshape(chi_m_in, shape(chi_m))
 
     ! allocate the solutions variables
     call initialize_state(.true.)
@@ -82,10 +88,11 @@ module dgmsolver
     ! Fill the multigroup material map
     mg_mMap = homogenization_map
 
-    call compute_source_moments()
-
     ! Delete the fine-group cross sections
     call finalize_material()
+
+    ! Build the source moments
+    call compute_source_moments(.True.)
 
   end subroutine initialize_dgmsolver_with_moments
 
@@ -550,7 +557,7 @@ module dgmsolver
 
   end subroutine compute_xs_moments
 
-  subroutine compute_source_moments()
+  subroutine compute_source_moments(skip_chi_m)
     ! ##########################################################################
     ! Expand the source and chi using the basis functions
     ! ##########################################################################
@@ -575,12 +582,17 @@ module dgmsolver
         mat      ! Material index
     real(kind=dp), dimension(number_regions) :: &
         lengths  ! Length of each region
+    logical, intent(in), optional :: &
+        skip_chi_m                     ! Controls intializing the material
+    logical :: &
+        skip_chi_m_default = .false., & ! Controls the default for intializing the material
+        skip_chi_m_val                 ! Holds actual value of init_material_flag
 
-    allocate(chi_m(number_groups, number_regions, 0:expansion_order))
-    allocate(source_m(number_groups, 0:expansion_order))
-
-    chi_m = 0.0_8
-    source_m = 0.0_8
+    if (present(skip_chi_m)) then
+      skip_chi_m_val = skip_chi_m
+    else
+      skip_chi_m_val = skip_chi_m_default
+    end if
 
     ! Get the length of each region
     lengths = 0.0_8
@@ -594,22 +606,28 @@ module dgmsolver
     end do  ! End cy loop
 
     ! chi moment
-    do order = 0, expansion_order
-      c = 1
-      do cy = 1, number_cells_y
-        do cx = 1, number_cells_x
-          mat = mMap(c)
-          r = mg_mMap(c)
-          do g = 1, number_fine_groups
-            cg = energy_group_map(g)
-            chi_m(cg, r, order) = chi_m(cg, r, order) + basis(g, order) * chi(g, mat) * dx(cx) * dy(cy) / lengths(r)
-          end do  ! End g loop
-          c = c + 1
-        end do  ! End cx loop
-      end do  ! End cy loop
-    end do  ! End order loop
+    if (.not. skip_chi_m_val) then
+      allocate(chi_m(number_groups, number_regions, 0:expansion_order))
+      chi_m = 0.0_8
+      do order = 0, expansion_order
+        c = 1
+        do cy = 1, number_cells_y
+          do cx = 1, number_cells_x
+            mat = mMap(c)
+            r = mg_mMap(c)
+            do g = 1, number_fine_groups
+              cg = energy_group_map(g)
+              chi_m(cg, r, order) = chi_m(cg, r, order) + basis(g, order) * chi(g, mat) * dx(cx) * dy(cy) / lengths(r)
+            end do  ! End g loop
+            c = c + 1
+          end do  ! End cx loop
+        end do  ! End cy loop
+      end do  ! End order loop
+    end if
 
     ! Source moment
+    allocate(source_m(number_groups, 0:expansion_order))
+    source_m = 0.0_8
     do order = 0, expansion_order
       do g = 1, number_fine_groups
         cg = energy_group_map(g)
