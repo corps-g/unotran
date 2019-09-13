@@ -40,7 +40,7 @@ module dgmsolver
                         number_moments, number_angles_per_octant, min_recon_iters, number_coarse_groups
     use state, only : keff, phi, psi, mg_phi, mg_psi, normalize_flux, &
                       update_fission_density, output_moments, recon_convergence_rate, &
-                      mg_incident_x, mg_incident_y, eigen_count, recon_count
+                      mg_incident_x, mg_incident_y, eigen_count, recon_count, exit_status
     use dgm, only : expansion_order, phi_m, psi_m, dgm_order
     use solver, only : solve
     use omp_lib, only : omp_get_wtime
@@ -101,6 +101,10 @@ module dgmsolver
         call slice_xs_moments(order=dgm_order)
 
         call solve()
+        
+        if (exit_status == 1) then
+            return
+        end if
 
         ! Save the new flux moments
         phi_m(dgm_order,:,:,:) = mg_phi
@@ -350,6 +354,7 @@ module dgmsolver
         ord,         & ! Delta truncation order
         mat            ! Material index
     real(kind=dp) :: &
+        tolerance,   & ! Variable to hold the tolerance check for dividing by zero
         float          ! temporary double precision number
     real(kind=dp), dimension(0:expansion_order) :: &
         tmp_psi_m      ! flux arrays
@@ -369,9 +374,10 @@ module dgmsolver
 
     ! initialize all moments and mg containers to zero
     sig_s_m = 0.0_8
-    mg_sig_t = 0.0_8
     delta_m = 0.0_8
-    mg_nu_sig_f = 0.0_8
+
+    ! Set the tolerance as the smallest number of the same type as homog_phi
+    tolerance = tiny(homog_phi)
 
     ! Compute the denominator for spatial homogenization
     homog_phi = 0.0_8
@@ -393,7 +399,8 @@ module dgmsolver
         r = mg_mMap(c)
         do cg = 1, number_coarse_groups
           float = dot_product(phi_m(:, 0, cg, c), expanded_sig_t(:, cg, mat, 0))
-          if (homog_phi(0, cg, r) /= 0.0_8)  then
+          ! Avoid dividing by zero
+          if (abs(homog_phi(0, cg, r)) > tolerance) then
             mg_sig_t(cg, r) = mg_sig_t(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
           end if
         end do  ! End cg loop
@@ -410,7 +417,8 @@ module dgmsolver
         r = mg_mMap(c)
         do cg = 1, number_coarse_groups
           float = dot_product(phi_m(:, 0, cg, c), expanded_nu_sig_f(:, cg, mat))
-          if (homog_phi(0, cg, r) /= 0.0_8)  then
+          ! Avoid dividing by zero
+          if (abs(homog_phi(0, cg, r)) > tolerance) then
             mg_nu_sig_f(cg, r) = mg_nu_sig_f(cg, r) + dx(cx) * dy(cy) * float / homog_phi(0, cg, r)
           end if
         end do  ! End cg loop
@@ -430,7 +438,8 @@ module dgmsolver
             do cgp = 1, number_coarse_groups
               do l = 0, scatter_leg_order
                 float = dot_product(phi_m(:, l, cgp, c), expanded_sig_s(:, l, cgp, cg, mat, o))
-                if (homog_phi(l, cgp, r) /= 0.0_8) then
+                ! Avoid dividing by zero
+                if (abs(homog_phi(l, cgp, r)) > tolerance) then
                     sig_s_m(l, cgp, cg, r, o) = sig_s_m(l, cgp, cg, r, o) &
                                               + dx(cx) * dy(cy) * float / homog_phi(l, cgp, r)
                 end if
@@ -466,7 +475,8 @@ module dgmsolver
               ! Check if producing nan and not computing with a nan
               float = dot_product(tmp_psi_m(:), expanded_sig_t(:, cg, mat, o))
               float = float - mg_sig_t(cg, r) * tmp_psi_m(o)
-              if ((homog_phi(0, cg, r) /= 0.0_8) .and. (tmp_psi_m(0) /= 0.0_8)) then
+              ! Avoid dividing by zero
+              if (abs(homog_phi(0, cg, r)) > tolerance .and. (abs(tmp_psi_m(0)) > tolerance)) then
                 delta_m(cg, a, r, o) = delta_m(cg, a, r, o) &
                                      + dx(cx) * dy(cy) * float / tmp_psi_m(0) * phi_m(0, 0, cg, c) / homog_phi(0, cg, r)
               end if

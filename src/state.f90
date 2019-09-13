@@ -33,6 +33,7 @@ module state
       scaling,             & ! Scaling factor for source terms
       recon_convergence_rate ! Approximate rate of convergence for recon iters
   integer :: &
+      exit_status,         & ! Allows setting exit signals
       sweep_count,         & ! Counter for the number of transport sweeps
       recon_count,         & ! Number of recon iterations
       eigen_count,         & ! Number of eigen iterations
@@ -399,7 +400,8 @@ module state
     ! Print the output of the cross sections to the standard output
     ! ##########################################################################
 
-    use control, only : store_psi
+    use control, only : store_psi, use_DGM
+    use dgm, only : delta_m
 
     ! Total XS
     print *, 'Sig_t = ', mg_sig_t
@@ -414,11 +416,16 @@ module state
     print *, 'chi = ', mg_chi
 
     ! Phi
-    print *, 'phi = ', phi
+    print *, 'phi = ', mg_phi
 
     ! Psi
     if (store_psi) then
-      print *, 'psi = ', psi
+      print *, 'psi = ', mg_psi
+    end if
+
+    ! Delta
+    if (use_DGM) then
+      print *, 'delta = ', delta_m
     end if
 
     ! incoming
