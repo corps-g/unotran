@@ -56,7 +56,7 @@ class XS():
 class DGMSOLVER():
 
     # Solve the problem using unotran
-    def __init__(self, G, fname, fm, cm, mm, nPin, norm=None, mapping=None):
+    def __init__(self, G, fname, fm, cm, mm, nPin, norm=None, mapping=None, vacuum=False):
         '''
         Inputs:
             G     - Number of energy groups
@@ -77,9 +77,9 @@ class DGMSOLVER():
         self.npin = nPin
         self.norm = norm
         self.computenorm = self.norm is None
+        self.vacuum = vacuum
 
         self.mapping = mapping
-        assert self.mapping is not None
         # Pass on the options to unotran
         self.setOptions()
         # Solve using unotran
@@ -87,7 +87,8 @@ class DGMSOLVER():
         # Homogenize the cross sections over each spatial region
         self.homogenize_space()
         # Homogenize the cross sections over each energy range
-        self.homogenize_energy()
+        if self.mapping is not None:
+            self.homogenize_energy()
 
     def setOptions(self):
         '''
@@ -100,14 +101,14 @@ class DGMSOLVER():
         pydgm.control.xs_name = self.fname.ljust(256)
         pydgm.control.angle_order = 8
         pydgm.control.angle_option = pydgm.angle.gl
-        pydgm.control.boundary_west = 1.0
-        pydgm.control.boundary_east = 1.0
+        pydgm.control.boundary_west = 0.0 if self.vacuum else 1.0
+        pydgm.control.boundary_east = 0.0 if self.vacuum else 1.0
         pydgm.control.allow_fission = True
         pydgm.control.eigen_print = 0
         pydgm.control.outer_print = 0
         pydgm.control.eigen_tolerance = 1e-14
         pydgm.control.outer_tolerance = 1e-14
-        pydgm.control.max_eigen_iters = 10000
+        pydgm.control.max_eigen_iters = 100000
         pydgm.control.max_outer_iters = 1
         pydgm.control.store_psi = False
         pydgm.control.solver_type = 'eigen'.ljust(256)
@@ -174,9 +175,10 @@ class DGMSOLVER():
 
         # Either find the norm of the flux or normalize the flux to self.norm
         if self.computenorm:
-            self.norm = np.sum(phi_dx, axis=1)
+            self.norm = np.sum(self.phi_homo, axis=-1)
         else:
-            norm = self.norm / self.phi_homo.dot(V)
+            print('compute norm')
+            norm = np.nan_to_num(self.norm / np.sum(self.phi_homo, axis=-1))
             self.phi_homo *= norm[:,np.newaxis]
             phi_dx *= norm[:,np.newaxis]
 

@@ -59,7 +59,14 @@ module dgmsolver
     integer, dimension(3) :: &
       size3            ! Container
     integer :: &
-      nC
+      nC, &
+      c, &
+      o, &
+      oo, &
+      g, &
+      gp, &
+      l, &
+      m
 
     size6 = shape(sig_s_mass)
     size3 = shape(chi_m_in)
@@ -77,10 +84,45 @@ module dgmsolver
                             number_coarse_groups, number_materials, 0:expansion_order))
     allocate(chi_m(number_coarse_groups, nC, 0:expansion_order))
 
-    expanded_sig_t = reshape(sig_t_mass, shape(expanded_sig_t))
-    expanded_nu_sig_f = reshape(nu_sig_f_mass, shape(expanded_nu_sig_f))
-    expanded_sig_s = reshape(sig_s_mass, shape(expanded_sig_s))
-    chi_m = reshape(chi_m_in, shape(chi_m))
+    do o = 0, expansion_order
+      do m = 1, number_materials
+        do g = 1, number_coarse_groups
+          do oo = 0, expansion_order
+            expanded_sig_t(oo,g,m,o) = sig_t_mass(oo+1,g,m,o+1)
+          end do
+        end do
+      end do
+    end do
+
+    do m = 1, number_materials
+      do g = 1, number_coarse_groups
+        do oo = 0, expansion_order
+          expanded_nu_sig_f(oo,g,m) = nu_sig_f_mass(oo+1,g,m)
+        end do
+      end do
+    end do
+
+    do o = 0, expansion_order
+      do m = 1, number_materials
+        do g = 1, number_coarse_groups
+          do gp = 1, number_coarse_groups
+            do l = 0, scatter_leg_order
+              do oo = 0, expansion_order
+                expanded_sig_s(oo,l,gp,g,m,o) = sig_s_mass(oo+1,l+1,gp,g,m,o+1)
+              end do
+            end do
+          end do
+        end do
+      end do
+    end do
+
+    do o = 0, expansion_order
+      do c = 1, nC
+        do g = 1, number_coarse_groups
+          chi_m(g, c, o) = chi_m_in(g, c, o + 1)
+        end do
+      end do
+    end do
 
     ! allocate the solutions variables
     call initialize_state(.true.)

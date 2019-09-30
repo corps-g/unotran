@@ -2,14 +2,19 @@ import numpy as np
 from sph import XS, DGMSOLVER
 import matplotlib.pyplot as plt
 from structures import structure
+from coarseBounds import computeBounds, Grouping
 from scipy.optimize import minimize, Bounds
+import pickle
 
 
 def buildGEO(ass_map, homogenzied=False):
     fine_map = [6, 18, 18, 18, 18, 6]
     coarse_map = [1.1176, 3.2512, 3.2512, 3.2512, 3.2512, 1.1176]
 
-    material_map = [[5, 1, 2, 2, 1, 5], [5, 1, 3, 3, 1, 5], [5, 1, 4, 4, 1, 5]]
+    if G > 40:
+        material_map = [[5, 1, 2, 2, 1, 5], [5, 1, 3, 3, 1, 5], [5, 1, 4, 4, 1, 5]]
+    else:
+        material_map = [[9, 1, 2, 2, 1, 9], [9, 1, 3, 3, 1, 9], [9, 1, 4, 4, 1, 9]]
 
     npins = len(ass_map)
 
@@ -73,6 +78,8 @@ def runSPH(G, pin_map, xs_name, mapping):
         pin_map - List of pins in the geometry
         xs_name - Str with the cross section file in anlxs format
     '''
+
+    print('compute reference reaction rates')
     # Build the reference geometry
     nPin, fm, cm, mm = buildGEO(pin_map, False)
 
@@ -82,8 +89,6 @@ def runSPH(G, pin_map, xs_name, mapping):
 
     # Solve for the reference problem
     ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, mapping=mapping)
-
-    print(ref.phi_homo * ref.sig_t_homo)
 
     ref_XS = XS(ref.sig_t_homo, ref.sig_f_homo, ref.chi_homo, ref.sig_s_homo)
 
@@ -99,7 +104,7 @@ def runSPH(G, pin_map, xs_name, mapping):
 
     for i in range(1000):
         # Get the homogenized solution
-        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, ref.norm, structure(nCG, nCG))
+        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, ref.norm)
 
         # Compute the SPH factors
         mu = ref.phi_homo / homo.phi_homo
@@ -125,8 +130,11 @@ def runSPH(G, pin_map, xs_name, mapping):
     rxn_ref = ref.phi_homo * ref.sig_t_homo# - np.sum(ref.sig_s_homo, axis=0))
     rxn_homo = homo.phi_homo * homo.sig_t_homo# - np.sum(homo.sig_s_homo, axis=0))
     print('Make sure these reactions rates are the same if SPH is working properly')
-    print(rxn_ref)
-    print(rxn_homo)
+    print(rxn_homo - rxn_ref)
+
+    pickle.dump(ref, open('ref_sph.p', 'wb'))
+    pickle.dump(ref_XS, open('refXS_sph.p', 'wb'))
+    pickle.dump(homo, open('homo_sph.p', 'wb'))
 
     return ref_XS
 
@@ -141,20 +149,17 @@ def makeColorset(G, pin_map, xs_name, homog=False, norm=None):
 if __name__ == '__main__':
     np.set_printoptions(precision=6)
 
-    G = 7
+    G = 44
 
-    mapping = structure(G, 2)
+    dgmstructure = computeBounds(G, 'core2', 1, 0.0, 1.0, 60)
+    mapping = structure(G, dgmstructure)
     xs_name = 'XS/{}gXS.anlxs'.format(G)
 
-    # Get the reference solution
-    ass_map = [0, 1]
-    #ref = makeColorset(G, ass_map, xs_name, False)
-
-
     # Get the homogenized cross sections
-    ass1 = runSPH(G, [0, 1], xs_name, mapping)
-    #ass2 = runSPH(G, [1], xs_name)
-    #core = uo2low + uo2high
+    ass1 = runSPH(G, [0], xs_name, mapping)
+    ass2 = runSPH(G, [2], xs_name, mapping)
+
+    pickle.dump(ass1 + ass2, open('refXS_sph.p', 'wb'))
 
     exit()
 

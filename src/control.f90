@@ -67,6 +67,7 @@ module control
       delta_leg_order=-1            ! Legendre order for truncated expansion of delta term
   logical :: &
       allow_fission=.false.,      & ! Enable/Disable fission in the problem
+      allow_scatter=.true.,       & ! Enable/Disable scattering in the problem
       use_dgm=.false.,            & ! Enable/Disable DGM solver
       store_psi=.false.,          & ! Enable/Disable storing the angular flux
       ignore_warnings=.true.,     & ! Enable/Disable warning messages

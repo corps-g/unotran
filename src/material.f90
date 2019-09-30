@@ -29,7 +29,7 @@ module material
     ! ##########################################################################
 
     ! Use Statements
-    use control, only : allow_fission, number_fine_groups, &
+    use control, only : allow_fission, allow_scatter, number_fine_groups, &
                         number_legendre, xs_name, number_coarse_groups, &
                         scatter_leg_order
     ! Variable definitions
@@ -124,6 +124,11 @@ module material
     if (.not. allow_fission) then
       sig_f = 0.0
       nu_sig_f = 0.0
+    end if
+
+    ! If scattering is not allowed, set scattering cross sections to zero
+    if (.not. allow_scatter) then
+      sig_s = 0.0
     end if
 
   end subroutine create_material
