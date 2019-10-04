@@ -2,12 +2,17 @@ import numpy as np
 from sph_dgm import XS, DGMSOLVER
 import matplotlib.pyplot as plt
 from structures import structure
-from scipy.optimize import minimize, Bounds
+from scipy.optimize import minimize
 from coarseBounds import computeBounds, Grouping
 from makeDLPbasis import makeBasis as makeDLP
 from makeKLTbasis import makeBasis as makeKLT
 import pickle
 import time
+from mpi4py import MPI
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+np.set_printoptions(precision=8, suppress=True)
 
 
 def buildGEO(ass_map, homogenzied=False):
@@ -84,12 +89,14 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
     # Build the reference geometry
     nPin, fm, cm, mm = buildGEO(pin_map, False)
 
+    mmap = [m - 1 for r, m in zip(fm, mm) for _ in range(r)]
+
     # Create the initial SPH factors
     fname = '_homo.'.join(xs_name.split('.'))
 
     # Solve for the reference problem
 
-    if False:
+    if True:
         print('Loading previous reference')
         ref = pickle.load(open('ref_dgm.p', 'rb'))
     else:
@@ -97,13 +104,28 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
         ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, dgmstructure, order=order)
         pickle.dump(ref, open('ref_dgm.p', 'wb'))
     na = np.newaxis
-    rxn_ref = np.sum(ref.sig_t_homo * ref.phi_homo[:,na,:,:], axis=0)
-    rxn_ref_s = np.sum(ref.sig_s_homo * ref.phi_homo[:,na,:,na,:], axis=0)
-    rxn_ref_f = np.sum(ref.sig_f_homo * ref.phi_homo[:,:,:], axis=0)
+    rxn_ref = np.sum(ref.sig_t_homo * ref.phi_homo[:, na, :, :], axis=0)
+    rxn_ref_s = np.sum(ref.sig_s_homo * ref.phi_homo[:, na, :, na, :], axis=0)
+    rxn_ref_f = np.sum(ref.sig_f_homo * ref.phi_homo[:, :, :], axis=0)
 
-    test_rxn_t = np.sum(np.sum(ref.sig_t * ref.phi[:,na,:,:], axis=0) * ref.dx[na,na,:], axis=-1) / np.sum(ref.dx)
-    test_rxn_s = np.sum(np.sum(ref.sig_s * ref.phi[:,na,:,na,:], axis=0) * ref.dx[na,na,na,:], axis=-1) / np.sum(ref.dx)
-    test_rxn_f = np.sum(np.sum(ref.vsig_f * ref.phi[:,:,:], axis=0) * ref.dx[na,:], axis=-1) / np.sum(ref.dx)
+    space_map = [r for r in range(nPin) for _ in range(ref.phi.shape[2] // nPin)]
+
+    test_rxn_t = np.zeros((rxn_ref.shape), order='f')
+    test_rxn_s = np.zeros((rxn_ref_s.shape), order='f')
+    test_rxn_f = np.zeros((rxn_ref_f.shape), order='f')
+    L = np.zeros((nPin))
+
+    for c, r in enumerate(space_map):
+        L[r] += ref.dx[c]
+
+    for c, r in enumerate(space_map):
+        test_rxn_t[:, :, r] += np.sum(ref.sig_t[:, :, :, c] * ref.phi[:, na, :, c], axis=0) * ref.dx[na, na, c] / L[na, na, r]
+        test_rxn_s[:, :, :, r] += np.sum(ref.sig_s[:, :, :, :, c] * ref.phi[:, na, :, na, c], axis=0) * ref.dx[na, na, na, c] / L[na, na, na, r]
+        test_rxn_f[:, r] += np.sum(ref.vsig_f[:, :, c] * ref.phi[:, :, c], axis=0) * ref.dx[na, c] / L[na, r]
+
+    # np.testing.assert_allclose(0.0, rxn_ref - test_rxn_t, atol=1e-14)
+    np.testing.assert_allclose(0.0, rxn_ref_s - test_rxn_s, atol=1e-14)
+    np.testing.assert_allclose(0.0, rxn_ref_f - test_rxn_f, atol=1e-14)
 
     nCellPerPin = ref.phi.shape[2] // ref.npin
 
@@ -114,34 +136,36 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
 
     nCG = max(dgmstructure.structure) + 1
 
-    mu = np.ones((min(order+1, dgmstructure.maxOrder), nCG, ref.npin), order='f')
+    mu = np.ones((order + 1, nCG, ref.npin), order='f')
     for cg, MO in dgmstructure.counts.items():
-        mu[MO:,cg,:] *= 0
+        mu[MO:, cg, :] *= 0
+    mu = np.ones((nCG, ref.npin), order='f')
     old_mu = np.copy(mu)
 
-    print('start')
+    print(rxn_ref)
+
+    print('start SPH')
 
     for i in range(1000):
         XS_args = ref_XS.write_homogenized_XS(mu)
 
         # Get the homogenized solution
         homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, dgmstructure, ref.norm, XS=XS_args, order=order)
-        rxn_homo = np.sum(homo.sig_t_homo * homo.phi_homo[:,na,:,:], axis=0)
-        test_rxn_t_homo = np.sum(np.sum(homo.sig_t * homo.phi[:,na,:,:], axis=0) * homo.dx[na,na,:], axis=-1) / np.sum(homo.dx)
-
+        rxn_homo = np.sum(homo.sig_t_homo * homo.phi_homo[:, na, :, :], axis=0)
         # Compute the SPH factors
-        mu = np.nan_to_num(ref.phi_homo / homo.phi_homo)
-        print(mu.flatten())
-        time.sleep(1)
+        # mu = np.nan_to_num(ref.phi_homo[0] / homo.phi_homo[0])
+        mu *= np.nan_to_num(rxn_ref[0] / rxn_homo[0] - 1.0) ** 1.0 + 1.0
+        print(mu)
 
         # Compute the error in reaction rates
-        rxn_homo = np.sum(homo.sig_t_homo * homo.phi_homo[:,na,:,:], axis=0)
-        #err = np.linalg.norm(rxn_homo.flatten() - rxn_ref.flatten(), np.inf)
+        print('rate')
+        # err = np.linalg.norm(rxn_homo.flatten() - rxn_ref.flatten(), np.inf)
+        print(rxn_homo - rxn_ref)
         err = np.linalg.norm(mu.flatten() - old_mu.flatten(), np.inf)
         old_mu = np.copy(mu)
 
         # Provide iteration output
-        print('Iter: {}    Error: {:6.4e}'.format(i + 1, err))
+        print('Iter: {} Order: {}   Error: {:6.4e}'.format(i + 1, order, err))
         if err < 1e-8:
             break
 
@@ -150,19 +174,13 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
 
     print('Make sure these reactions rates are the same if SPH is working properly')
     print(rxn_ref - rxn_homo)
-    #print(rxn_homo)
+    print(rxn_ref / rxn_homo)
+    # print(rxn_homo)
 
     pickle.dump(ref_XS, open('refXS_dgm.p', 'wb'))
     pickle.dump(homo, open('homo_dgm.p', 'wb'))
 
     return ref_XS
-
-
-def makeColorset(G, pin_map, xs_name, homog=False, norm=None):
-    nPin, fm, cm, mm = buildGEO(pin_map, homog)
-    S = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, norm)
-
-    return S
 
 
 if __name__ == '__main__':
@@ -182,20 +200,26 @@ if __name__ == '__main__':
 
     xs_name = 'XS/{}gXS.anlxs'.format(G)
 
-    # Get the reference solution
-    ass_map = [0, 2]
-    #ref = makeColorset(G, ass_map, xs_name, False)
-    for o in range(dgmstructure.maxOrder):
-        if o in [1]:
-            continue
-        # Get the homogenized cross sections
-        ass1 = runSPH(G, [0], xs_name, dgmstructure, order=o)
-        ass2 = runSPH(G, [2], xs_name, dgmstructure, order=o)
+    if False:
+        for o in range(dgmstructure.maxOrder):
+            if o in [1]:
+                continue
+            # Get the homogenized cross sections
+            ass1 = runSPH(G, [0], xs_name, dgmstructure, order=o)
+            ass2 = runSPH(G, [2], xs_name, dgmstructure, order=o)
 
-        pickle.dump(ass1, open('refXS_dgm_ass1_o{}.p'.format(o), 'wb'))
-        pickle.dump(ass2, open('refXS_dgm_ass2_o{}.p'.format(o), 'wb'))
-        pickle.dump(ass1 + ass2, open('refXS_dgm_o{}.p'.format(o), 'wb'))
-        core = ass1 + ass2
+            pickle.dump(ass1, open('refXS_dgm_ass1_o{}.p'.format(o), 'wb'))
+            pickle.dump(ass2, open('refXS_dgm_ass2_o{}.p'.format(o), 'wb'))
+            pickle.dump(ass1 + ass2, open('refXS_dgm_o{}.p'.format(o), 'wb'))
+    else:
+        ass_map = [0, 2]
+        item = -1
+        for o in range(dgmstructure.maxOrder):
+            item += 1
+            if (item % size) != rank: continue
+            # Get the homogenized cross sections
+            ass1 = runSPH(G, ass_map, xs_name, dgmstructure, order=o)
+            pickle.dump(ass1, open('refXS_dgm_o{}.p'.format(o), 'wb'))
 
     exit()
 

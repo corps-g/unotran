@@ -3,6 +3,7 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 
+
 class XS():
 
     # Hold the cross section values with routines for outputting to txt file
@@ -34,16 +35,16 @@ class XS():
         sig_s = np.zeros((order, 1, G, G, nMat, order), order='F')
         chi = np.zeros((G, self.nCellPerPin * nMat, order), order='F')
 
+        sig_f[:, :, :] = self.sig_f[:, :, :] * self.mu[na, :, :]
         for o in range(order):
-            sig_t[:,:,:,o] = self.sig_t[:,o,:,:] * self.mu[:,:,:]
-            sig_f[o,:,:] = self.sig_f[o,:,:] * self.mu[o,:,:]
-            sig_s[:,0,:,:,:,o] = self.sig_s[:,o,:,:,:] * self.mu[:,:,na,:]
+            sig_t[:, :, :, o] = self.sig_t[:, o, :, :] * self.mu[na, :, :]
+            sig_s[:, 0, :, :, :, o] = self.sig_s[:, o, :, :, :] * self.mu[na, :, na, :]
             for i in range(self.nCellPerPin * nMat):
-                chi[:,i,o] = self.chi[o,:,i // self.nCellPerPin]
+                chi[:, i, o] = self.chi[o, :, i // self.nCellPerPin]
 
         if mmap is not None:
             X = chi.reshape((G, self.nCellPerPin, -1, order))
-            chi = np.concatenate([X[:,:,m-1,:] for m in mmap], axis=1)
+            chi = np.concatenate([X[:, :, m - 1, :] for m in mmap], axis=1)
 
         return self.nFG, sig_t, sig_f, sig_s, chi
 
@@ -115,6 +116,7 @@ class DGMSOLVER():
         pydgm.control.eigen_print = 0
         pydgm.control.outer_print = 0
         pydgm.control.recon_tolerance = 1e-8
+        pydgm.control.recon_tolerance = 1e-6
         pydgm.control.eigen_tolerance = 1e-14
         pydgm.control.outer_tolerance = 1e-14
         pydgm.control.max_recon_iters = 10000
@@ -145,8 +147,6 @@ class DGMSOLVER():
             pydgm.control.lamb = 0.6
             pydgm.dgmsolver.initialize_dgmsolver_with_moments(*self.XS)
 
-        print('initialized')
-
         # Call the solver
         pydgm.dgmsolver.dgmsolve()
 
@@ -161,7 +161,7 @@ class DGMSOLVER():
         '''
         Copy information from Unotran before the solver is deallocated
         '''
-        self.phi = np.copy(pydgm.dgm.phi_m[:,0,:,:])
+        self.phi = np.copy(pydgm.dgm.phi_m[:, 0, :, :])
         self.dx = np.copy(pydgm.mesh.dx)
         self.mat_map = np.copy(pydgm.mesh.mmap)
 
@@ -175,10 +175,10 @@ class DGMSOLVER():
         self.basis = np.copy(pydgm.dgm.basis).T  # i,g
         for c in range(nC):
             for o in range(order):
-                self.sig_t[:,o,:,c] = pydgm.dgm.expanded_sig_t[:,:,self.mat_map[c]-1,o]
-                self.sig_s[:,o,:,:,c] = pydgm.dgm.expanded_sig_s[:,0,:,:,self.mat_map[c]-1,o]
-            self.vsig_f[:,:,c] = pydgm.dgm.expanded_nu_sig_f[:,:,self.mat_map[c]-1]
-            self.chi[:,:,c] = pydgm.dgm.chi_m[:,c,:].T
+                self.sig_t[:, o, :, c] = pydgm.dgm.expanded_sig_t[:, :, self.mat_map[c] - 1, o]
+                self.sig_s[:, o, :, :, c] = pydgm.dgm.expanded_sig_s[:, 0, :, :, self.mat_map[c] - 1, o]
+            self.vsig_f[:, :, c] = pydgm.dgm.expanded_nu_sig_f[:, :, self.mat_map[c] - 1]
+            self.chi[:, :, c] = pydgm.dgm.chi_m[:, c, :].T
 
     def homogenize_space(self):
         '''
@@ -193,7 +193,6 @@ class DGMSOLVER():
             shape = array.shape
             return np.sum(array.reshape(*shape[:-1], self.npin, nCellPerPin, order='F'), axis=-1) / V
 
-
         # Check that everything is the right shape of arrays
         shape = self.phi.shape
         assert (shape[2] / self.npin) == (shape[2] // self.npin)
@@ -205,20 +204,20 @@ class DGMSOLVER():
         # Compute the \sum_{g\in G} \sum_{c\in r} V_c dE_g
         V = np.sum(self.dx.reshape(self.npin, -1), axis=1)
 
-        # \forall g\in G, \forall c\in r compute \phi_{g,c} V_c dE_g
+        # \forall c\in r compute \phi_{g,c} V_c
         # Homogenize the flux
-        phi_dx = self.phi[:,:,:] * self.dx[na,na,:]
+        phi_dx = self.phi[:, :, :] * self.dx[na, na, :]
 
-        self.phi_homo = homo_space(phi_dx)
+        self.phi_homo = np.nan_to_num(homo_space(phi_dx))
 
         # Either find the norm of the flux or normalize the flux to self.norm
         if self.computenorm:
             self.norm = np.sum(self.phi_homo, axis=-1)
         else:
-            print('compute norm')
             norm = np.nan_to_num(self.norm / np.sum(self.phi_homo, axis=-1))
-            self.phi_homo *= norm[:,:,na]
-            phi_dx *= norm[:,:,na]
+            norm[norm == 0.0] = 1.0
+            self.phi_homo *= norm[:, :, na]
+            phi_dx *= norm[:, :, na]
 
         MO = min(self.dgmstructure.maxOrder, self.order + 1)
         nCG = max(self.dgmstructure.structure) + 1
@@ -227,23 +226,23 @@ class DGMSOLVER():
 
         self.phi_homo_fine = np.zeros((self.dgmstructure.G, self.npin))
         for g, cg in enumerate(self.dgmstructure.structure):
-            self.phi_homo_fine[g,:] += self.phi_homo[:,cg,:].T @ self.basis[:,g]
+            self.phi_homo_fine[g, :] += self.phi_homo[:, cg, :].T.dot(self.basis[:, g])
 
         for g, cg in enumerate(self.dgmstructure.structure):
             for i in range(MO):
                 for j in range(MO):
                     for k in range(MO):
-                        basis_phi[:,k,j,i,cg] += self.basis[i,g] * self.basis[j,g] * self.basis[k,g] / self.phi_homo_fine[g,:]
+                        basis_phi[:, k, j, i, cg] += np.nan_to_num(self.basis[i, g] * self.basis[j, g] * self.basis[k, g] / self.phi_homo_fine[g, :])
 
         # Homogenize the cross sections
 
         # total
-        self.sig_t_homo = np.zeros((MO,MO,nCG,self.npin), order='f')
+        self.sig_t_homo = np.zeros((MO, MO, nCG, self.npin), order='f')
         for c, r in enumerate(space_map):
             for G in range(nCG):
                 for i in range(MO):
                     for j in range(MO):
-                        self.sig_t_homo[j,i,G,r] += self.sig_t[j,:,G,c] @ basis_phi[r,:,:,i,G] @ phi_dx[:, G, c] / V[r]
+                        self.sig_t_homo[j, i, G, r] += self.sig_t[j, :, G, c].dot(basis_phi[r, :, :, i, G]).dot(phi_dx[:, G, c]) / V[r]
 
         # scatter
         self.sig_s_homo = np.zeros((MO, MO, nCG, nCG, self.npin), order='f')
@@ -252,16 +251,20 @@ class DGMSOLVER():
                 for GP in range(nCG):
                     for i in range(MO):
                         for j in range(MO):
-                            self.sig_s_homo[j,i,GP,G,r] += self.sig_s[:,i,GP,G,c] @ basis_phi[r,:,:,j,GP] @ phi_dx[:, GP, c] / V[r]
+                            self.sig_s_homo[j, i, GP, G, r] += self.sig_s[:, i, GP, G, c].dot(basis_phi[r, :, :, j, GP]).dot(phi_dx[:, GP, c]) / V[r]
 
         # fission
         self.sig_f_homo = np.zeros((MO, nCG, self.npin), order='f')
         for c, r in enumerate(space_map):
             for G in range(nCG):
                 for i in range(MO):
-                    self.sig_f_homo[i,G,r] += self.vsig_f[:,G,c] @ basis_phi[r,:,:,i,G] @ phi_dx[:, G, c] / V[r]
+                    self.sig_f_homo[i, G, r] += self.vsig_f[:, G, c].dot(basis_phi[r, :, :, i, G]).dot(phi_dx[:, G, c]) / V[r]
 
         self.chi_homo = homo_space(self.chi * self.dx)
+
+        self.sig_t_homo = np.nan_to_num(self.sig_t_homo)
+        self.sig_s_homo = np.nan_to_num(self.sig_s_homo)
+        self.sig_f_homo = np.nan_to_num(self.sig_f_homo)
 
         return
 
@@ -279,63 +282,9 @@ class DGMSOLVER():
         for j in range(5):
             for i in range(5):
                 for g in range(2):
-                    plt.plot(*barchart(x, self.sig_t[j,i,g,:]))
-                    plt.axhline(self.sig_t_homo[j,i,g,0])
-                    plt.savefig('fig{}-{}-{}.png'.format(j,i,g))
+                    plt.plot(*barchart(x, self.sig_t[j, i, g, :]))
+                    plt.axhline(self.sig_t_homo[j, i, g, 0])
+                    plt.savefig('fig{}-{}-{}.png'.format(j, i, g))
                     plt.clf()
         exit()
-
-
-
-
-
-
-    def homogenize_energy(self):
-        '''
-        Homogenize the cross sections over the energy range
-        '''
-
-        def homo_energy(array1, array2=None):
-            '''
-            convinence function to do the integration
-
-            return \frac{\sum_i array1[i] * array2[i]}{\sum_i array2[i]} for each coarse group
-            '''
-            if array2 is not None:
-                y = np.zeros((nCG, len(array1[0])))
-                z = np.zeros((nCG, len(array1[0])))
-                for g, cg in enumerate(grouping):
-                    z[cg - 1] += array1[g] * array2[g]
-                    y[cg - 1] += array2[g]
-
-                return z / y
-            else:
-                z = np.zeros((nCG, len(array1[0])))
-                for g, cg in enumerate(grouping):
-                    z[cg - 1] += array1[g]
-                return z
-
-        nCG = self.mapping.nCG
-        nFG = self.mapping.nFG
-        grouping = np.array(self.mapping.grouping)
-
-        dE_coarse = np.array(self.mapping.dE_coarse)
-        dE_fine = np.array(self.mapping.dE_fine)
-
-        phi_homo = homo_energy(self.phi_homo, dE_fine[:,np.newaxis])
-
-        if self.computenorm:
-            norm = np.zeros(nCG)
-            for g, cg in enumerate(grouping):
-                norm[cg - 1] += self.norm[g]
-            self.norm = norm
-
-        self.sig_t_homo = homo_energy(self.sig_t_homo, self.phi_homo)
-        self.sig_f_homo = homo_energy(self.sig_f_homo, self.phi_homo)
-        self.chi_homo = homo_energy(self.chi_homo)
-        sig_s_homo = np.zeros((nCG, nCG, self.npin))
-        for gp, g in enumerate(grouping):
-            sig_s_homo[g - 1] += homo_energy(self.sig_s_homo[gp], self.phi_homo)
-        self.sig_s_homo = sig_s_homo
-        self.phi_homo = phi_homo
 
