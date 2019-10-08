@@ -116,7 +116,6 @@ class DGMSOLVER():
         pydgm.control.eigen_print = 0
         pydgm.control.outer_print = 0
         pydgm.control.recon_tolerance = 1e-8
-        pydgm.control.recon_tolerance = 1e-6
         pydgm.control.eigen_tolerance = 1e-14
         pydgm.control.outer_tolerance = 1e-14
         pydgm.control.max_recon_iters = 10000
@@ -144,7 +143,7 @@ class DGMSOLVER():
         if self.XS is None:
             pydgm.dgmsolver.initialize_dgmsolver()
         else:
-            pydgm.control.lamb = 0.6
+            pydgm.control.lamb = 0.5
             pydgm.dgmsolver.initialize_dgmsolver_with_moments(*self.XS)
 
         # Call the solver

@@ -8,6 +8,7 @@ from makeDLPbasis import makeBasis as makeDLP
 from makeKLTbasis import makeBasis as makeKLT
 import pickle
 import time
+import os
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
@@ -96,7 +97,7 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
 
     # Solve for the reference problem
 
-    if True:
+    if False:
         print('Loading previous reference')
         ref = pickle.load(open('ref_dgm.p', 'rb'))
     else:
@@ -166,7 +167,7 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
 
         # Provide iteration output
         print('Iter: {} Order: {}   Error: {:6.4e}'.format(i + 1, order, err))
-        if err < 1e-8:
+        if err < 1e-6:
             break
 
     print('SPH factors')
@@ -174,7 +175,6 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
 
     print('Make sure these reactions rates are the same if SPH is working properly')
     print(rxn_ref - rxn_homo)
-    print(rxn_ref / rxn_homo)
     # print(rxn_homo)
 
     pickle.dump(ref_XS, open('refXS_dgm.p', 'wb'))
@@ -185,6 +185,8 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
 
 if __name__ == '__main__':
     np.set_printoptions(precision=6)
+
+    task = int(os.environ['SLURM_ARRAY_TASK_ID'])
 
     G = 44
     basis = 'dlp'
@@ -214,12 +216,10 @@ if __name__ == '__main__':
     else:
         ass_map = [0, 2]
         item = -1
-        for o in range(dgmstructure.maxOrder):
-            item += 1
-            if (item % size) != rank: continue
-            # Get the homogenized cross sections
-            ass1 = runSPH(G, ass_map, xs_name, dgmstructure, order=o)
-            pickle.dump(ass1, open('refXS_dgm_o{}.p'.format(o), 'wb'))
+        o = task
+        # Get the homogenized cross sections
+        ass1 = runSPH(G, ass_map, xs_name, dgmstructure, order=o)
+        pickle.dump(ass1, open('refXS_dgm_o{}.p'.format(o), 'wb'))
 
     exit()
 

@@ -3,7 +3,7 @@ from sph import XS, DGMSOLVER
 import matplotlib.pyplot as plt
 from structures import structure
 from coarseBounds import computeBounds, Grouping
-from scipy.optimize import minimize, Bounds
+from scipy.optimize import minimize, Bounds, fsolve, root
 import pickle
 
 
@@ -95,6 +95,9 @@ def runSPH(G, pin_map, xs_name, mapping):
     # Write the reference cross sections
     ref_XS.write_homogenized_XS(fname, old_mu)
 
+    ref_rate = ref.phi_homo * ref.sig_t_homo
+    print(ref_rate)
+
     # Build the homogenized geometry
     nPin, fm, cm, mm = buildGEO(pin_map, True)
 
@@ -113,7 +116,9 @@ def runSPH(G, pin_map, xs_name, mapping):
         ref_XS.write_homogenized_XS(fname, mu)
 
         # Compute the error in reaction rates
-        err = np.sum(np.abs(homo.phi_homo * homo.sig_t_homo - ref.phi_homo * ref.sig_t_homo))
+        homo_rate = homo.phi_homo * homo.sig_t_homo
+        print(homo_rate)
+        err = np.sum(np.abs(homo_rate - ref_rate))
         # err = np.linalg.norm(mu - old_mu, np.inf)
 
         # Save the previous SPH factors
@@ -127,8 +132,8 @@ def runSPH(G, pin_map, xs_name, mapping):
     print('SPH factors')
     print(mu)
 
-    rxn_ref = ref.phi_homo * ref.sig_t_homo# - np.sum(ref.sig_s_homo, axis=0))
-    rxn_homo = homo.phi_homo * homo.sig_t_homo# - np.sum(homo.sig_s_homo, axis=0))
+    rxn_ref = ref.phi_homo * ref.sig_t_homo  # - np.sum(ref.sig_s_homo, axis=0))
+    rxn_homo = homo.phi_homo * homo.sig_t_homo  # - np.sum(homo.sig_s_homo, axis=0))
     print('Make sure these reactions rates are the same if SPH is working properly')
     print(rxn_homo - rxn_ref)
 
@@ -156,10 +161,14 @@ if __name__ == '__main__':
     xs_name = 'XS/{}gXS.anlxs'.format(G)
 
     # Get the homogenized cross sections
-    ass1 = runSPH(G, [0], xs_name, mapping)
-    ass2 = runSPH(G, [2], xs_name, mapping)
+    if False:
+        ass1 = runSPH(G, [0], xs_name, mapping)
+        ass2 = runSPH(G, [2], xs_name, mapping)
 
-    pickle.dump(ass1 + ass2, open('refXS_sph.p', 'wb'))
+        pickle.dump(ass1 + ass2, open('refXS_sph.p', 'wb'))
+    else:
+        ass1 = runSPH(G, [0, 2], xs_name, mapping)
+        pickle.dump(ass1, open('refXS_sph.p', 'wb'))
 
     exit()
 

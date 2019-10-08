@@ -178,7 +178,7 @@ class DGMSOLVER():
             self.norm = np.sum(self.phi_homo, axis=-1)
         else:
             print('compute norm')
-            norm = np.nan_to_num(self.norm / np.sum(self.phi_homo, axis=-1))
+            norm = self.norm / np.sum(self.phi_homo, axis=-1)
             self.phi_homo *= norm[:,np.newaxis]
             phi_dx *= norm[:,np.newaxis]
 
