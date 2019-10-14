@@ -53,7 +53,8 @@ module state
                         solver_type, source_value, store_psi, check_inputs, &
                         verify_control, homogenization_map, number_regions, &
                         scatter_leg_order, delta_leg_order, truncate_delta, &
-                        number_cells_x, number_cells_y, spatial_dimension, number_moments
+                        number_cells_x, number_cells_y, spatial_dimension, number_moments, &
+                        store_phi_order
     use mesh, only : mMap, create_mesh
     use material, only : nu_sig_f, create_material, number_materials
     use angle, only : initialize_angle, initialize_polynomials, PI
@@ -72,7 +73,10 @@ module state
     if (delta_leg_order == -1) then
       delta_leg_order = scatter_leg_order
     end if
-    number_legendre = max(delta_leg_order, scatter_leg_order)
+    if (store_phi_order == -1) then
+      store_phi_order = scatter_leg_order
+    end if
+    number_legendre = max(delta_leg_order, scatter_leg_order, store_phi_order)
     if (spatial_dimension == 1) then
       number_moments = number_legendre
     else
