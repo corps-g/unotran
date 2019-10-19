@@ -2,6 +2,7 @@ import pydgm
 import numpy as np
 import sys
 
+
 class XS():
 
     # Hold the cross section values with routines for outputting to txt file
@@ -10,10 +11,7 @@ class XS():
         self.sig_f = sig_f
         self.chi = chi
         self.sig_s = sig_s
-        if mu is None:
-            self.mu = np.ones(self.sig_t.shape)
-        else:
-            self.mu = mu
+        self.mu = mu if mu is None else np.ones(self.sig_t.shape)
 
     def write_homogenized_XS(self, fname, mu=None):
         if mu is not None:
@@ -41,7 +39,6 @@ class XS():
 
         with open(fname, 'w') as f:
             f.write(s[:-1])
-
 
     def __add__(self, newXS):
         sig_t = np.concatenate([self.sig_t, newXS.sig_t], axis=-1)
@@ -170,7 +167,7 @@ class DGMSOLVER():
 
         # \forall g\in G, \forall c\in r compute \phi_{g,c} V_c dE_g
         # Homogenize the flux
-        phi_dx = self.phi[:,:] * self.dx[:]
+        phi_dx = self.phi[:, :] * self.dx[:]
         self.phi_homo = homo_space(phi_dx)
 
         # Either find the norm of the flux or normalize the flux to self.norm
@@ -179,8 +176,8 @@ class DGMSOLVER():
         else:
             print('compute norm')
             norm = self.norm / np.sum(self.phi_homo, axis=-1)
-            self.phi_homo *= norm[:,np.newaxis]
-            phi_dx *= norm[:,np.newaxis]
+            self.phi_homo *= norm[:, np.newaxis]
+            phi_dx *= norm[:, np.newaxis]
 
         # Homogenize the cross sections
         self.sig_t_homo = homo_space(self.sig_t * phi_dx) / self.phi_homo
@@ -222,7 +219,7 @@ class DGMSOLVER():
         dE_coarse = np.array(self.mapping.dE_coarse)
         dE_fine = np.array(self.mapping.dE_fine)
 
-        phi_homo = homo_energy(self.phi_homo, dE_fine[:,np.newaxis])
+        phi_homo = homo_energy(self.phi_homo, dE_fine[:, np.newaxis])
 
         if self.computenorm:
             norm = np.zeros(nCG)

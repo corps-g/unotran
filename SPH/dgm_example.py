@@ -13,17 +13,22 @@ from mpi4py import MPI
 comm = MPI.COMM_WORLD
 rank = comm.Get_rank()
 size = comm.Get_size()
-np.set_printoptions(precision=8, suppress=True)
+np.set_printoptions(linewidth=240, precision=8, suppress=True)
 
 
 def buildGEO(ass_map, homogenzied=False):
     fine_map = [6, 18, 18, 18, 18, 6]
     coarse_map = [1.1176, 3.2512, 3.2512, 3.2512, 3.2512, 1.1176]
 
+    fine_map = [3, 22, 3]
+    coarse_map = [0.09, 1.08, 0.09]
+
     if G > 40:
         material_map = [[5, 1, 2, 2, 1, 5], [5, 1, 3, 3, 1, 5], [5, 1, 4, 4, 1, 5]]
+        material_map = [[5, 1, 5], [5, 4, 5]]
     else:
         material_map = [[9, 1, 2, 2, 1, 9], [9, 1, 3, 3, 1, 9], [9, 1, 4, 4, 1, 9]]
+        material_map = [[9, 1, 9], [9, 4, 9]]
 
     npins = len(ass_map)
 
@@ -78,7 +83,7 @@ def plot(ref, homo):
     plt.show()
 
 
-def runSPH(G, pin_map, xs_name, dgmstructure, order):
+def runSPH(G, pin_map, xs_name, dgmstructure, method):
     '''
     Run the SPH problem
 
@@ -97,36 +102,19 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
 
     # Solve for the reference problem
 
-    if False:
+    if True:
         print('Loading previous reference')
-        ref = pickle.load(open('ref_dgm.p', 'rb'))
+        ref = pickle.load(open('ref_dgm_{}g.p'.format(G), 'rb'))
     else:
         print('Computing reference')
-        ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, dgmstructure, order=order)
-        pickle.dump(ref, open('ref_dgm.p', 'wb'))
+        ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, dgmstructure)
+        pickle.dump(ref, open('ref_dgm_{}g.p'.format(G), 'wb'))
     na = np.newaxis
     rxn_ref = np.sum(ref.sig_t_homo * ref.phi_homo[:, na, :, :], axis=0)
     rxn_ref_s = np.sum(ref.sig_s_homo * ref.phi_homo[:, na, :, na, :], axis=0)
     rxn_ref_f = np.sum(ref.sig_f_homo * ref.phi_homo[:, :, :], axis=0)
 
     space_map = [r for r in range(nPin) for _ in range(ref.phi.shape[2] // nPin)]
-
-    test_rxn_t = np.zeros((rxn_ref.shape), order='f')
-    test_rxn_s = np.zeros((rxn_ref_s.shape), order='f')
-    test_rxn_f = np.zeros((rxn_ref_f.shape), order='f')
-    L = np.zeros((nPin))
-
-    for c, r in enumerate(space_map):
-        L[r] += ref.dx[c]
-
-    for c, r in enumerate(space_map):
-        test_rxn_t[:, :, r] += np.sum(ref.sig_t[:, :, :, c] * ref.phi[:, na, :, c], axis=0) * ref.dx[na, na, c] / L[na, na, r]
-        test_rxn_s[:, :, :, r] += np.sum(ref.sig_s[:, :, :, :, c] * ref.phi[:, na, :, na, c], axis=0) * ref.dx[na, na, na, c] / L[na, na, na, r]
-        test_rxn_f[:, r] += np.sum(ref.vsig_f[:, :, c] * ref.phi[:, :, c], axis=0) * ref.dx[na, c] / L[na, r]
-
-    # np.testing.assert_allclose(0.0, rxn_ref - test_rxn_t, atol=1e-14)
-    np.testing.assert_allclose(0.0, rxn_ref_s - test_rxn_s, atol=1e-14)
-    np.testing.assert_allclose(0.0, rxn_ref_f - test_rxn_f, atol=1e-14)
 
     nCellPerPin = ref.phi.shape[2] // ref.npin
 
@@ -137,9 +125,6 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
 
     nCG = max(dgmstructure.structure) + 1
 
-    mu = np.ones((order + 1, nCG, ref.npin), order='f')
-    for cg, MO in dgmstructure.counts.items():
-        mu[MO:, cg, :] *= 0
     mu = np.ones((nCG, ref.npin), order='f')
     old_mu = np.copy(mu)
 
@@ -148,25 +133,34 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
     print('start SPH')
 
     for i in range(1000):
-        XS_args = ref_XS.write_homogenized_XS(mu)
+        XS_args = ref_XS.write_homogenized_XS(mu, method=method)
 
         # Get the homogenized solution
-        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, dgmstructure, ref.norm, XS=XS_args, order=order)
+        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, dgmstructure, ref.norm, XS=XS_args)
         rxn_homo = np.sum(homo.sig_t_homo * homo.phi_homo[:, na, :, :], axis=0)
+        rxn_homo_s = np.sum(homo.sig_s_homo * homo.phi_homo[:, na, :, na, :], axis=0)
+        rxn_homo_f = np.sum(homo.sig_f_homo * homo.phi_homo[:, :, :], axis=0)
         # Compute the SPH factors
-        # mu = np.nan_to_num(ref.phi_homo[0] / homo.phi_homo[0])
-        mu *= np.nan_to_num(rxn_ref[0] / rxn_homo[0] - 1.0) ** 1.0 + 1.0
+        # mu = np.nan_to_num(ref.phi_homo_f / homo.phi_homo[0])
+        if 'rxn_t' in method:
+            mu *= np.nan_to_num(rxn_ref[0] / rxn_homo[0])
+        elif 'rxn_f' in method:
+            mu *= np.nan_to_num(rxn_ref_f / rxn_homo_f)
         print(mu)
 
         # Compute the error in reaction rates
         print('rate')
         # err = np.linalg.norm(rxn_homo.flatten() - rxn_ref.flatten(), np.inf)
-        print(rxn_homo - rxn_ref)
-        err = np.linalg.norm(mu.flatten() - old_mu.flatten(), np.inf)
+        print((rxn_homo - rxn_ref)[:3])
+        print('rate scatter')
+        print((rxn_homo_s - rxn_ref_s)[:3])
+        print('rate fission')
+        print((rxn_homo_f - rxn_ref_f))
+        err = np.linalg.norm((mu - old_mu).flatten(), np.inf)
         old_mu = np.copy(mu)
 
         # Provide iteration output
-        print('Iter: {} Order: {}   Error: {:6.4e}'.format(i + 1, order, err))
+        print('Iter: {} Error: {:6.4e}'.format(i + 1, err))
         if err < 1e-6:
             break
 
@@ -183,61 +177,62 @@ def runSPH(G, pin_map, xs_name, dgmstructure, order):
     return ref_XS
 
 
+def getInfo(task, kill=False):
+    Gs = [238]
+    geo = 'full'
+    contigs = [1]
+    min_cutoff = 0.0
+    ratio_cutoff = 1.3
+    group_cutoff = 60
+    basisTypes = ['dlp', 'klt_full', 'klt_combine', 'klt_pins_full']
+    methods = ['rxn_t_mu_zeroth', 'rxn_f_mu_zeroth', 'rxn_t_mu_all', 'rxn_f_mu_all']
+    homogOptions = [0]
+
+    item = 0
+    groupBounds = []
+    for i, G in enumerate(Gs):
+        for method in methods:
+            for contig in contigs:
+                for homogOption in homogOptions:
+                    for basisType in basisTypes:
+                        if item == task and not kill:
+                            return G, geo, contig, min_cutoff, ratio_cutoff, group_cutoff, basisType, homogOption, method
+                        else:
+                            item += 1
+        groupBounds.append(item)
+    if kill:
+        groupBounds = [0] + groupBounds
+        for i, G in enumerate(Gs):
+            print('Group {:4d} cutoffs: {:>5d}-{:<5d}'.format(G, groupBounds[i] + 1, groupBounds[i + 1]))
+    exit()
+
+
 if __name__ == '__main__':
     np.set_printoptions(precision=6)
 
-    task = int(os.environ['SLURM_ARRAY_TASK_ID'])
+    # getInfo(1, True)
 
-    G = 44
-    basis = 'dlp'
+    for task in range(32):
 
-    dgmstructure = computeBounds(G, 'core2', 1, 0.0, 1.0, 60)
-    print(dgmstructure)
-    if 'klt' in basis:
-        makeKLT(basis, dgmstructure)
-    else:
-        makeDLP(dgmstructure)
+        if (task % size) != rank: continue
 
-    dgmstructure.fname = '{}_{}'.format(basis, dgmstructure.fname)
+        parameters = getInfo(task)
+        print(parameters)
+        G, geo, contig, min_cutoff, ratio_cutoff, group_cutoff, basisType, homogOption, method = parameters
 
-    xs_name = 'XS/{}gXS.anlxs'.format(G)
+        dgmstructure = computeBounds(G, geo, contig, min_cutoff, ratio_cutoff, group_cutoff)
+        print(dgmstructure)
+        if 'klt' in basisType:
+            makeKLT(basisType, dgmstructure)
+        else:
+            makeDLP(dgmstructure)
 
-    if False:
-        for o in range(dgmstructure.maxOrder):
-            if o in [1]:
-                continue
-            # Get the homogenized cross sections
-            ass1 = runSPH(G, [0], xs_name, dgmstructure, order=o)
-            ass2 = runSPH(G, [2], xs_name, dgmstructure, order=o)
+        dgmstructure.fname = '{}_{}'.format(basisType, dgmstructure.fname)
 
-            pickle.dump(ass1, open('refXS_dgm_ass1_o{}.p'.format(o), 'wb'))
-            pickle.dump(ass2, open('refXS_dgm_ass2_o{}.p'.format(o), 'wb'))
-            pickle.dump(ass1 + ass2, open('refXS_dgm_o{}.p'.format(o), 'wb'))
-    else:
-        ass_map = [0, 2]
-        item = -1
-        o = task
+        xs_name = 'XS/{}gXS.anlxs'.format(G)
+
+        ass_map = [0, 1]
         # Get the homogenized cross sections
-        ass1 = runSPH(G, ass_map, xs_name, dgmstructure, order=o)
-        pickle.dump(ass1, open('refXS_dgm_o{}.p'.format(o), 'wb'))
+        ass1 = runSPH(G, ass_map, xs_name, dgmstructure, method)
+        pickle.dump(ass1, open('refXS_dgm_{}_{}.p'.format(dgmstructure.fname, method), 'wb'))
 
-    exit()
-
-    # Write the SPH cross sections
-    uo2XS.write_homogenized_XS('XS/colorset_homogenized.anlxs')
-
-    # Get the homogenized solution
-    homo = makeColorset(G, pin_map, 'XS/colorset_homogenized.anlxs', True)
-
-    rxn_ref = ref.phi_homo * (ref.sig_t_homo - ref.sig_s_homo)
-    rxn_homo = homo.phi_homo * (homo.sig_t_homo - homo.sig_s_homo)
-
-    print('Reference reaction rates')
-    print(rxn_ref)
-    print('Homogenzied reaction rates')
-    print(rxn_homo)
-    np.set_printoptions(precision=3, suppress=True)
-    print('Error in reaction rates')
-    print((rxn_homo - rxn_ref) / rxn_ref * 100)
-
-    plot(ref, homo)

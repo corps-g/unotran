@@ -11,10 +11,15 @@ def buildGEO(ass_map, homogenzied=False):
     fine_map = [6, 18, 18, 18, 18, 6]
     coarse_map = [1.1176, 3.2512, 3.2512, 3.2512, 3.2512, 1.1176]
 
+    fine_map = [3, 22, 3]
+    coarse_map = [0.09, 1.08, 0.09]
+
     if G > 40:
         material_map = [[5, 1, 2, 2, 1, 5], [5, 1, 3, 3, 1, 5], [5, 1, 4, 4, 1, 5]]
+        material_map = [[5, 1, 5], [5, 4, 5]]
     else:
         material_map = [[9, 1, 2, 2, 1, 9], [9, 1, 3, 3, 1, 9], [9, 1, 4, 4, 1, 9]]
+        material_map = [[9, 1, 9], [9, 4, 9]]
 
     npins = len(ass_map)
 
@@ -126,7 +131,7 @@ def runSPH(G, pin_map, xs_name, mapping):
 
         # Provide iteration output
         print('Iter: {}    Error: {:6.4e}'.format(i + 1, err))
-        if err < 1e-7:
+        if err < 1e-6:
             break
 
     print('SPH factors')
@@ -154,39 +159,13 @@ def makeColorset(G, pin_map, xs_name, homog=False, norm=None):
 if __name__ == '__main__':
     np.set_printoptions(precision=6)
 
-    G = 44
+    G = 238
 
-    dgmstructure = computeBounds(G, 'core2', 1, 0.0, 1.0, 60)
+    dgmstructure = computeBounds(G, 'full', 1, 0.0, 1.3, 60)
     mapping = structure(G, dgmstructure)
     xs_name = 'XS/{}gXS.anlxs'.format(G)
 
     # Get the homogenized cross sections
-    if False:
-        ass1 = runSPH(G, [0], xs_name, mapping)
-        ass2 = runSPH(G, [2], xs_name, mapping)
+    ass1 = runSPH(G, [0, 1], xs_name, mapping)
+    pickle.dump(ass1, open('refXS_sph_{}.p'.format(G), 'wb'))
 
-        pickle.dump(ass1 + ass2, open('refXS_sph.p', 'wb'))
-    else:
-        ass1 = runSPH(G, [0, 2], xs_name, mapping)
-        pickle.dump(ass1, open('refXS_sph.p', 'wb'))
-
-    exit()
-
-    # Write the SPH cross sections
-    uo2XS.write_homogenized_XS('XS/colorset_homogenized.anlxs')
-
-    # Get the homogenized solution
-    homo = makeColorset(G, pin_map, 'XS/colorset_homogenized.anlxs', True)
-
-    rxn_ref = ref.phi_homo * (ref.sig_t_homo - ref.sig_s_homo)
-    rxn_homo = homo.phi_homo * (homo.sig_t_homo - homo.sig_s_homo)
-
-    print('Reference reaction rates')
-    print(rxn_ref)
-    print('Homogenzied reaction rates')
-    print(rxn_homo)
-    np.set_printoptions(precision=3, suppress=True)
-    print('Error in reaction rates')
-    print((rxn_homo - rxn_ref) / rxn_ref * 100)
-
-    plot(ref, homo)
