@@ -53,7 +53,7 @@ class XS():
 class DGMSOLVER():
 
     # Solve the problem using unotran
-    def __init__(self, G, fname, fm, cm, mm, nPin, norm=None, mapping=None, vacuum=False):
+    def __init__(self, G, fname, fm, cm, mm, nPin, norm=None, mapping=None, vacuum=False, k=None, phi=None, psi=None):
         '''
         Inputs:
             G     - Number of energy groups
@@ -80,7 +80,7 @@ class DGMSOLVER():
         # Pass on the options to unotran
         self.setOptions()
         # Solve using unotran
-        self.solve()
+        self.solve(k, phi, psi)
         # Homogenize the cross sections over each spatial region
         self.homogenize_space()
         # Homogenize the cross sections over each energy range
@@ -104,17 +104,17 @@ class DGMSOLVER():
         pydgm.control.eigen_print = 0
         pydgm.control.outer_print = 0
         pydgm.control.eigen_tolerance = 1e-14
-        pydgm.control.outer_tolerance = 1e-14
-        pydgm.control.max_eigen_iters = 100000
+        pydgm.control.outer_tolerance = 1e-12
+        pydgm.control.max_eigen_iters = 10000
         pydgm.control.max_outer_iters = 1
-        pydgm.control.store_psi = False
+        pydgm.control.store_psi = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
         pydgm.control.equation_type = 'DD'
         pydgm.control.scatter_leg_order = 0
         pydgm.control.ignore_warnings = True
 
-    def solve(self):
+    def solve(self, k, phi, psi):
         '''
         Solve the problem using Unotran
         '''
@@ -122,11 +122,22 @@ class DGMSOLVER():
         # Initialize the problem
         pydgm.solver.initialize_solver()
 
+        if k is not None:
+            pydgm.state.keff = k
+        if phi is not None:
+            pydgm.state.phi = phi
+        if psi is not None:
+            pydgm.state.psi = psi
+
         # Call the solver
         pydgm.solver.solve()
 
         # Copy any information from Unotran
         self.extractInfo()
+
+        self.iter_k = np.copy(pydgm.state.keff)
+        self.iter_phi = np.copy(pydgm.state.phi)
+        self.iter_psi = np.copy(pydgm.state.psi)
 
         # Clean up the solver
         pydgm.solver.finalize_solver()
@@ -156,8 +167,8 @@ class DGMSOLVER():
 
         # Check that everything is the right shape of arrays
         shape = self.phi.shape
-        assert shape[0] == self.G
-        assert (shape[1] / self.npin) == (shape[1] // self.npin)
+        #assert shape[0] == self.G
+        #assert (shape[1] / self.npin) == (shape[1] // self.npin)
 
         # Compute the number of pins
         nCellPerPin = shape[1] // self.npin

@@ -51,6 +51,14 @@ class XS():
                     sig_s[oo, 0, :, :, :, o] = self.sig_s[oo, o, :, :, :] * (1.0 if o > 0 else self.mu[:, na, :])
                 for i in range(self.nCellPerPin * nMat):
                     chi[:, i, o] = self.chi[o, :, i // self.nCellPerPin]
+        elif 'fine_mu' in method:
+            for o in range(order):
+                sig_f[o, :, :] = self.sig_f[o, :, :]
+                for oo in range(order):
+                    sig_t[oo, :, :, o] = self.sig_t[oo, o, :, :]
+                    sig_s[oo, 0, :, :, :, o] = self.sig_s[oo, o, :, :, :]
+                for i in range(self.nCellPerPin * nMat):
+                    chi[:, i, o] = self.chi[o, :, i // self.nCellPerPin]
         else:
             raise(NotImplementedError)
 
@@ -73,7 +81,7 @@ class XS():
 class DGMSOLVER():
 
     # Solve the problem using unotran
-    def __init__(self, G, fname, fm, cm, mm, nPin, dgmstructure, norm=None, mapping=None, XS=None, vacuum=False, order=None):
+    def __init__(self, G, fname, fm, cm, mm, nPin, dgmstructure, norm=None, mapping=None, XS=None, vacuum=False, order=None, homogOption=None, solveFlag=True, k=None, phi=None, psi=None):
         '''
         Inputs:
             G     - Number of energy groups
@@ -98,12 +106,14 @@ class DGMSOLVER():
         self.XS = XS
         self.vacuum = vacuum
         self.order = order
+        self.homogOption = homogOption
 
         self.mapping = mapping
         # Pass on the options to unotran
         self.setOptions()
+        if not solveFlag: return
         # Solve using unotran
-        self.solve()
+        self.solve(k, phi, psi)
         # Homogenize the cross sections over each spatial region
         self.homogenize_space()
         # Homogenize the cross sections over each energy range
@@ -124,16 +134,16 @@ class DGMSOLVER():
         pydgm.control.boundary_west = 0.0 if self.vacuum else 1.0
         pydgm.control.boundary_east = 0.0 if self.vacuum else 1.0
         pydgm.control.allow_fission = True
-        pydgm.control.recon_print = 1
+        pydgm.control.recon_print = 1 if self.dgmstructure.G == 44 else 1
         pydgm.control.eigen_print = 0
         pydgm.control.outer_print = 0
-        pydgm.control.recon_tolerance = 1e-9
-        pydgm.control.eigen_tolerance = 1e-14
-        pydgm.control.outer_tolerance = 1e-14
+        pydgm.control.recon_tolerance = 1e-7
+        pydgm.control.eigen_tolerance = 1e-12
+        pydgm.control.outer_tolerance = 1e-12
         pydgm.control.max_recon_iters = 10000
         pydgm.control.max_eigen_iters = 10000
         pydgm.control.max_outer_iters = 1
-        pydgm.control.lamb = 0.8 if self.dgmstructure.G == 44 else 0.2
+        pydgm.control.lamb = 0.01 if self.dgmstructure.G == 44 else 0.2
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0
@@ -146,7 +156,33 @@ class DGMSOLVER():
         if self.order is not None:
             pydgm.control.truncation_map = [min(d - 1, self.order) for d in self.dgmstructure.counts.values()]
 
-    def solve(self):
+        if self.homogOption == 0 or self.homogOption is None:
+            # No homogenization
+            pydgm.control.truncate_delta = False
+        elif self.homogOption == 1:
+            # Approximate delta with flat function
+            pydgm.control.truncate_delta = True
+            pydgm.control.delta_leg_order = 0
+        elif self.homogOption == 2:
+            # Approximate delta with linear function
+            pydgm.control.truncate_delta = True
+            pydgm.control.delta_leg_order = 1
+        elif self.homogOption == 3:
+            # Homogenize over coarse mesh region
+            pydgm.control.truncate_delta = False
+            pydgm.control.homogenization_map = [i + 1 for i, fx in enumerate(self.fm) for ii in range(fx)]
+        elif self.homogOption == 4:
+            # Homogenize over all cells with same material
+            matID = {}
+            baseID = 1
+            for mat in range(min(self.mm), max(self.mm) + 1):
+                if mat in self.mm:
+                    matID[mat] = baseID
+                    baseID += 1
+            pydgm.control.truncate_delta = False
+            pydgm.control.homogenization_map = [matID[self.mm[i]] for i, fx in enumerate(self.fm) for ii in range(fx)]
+
+    def solve(self, k, phi, psi):
         '''
         Solve the problem using Unotran
         '''
@@ -157,11 +193,22 @@ class DGMSOLVER():
         else:
             pydgm.dgmsolver.initialize_dgmsolver_with_moments(*self.XS)
 
+        if k is not None:
+            pydgm.state.keff = k
+        if phi is not None:
+            pydgm.state.phi = phi
+        if psi is not None:
+            pydgm.state.psi = psi
+
         # Call the solver
         pydgm.dgmsolver.dgmsolve()
 
         # Copy any information from Unotran
         self.extractInfo()
+
+        self.iter_k = np.copy(pydgm.state.keff)
+        self.iter_phi = np.copy(pydgm.state.phi)
+        self.iter_psi = np.copy(pydgm.state.psi)
 
         # Clean up the solver
         pydgm.dgmsolver.finalize_dgmsolver()
@@ -188,7 +235,8 @@ class DGMSOLVER():
                 self.sig_t[:, o, :, c] = pydgm.dgm.expanded_sig_t[:, :, self.mat_map[c] - 1, o]
                 self.sig_s[:, o, :, :, c] = pydgm.dgm.expanded_sig_s[:, 0, :, :, self.mat_map[c] - 1, o]
             self.vsig_f[:, :, c] = pydgm.dgm.expanded_nu_sig_f[:, :, self.mat_map[c] - 1]
-            self.chi[:, :, c] = pydgm.dgm.chi_m[:, c, :].T
+        for c, r in enumerate(pydgm.state.mg_mmap):
+            self.chi[:, :, c] = pydgm.dgm.chi_m[:, r - 1, :].T
 
     def homogenize_space(self):
         '''
@@ -275,24 +323,4 @@ class DGMSOLVER():
         self.sig_f_homo = np.nan_to_num(self.sig_f_homo)
 
         return
-
-        def barchart(x, y):
-            X = np.zeros(2 * len(y))
-            Y = np.zeros(2 * len(y))
-            for i in range(0, len(y)):
-                X[2 * i] = x[i]
-                X[2 * i + 1] = x[i + 1]
-                Y[2 * i] = y[i]
-                Y[2 * i + 1] = y[i]
-            return X, Y
-
-        x = np.concatenate(([0], np.cumsum(self.dx)))
-        for j in range(5):
-            for i in range(5):
-                for g in range(2):
-                    plt.plot(*barchart(x, self.sig_t[j, i, g, :]))
-                    plt.axhline(self.sig_t_homo[j, i, g, 0])
-                    plt.savefig('fig{}-{}-{}.png'.format(j, i, g))
-                    plt.clf()
-        exit()
 
