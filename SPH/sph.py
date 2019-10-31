@@ -238,6 +238,22 @@ class DGMSOLVER():
                 norm[cg - 1] += self.norm[g]
             self.norm = norm
 
+        print(self.mapping.fine_bounds)
+        import matplotlib.pyplot as plt
+
+        def barchart(x, y):
+            X = np.zeros(2 * len(y))
+            Y = np.zeros(2 * len(y))
+            for i in range(0, len(y)):
+                X[2 * i] = x[i]
+                X[2 * i + 1] = x[i + 1]
+                Y[2 * i] = y[i]
+                Y[2 * i + 1] = y[i]
+            return X, Y
+
+        plt.loglog(*barchart(self.mapping.fine_bounds, self.sig_t_homo[:,0]), 'g-', label='fine group')
+
+
         self.sig_t_homo = homo_energy(self.sig_t_homo, self.phi_homo)
         self.sig_f_homo = homo_energy(self.sig_f_homo, self.phi_homo)
         self.chi_homo = homo_energy(self.chi_homo)
@@ -246,4 +262,11 @@ class DGMSOLVER():
             sig_s_homo[g - 1] += homo_energy(self.sig_s_homo[gp], self.phi_homo)
         self.sig_s_homo = sig_s_homo
         self.phi_homo = phi_homo
+
+        plt.loglog(*barchart(self.mapping.coarse_bounds, self.sig_t_homo[:,0]), 'k-', label='coarse group')
+        plt.legend(loc=0)
+        plt.xlabel('Energy [MeV]')
+        plt.ylabel('$\Sigma_t$ [cm$^{-1}$]')
+        plt.savefig('test.pdf', transparent=True)
+        exit()
 

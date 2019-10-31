@@ -1,4 +1,6 @@
 import numpy as np
+import sys
+sys.path.append('/homes/rlreed/workspace/unotran/src')
 from sph import XS, DGMSOLVER
 import matplotlib.pyplot as plt
 from structures import structure
@@ -159,7 +161,7 @@ def makeColorset(G, pin_map, xs_name, homog=False, norm=None):
 if __name__ == '__main__':
     np.set_printoptions(precision=6)
 
-    G = 238
+    G = 44
 
     dgmstructure = computeBounds(G, 'full', 1, 0.0, 1.3, 60)
     mapping = structure(G, dgmstructure)
