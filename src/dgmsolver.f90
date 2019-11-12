@@ -164,14 +164,17 @@ module dgmsolver
     real(kind=dp) :: &
         recon_error,    & ! Error between successive iterations
         start,          & ! Start time of the sweep function
+        past_error,     & ! The error for last iteration
+        past_error2,    & ! The error for two iterations back
         ave_sweep_time    ! Average time in seconds per sweep
     real(kind=dp), dimension(0:expansion_order, 0:number_moments, number_coarse_groups, number_cells) :: &
         old_phi_m         ! Scalar flux from previous iteration
     real(kind=dp), dimension(0:expansion_order, number_coarse_groups, 2 * spatial_dimension * &
                                 number_angles_per_octant, number_cells) :: &
         old_psi_m         ! Angular flux from previous iteration
-    real(kind=dp), dimension(3) :: &
-        past_error        ! Container to hold the error for last 3 iterations
+    integer :: &
+        recon_estimate    ! Estimate for the total number of iterations
+        
 
     if (present(bypass_arg)) then
       bypass_flag = bypass_arg
@@ -236,19 +239,29 @@ module dgmsolver
       call update_fission_density()
 
       ! Update the error
+      past_error2 = past_error
+      past_error = recon_error
       recon_error = maxval(abs(old_phi_m - phi_m))
-      past_error(3) = past_error(2)
-      past_error(2) = past_error(1)
-      past_error(1) = log10(recon_error)
-      recon_convergence_rate = exp((past_error(1) - past_error(3)) / 2.0_8)
+      
+      if (past_error2 == 0.0) then
+        recon_convergence_rate = log10(recon_error / past_error)
+      else
+        recon_convergence_rate = log10(recon_error ** 3 / past_error ** 4 * past_error2) / 2
+      end if
+      recon_estimate = int(log10(recon_tolerance / recon_error) / recon_convergence_rate) + recon_count
+      if (recon_estimate < 0) then
+        recon_estimate = 1000000
+      end if
 
       ave_sweep_time = ((recon_count - 1) * ave_sweep_time + (omp_get_wtime() - start)) / recon_count
 
       ! Print output
       if (recon_print > 0) then
-        write(*, 1001) recon_count, recon_error, keff, eigen_count, ave_sweep_time
-        1001 format ("recon: ", i4, " Error: ", es12.5E2, " eigenvalue: ", f12.9, &
-                     " eigen sweeps: ", i5, " ave sweep time: ", f5.2, " s")
+        write(*, 1001) recon_count, recon_error, keff, eigen_count, ave_sweep_time, &
+                       recon_convergence_rate, recon_estimate
+        1001 format ("recon: ", i5, " Error: ", es10.4E2, " k: ", f12.10, &
+                     " eSweeps: ", i5, " sweepTime: ", f6.1, " s", &
+                     " rate: ", f6.3, " iterEst: ", i5)
         if (recon_print > 1) then
           call output_moments()
         end if
