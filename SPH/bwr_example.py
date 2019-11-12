@@ -10,17 +10,12 @@ import pickle
 
 
 def buildGEO(ass_map, homogenzied=False):
-    fine_map = [6, 18, 18, 18, 18, 6]
-    coarse_map = [1.1176, 3.2512, 3.2512, 3.2512, 3.2512, 1.1176]
-
     fine_map = [3, 22, 3]
     coarse_map = [0.09, 1.08, 0.09]
 
     if G > 40:
-        material_map = [[5, 1, 2, 2, 1, 5], [5, 1, 3, 3, 1, 5], [5, 1, 4, 4, 1, 5]]
         material_map = [[5, 1, 5], [5, 4, 5]]
     else:
-        material_map = [[9, 1, 2, 2, 1, 9], [9, 1, 3, 3, 1, 9], [9, 1, 4, 4, 1, 9]]
         material_map = [[9, 1, 9], [9, 4, 9]]
 
     npins = len(ass_map)
@@ -92,10 +87,13 @@ def runSPH(G, pin_map, xs_name, mapping):
 
     # Create the initial SPH factors
     old_mu = np.ones((mapping.nCG, nPin))
-    fname = '_homo.'.join(xs_name.split('.'))
+    fname = '_homo.'.join(xs_name.split('.')).replace('XS/', data_path + '/')
 
     # Solve for the reference problem
     ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, mapping=mapping)
+    iter_k = ref.iter_k
+    iter_phi = ref.iter_phi
+    iter_psi = ref.iter_psi
 
     ref_XS = XS(ref.sig_t_homo, ref.sig_f_homo, ref.chi_homo, ref.sig_s_homo)
 
@@ -112,9 +110,12 @@ def runSPH(G, pin_map, xs_name, mapping):
 
     print('start')
 
-    for i in range(1000):
+    for i in range(100000):
         # Get the homogenized solution
-        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, ref.norm)
+        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, ref.norm, k=iter_k, phi=iter_phi, psi=iter_psi)
+        iter_k = homo.iter_k
+        iter_phi = homo.iter_phi
+        iter_psi = homo.iter_psi
 
         # Compute the SPH factors
         mu = ref.phi_homo / homo.phi_homo
@@ -124,7 +125,7 @@ def runSPH(G, pin_map, xs_name, mapping):
 
         # Compute the error in reaction rates
         homo_rate = homo.phi_homo * homo.sig_t_homo
-        print(homo_rate)
+        print(mu)
         err = np.sum(np.abs(homo_rate - ref_rate))
         # err = np.linalg.norm(mu - old_mu, np.inf)
 
@@ -133,7 +134,7 @@ def runSPH(G, pin_map, xs_name, mapping):
 
         # Provide iteration output
         print('Iter: {}    Error: {:6.4e}'.format(i + 1, err))
-        if err < 1e-6:
+        if err < 1e-5:
             break
 
     print('SPH factors')
@@ -144,30 +145,23 @@ def runSPH(G, pin_map, xs_name, mapping):
     print('Make sure these reactions rates are the same if SPH is working properly')
     print(rxn_homo - rxn_ref)
 
-    pickle.dump(ref, open('ref_sph.p', 'wb'))
-    pickle.dump(ref_XS, open('refXS_sph.p', 'wb'))
-    pickle.dump(homo, open('homo_sph.p', 'wb'))
-
     return ref_XS
-
-
-def makeColorset(G, pin_map, xs_name, homog=False, norm=None):
-    nPin, fm, cm, mm = buildGEO(pin_map, homog)
-    S = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, norm)
-
-    return S
 
 
 if __name__ == '__main__':
     np.set_printoptions(precision=6)
 
     G = 44
+    data_path = 'data'
+    assay_map = [0, 1]
 
     dgmstructure = computeBounds(G, 'full', 1, 0.0, 1.3, 60)
-    mapping = structure(G, dgmstructure)
+    O = dgmstructure.maxOrder
     xs_name = 'XS/{}gXS.anlxs'.format(G)
 
-    # Get the homogenized cross sections
-    ass1 = runSPH(G, [0, 1], xs_name, mapping)
-    pickle.dump(ass1, open('refXS_sph_{}.p'.format(G), 'wb'))
+    for o in range(dgmstructure.maxOrder):
+        # Get the homogenized cross sections
+        mapping = structure(G, dgmstructure, o)
+        ass1 = runSPH(G, assay_map, xs_name, mapping)
+        pickle.dump(ass1, open('{}/refXS_sph_{}_o{}.p'.format(data_path, G, o), 'wb'))
 

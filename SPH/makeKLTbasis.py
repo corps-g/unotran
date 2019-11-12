@@ -345,11 +345,13 @@ if __name__ == '__main__':
     G, geo, basisType, contig, min_cutoff, ratio_cutoff, group_cutoff = getInfo(task)
 
     # Build the coarse-group structure
-    structure = pickle.load(open('XS/structure{}_{}_{}g_m{}_r{}_g{}.p'.format(contig, geo, G, min_cutoff, ratio_cutoff, group_cutoff), 'rb'))
+    structure = computeBounds(G, geo, contig, min_cutoff, ratio_cutoff, group_cutoff)
 
     makeBasis(basisType, structure)
 
-    # makePlot(238)
+    makePlot(44)
+    makePlot(238)
+    makePlot(1968)
 
     print('complete')
 

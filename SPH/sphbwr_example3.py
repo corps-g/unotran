@@ -62,7 +62,7 @@ if __name__ == '__main__':
     fname = dgmstructure.fname
     xs_name = 'XS/{}gXS.anlxs'.format(G)
     pin_map = [0, 1]
-    data_path = 'data'
+    data_path = 'data3'
 
     # Get the homogenized cross sections
     refXS = pickle.load(open('{}/refXS_sph_space_{}.p'.format(data_path, G), 'rb'))

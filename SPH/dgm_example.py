@@ -1,4 +1,6 @@
 import numpy as np
+import sys
+sys.path.append('/homes/rlreed/workspace/unotran/src')
 from sph_dgm import XS, DGMSOLVER
 import matplotlib.pyplot as plt
 from structures import structure
@@ -9,25 +11,16 @@ from makeKLTbasis import makeBasis as makeKLT
 import pickle
 import time
 import os
-from mpi4py import MPI
-comm = MPI.COMM_WORLD
-rank = comm.Get_rank()
-size = comm.Get_size()
 np.set_printoptions(linewidth=240, precision=8, suppress=True)
 
 
 def buildGEO(ass_map, homogenzied=False):
-    fine_map = [6, 18, 18, 18, 18, 6]
-    coarse_map = [1.1176, 3.2512, 3.2512, 3.2512, 3.2512, 1.1176]
-
     fine_map = [3, 22, 3]
     coarse_map = [0.09, 1.08, 0.09]
 
     if G > 40:
-        material_map = [[5, 1, 2, 2, 1, 5], [5, 1, 3, 3, 1, 5], [5, 1, 4, 4, 1, 5]]
         material_map = [[5, 1, 5], [5, 4, 5]]
     else:
-        material_map = [[9, 1, 2, 2, 1, 9], [9, 1, 3, 3, 1, 9], [9, 1, 4, 4, 1, 9]]
         material_map = [[9, 1, 9], [9, 4, 9]]
 
     npins = len(ass_map)
@@ -36,7 +29,7 @@ def buildGEO(ass_map, homogenzied=False):
         fine_map = [sum(fine_map)]
         coarse_map = [sum(coarse_map)]
         material_map = [[i + 1] for i in range(npins)]
-        ass_map = range(npins)
+        ass_map = [0, 1]
 
     cm = [0.0]
     fm = []
@@ -83,7 +76,7 @@ def plot(ref, homo):
     plt.show()
 
 
-def runSPH(G, pin_map, xs_name, dgmstructure, method):
+def runSPH(G, pin_map, xs_name, dgmstructure, method, homogOption):
     '''
     Run the SPH problem
 
@@ -102,21 +95,23 @@ def runSPH(G, pin_map, xs_name, dgmstructure, method):
 
     # Solve for the reference problem
 
-    if True:
-        print('Loading previous reference')
-        ref = pickle.load(open('ref_dgm_{}g.p'.format(G), 'rb'))
-    else:
-        print('Computing reference')
-        ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, dgmstructure)
-        pickle.dump(ref, open('ref_dgm_{}g.p'.format(G), 'wb'))
+    print('Computing reference')
+    ref = DGMSOLVER(G, xs_name, fm, cm, mm, nPin, dgmstructure, homogOption=homogOption)
+
+    iter_k = ref.iter_k
+    iter_phi = ref.iter_phi
+    iter_psi = ref.iter_psi
+
     na = np.newaxis
     rxn_ref = np.sum(ref.sig_t_homo * ref.phi_homo[:, na, :, :], axis=0)
-    rxn_ref_s = np.sum(ref.sig_s_homo * ref.phi_homo[:, na, :, na, :], axis=0)
+    # rxn_ref_s = np.sum(ref.sig_s_homo * ref.phi_homo[:, na, :, na, :], axis=0)
     rxn_ref_f = np.sum(ref.sig_f_homo * ref.phi_homo[:, :, :], axis=0)
 
     space_map = [r for r in range(nPin) for _ in range(ref.phi.shape[2] // nPin)]
 
     nCellPerPin = ref.phi.shape[2] // ref.npin
+    if homogOption in [3, 4]:
+        nCellPerPin = 1
 
     ref_XS = XS(G, nCellPerPin, ref.sig_t_homo, ref.sig_f_homo, ref.chi_homo, ref.sig_s_homo)
 
@@ -136,24 +131,30 @@ def runSPH(G, pin_map, xs_name, dgmstructure, method):
         XS_args = ref_XS.write_homogenized_XS(mu, method=method)
 
         # Get the homogenized solution
-        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, dgmstructure, ref.norm, XS=XS_args)
+        homo = DGMSOLVER(nCG, fname, fm, cm, mm, nPin, dgmstructure, ref.norm, XS=XS_args, homogOption=homogOption, k=iter_k, phi=iter_phi, psi=iter_psi)
+        iter_k = homo.iter_k
+        iter_phi = homo.iter_phi
+        iter_psi = homo.iter_psi
+
         rxn_homo = np.sum(homo.sig_t_homo * homo.phi_homo[:, na, :, :], axis=0)
-        rxn_homo_s = np.sum(homo.sig_s_homo * homo.phi_homo[:, na, :, na, :], axis=0)
+        # rxn_homo_s = np.sum(homo.sig_s_homo * homo.phi_homo[:, na, :, na, :], axis=0)
         rxn_homo_f = np.sum(homo.sig_f_homo * homo.phi_homo[:, :, :], axis=0)
         # Compute the SPH factors
-        # mu = np.nan_to_num(ref.phi_homo_f / homo.phi_homo[0])
+
         if 'rxn_t' in method:
             mu *= np.nan_to_num(rxn_ref[0] / rxn_homo[0])
         elif 'rxn_f' in method:
             mu *= np.nan_to_num(rxn_ref_f / rxn_homo_f)
+        elif 'phi' in method:
+            mu = np.nan_to_num(ref.phi_homo[0] / homo.phi_homo[0])
         print(mu)
 
         # Compute the error in reaction rates
         print('rate')
         # err = np.linalg.norm(rxn_homo.flatten() - rxn_ref.flatten(), np.inf)
         print((rxn_homo - rxn_ref)[:3])
-        print('rate scatter')
-        print((rxn_homo_s - rxn_ref_s)[:3])
+        # print('rate scatter')
+        # print((rxn_homo_s - rxn_ref_s)[:3])
         print('rate fission')
         print((rxn_homo_f - rxn_ref_f))
         err = np.linalg.norm((mu - old_mu).flatten(), np.inf)
@@ -161,7 +162,7 @@ def runSPH(G, pin_map, xs_name, dgmstructure, method):
 
         # Provide iteration output
         print('Iter: {} Error: {:6.4e}'.format(i + 1, err))
-        if err < 1e-6:
+        if err < 1e-5:
             break
 
     print('SPH factors')
@@ -171,21 +172,21 @@ def runSPH(G, pin_map, xs_name, dgmstructure, method):
     print(rxn_ref - rxn_homo)
     # print(rxn_homo)
 
-    pickle.dump(ref_XS, open('refXS_dgm.p', 'wb'))
-    pickle.dump(homo, open('homo_dgm.p', 'wb'))
+    #pickle.dump(ref_XS, open('refXS_dgm.p', 'wb'))
+    #pickle.dump(homo, open('homo_dgm.p', 'wb'))
 
     return ref_XS
 
 
 def getInfo(task, kill=False):
-    Gs = [238]
+    Gs = [44, 238]
     geo = 'full'
     contigs = [1]
     min_cutoff = 0.0
     ratio_cutoff = 1.3
     group_cutoff = 60
     basisTypes = ['dlp', 'klt_full', 'klt_combine', 'klt_pins_full']
-    methods = ['rxn_t_mu_zeroth', 'rxn_f_mu_zeroth', 'rxn_t_mu_all', 'rxn_f_mu_all']
+    methods = ['phi_mu_zeroth', 'phi_mu_all', 'rxn_t_mu_zeroth', 'rxn_f_mu_zeroth', 'rxn_t_mu_all', 'rxn_f_mu_all']
     homogOptions = [0]
 
     item = 0
@@ -208,31 +209,32 @@ def getInfo(task, kill=False):
 
 
 if __name__ == '__main__':
-    np.set_printoptions(precision=6)
-
     # getInfo(1, True)
 
-    for task in range(32):
+    task = os.environ['SLURM_ARRAY_TASK_ID']
+    task = int(task) - 1
 
-        if (task % size) != rank: continue
+    data_path = 'data'
 
-        parameters = getInfo(task)
-        print(parameters)
-        G, geo, contig, min_cutoff, ratio_cutoff, group_cutoff, basisType, homogOption, method = parameters
+    parameters = getInfo(task)
+    print(parameters)
+    G, geo, contig, min_cutoff, ratio_cutoff, group_cutoff, basisType, homogOption, method = parameters
 
-        dgmstructure = computeBounds(G, geo, contig, min_cutoff, ratio_cutoff, group_cutoff)
-        print(dgmstructure)
-        if 'klt' in basisType:
-            makeKLT(basisType, dgmstructure)
-        else:
-            makeDLP(dgmstructure)
+    dgmstructure = computeBounds(G, geo, contig, min_cutoff, ratio_cutoff, group_cutoff)
+    print(dgmstructure)
+    if 'klt' in basisType:
+        makeKLT(basisType, dgmstructure)
+    else:
+        makeDLP(dgmstructure)
 
-        dgmstructure.fname = '{}_{}'.format(basisType, dgmstructure.fname)
+    dgmstructure.fname = '{}_{}'.format(basisType, dgmstructure.fname)
 
-        xs_name = 'XS/{}gXS.anlxs'.format(G)
+    xs_name = 'XS/{}gXS.anlxs'.format(G)
 
-        ass_map = [0, 1]
-        # Get the homogenized cross sections
-        ass1 = runSPH(G, ass_map, xs_name, dgmstructure, method)
-        pickle.dump(ass1, open('refXS_dgm_{}_{}.p'.format(dgmstructure.fname, method), 'wb'))
+    ass_map = [0, 1]
+    # Get the homogenized cross sections
+    ass1 = runSPH(G, ass_map, xs_name, dgmstructure, method, homogOption)
+    pickle.dump(ass1, open('{}/refXS_dgm_{}_{}_h{}.p'.format(data_path, dgmstructure.fname, method, homogOption), 'wb'))
+
+    print('complete')
 

@@ -14,7 +14,7 @@ def buildGEO(ass_map):
     fine_map = [1]
     coarse_map = [1.26]
 
-    material_map = [[1], [2]]
+    material_map = [[1], [2], [3], [4], [5], [6], [7], [8], [9], [10]]
 
     npins = len(ass_map)
 
@@ -61,8 +61,8 @@ if __name__ == '__main__':
     dgmstructure = computeBounds(G, 'full', 1, 0.0, 1.3, 60)
     fname = dgmstructure.fname
     xs_name = 'XS/{}gXS.anlxs'.format(G)
-    pin_map = [0, 1]
-    data_path = 'data'
+    pin_map = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    data_path = 'data2'
 
     # Get the homogenized cross sections
     refXS = pickle.load(open('{}/refXS_sph_space_{}.p'.format(data_path, G), 'rb'))

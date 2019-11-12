@@ -41,8 +41,10 @@ def buildGEO(ass_map, homogenzied=False):
         fine_map = [sum(fine_map)]
         coarse_map = [sum(coarse_map)]
         material_map = [[i + 1] for i in range(npins)]
-        ass_map = range(npins)
-        ass_map = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+        if version in [1, 3]:
+            ass_map = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+        else:
+            ass_map = range(npins)
 
     cm = [0.0]
     fm = []
@@ -73,12 +75,12 @@ def run_reference(G, mmap, xs_name, mapping):
     np.save('{}/ref_sig_f_homo_{}'.format(data_path, G), ref.sig_f_homo)
 
 
-def run_homogenized(G, mmap, xs_name, mapping, useSPH=True):
+def run_homogenized(G, mmap, xs_name, mapping, order, useSPH=True):
     print('running the homogenized problem')
     # Write the homogenized cross sections
-    refXS = pickle.load(open('{}/refXS_sph_{}.p'.format(data_path, G), 'rb'))
+    refXS = pickle.load(open('{}/refXS_sph_{}_o{}.p'.format(data_path, G, order), 'rb'))
 
-    xs_name = '_homo.'.join(xs_name.split('.'))
+    xs_name = '_homo_o{}.'.join(xs_name.split('.')).format(order)
     if useSPH:
         refXS.write_homogenized_XS(xs_name)
         extra = ''
@@ -93,40 +95,12 @@ def run_homogenized(G, mmap, xs_name, mapping, useSPH=True):
     homo = sph.DGMSOLVER(mapping.nCG, xs_name, fm, cm, mm, nPin, vacuum=False)
 
     # Save the flux and cross sections
-    np.save('{}/homo_phi_{}{}'.format(data_path, G, extra), homo.phi)
-    np.save('{}/homo_sig_t_{}{}'.format(data_path, G, extra), homo.sig_t)
-    np.save('{}/homo_sig_f_{}{}'.format(data_path, G, extra), homo.vsig_f)
-    np.save('{}/homo_phi_homo_{}{}'.format(data_path, G, extra), homo.phi_homo)
-    np.save('{}/homo_sig_t_homo_{}{}'.format(data_path, G, extra), homo.sig_t_homo)
-    np.save('{}/homo_sig_f_homo_{}{}'.format(data_path, G, extra), homo.sig_f_homo)
-
-def run_homogenized_full(G, mmap, xs_name, mapping, useSPH=True):
-    print('running the homogenized problem without group collapse')
-    # Write the homogenized cross sections
-    refXS = pickle.load(open('{}/refXS_sph_space_{}.p'.format(data_path, G), 'rb'))
-
-    xs_name = '_homo.'.join(xs_name.split('.'))
-    if useSPH:
-        refXS.write_homogenized_XS(xs_name)
-        extra = ''
-    else:
-        refXS.write_homogenized_XS(xs_name, np.ones(refXS.sig_t.shape))
-        extra = '_nosph'
-
-    # Build the reference geometry
-    nPin, fm, cm, mm = buildGEO(mmap, True)
-
-    # Run the homogenized problem
-    homo = sph.DGMSOLVER(G, xs_name, fm, cm, mm, nPin, vacuum=False)
-
-    # Save the flux and cross sections
-    np.save('{}/homo_full_phi_{}{}'.format(data_path, G, extra), homo.phi)
-    np.save('{}/homo_full_sig_t_{}{}'.format(data_path, G, extra), homo.sig_t)
-    np.save('{}/homo_full_sig_f_{}{}'.format(data_path, G, extra), homo.vsig_f)
-    np.save('{}/homo_full_phi_homo_{}{}'.format(data_path, G, extra), homo.phi_homo)
-    np.save('{}/homo_full_sig_t_homo_{}{}'.format(data_path, G, extra), homo.sig_t_homo)
-    np.save('{}/homo_full_sig_f_homo_{}{}'.format(data_path, G, extra), homo.sig_f_homo)
-
+    np.save('{}/homo_phi_{}{}_o{}'.format(data_path, G, extra, order), homo.phi)
+    np.save('{}/homo_sig_t_{}{}_o{}'.format(data_path, G, extra, order), homo.sig_t)
+    np.save('{}/homo_sig_f_{}{}_o{}'.format(data_path, G, extra, order), homo.vsig_f)
+    np.save('{}/homo_phi_homo_{}{}_o{}'.format(data_path, G, extra, order), homo.phi_homo)
+    np.save('{}/homo_sig_t_homo_{}{}_o{}'.format(data_path, G, extra, order), homo.sig_t_homo)
+    np.save('{}/homo_sig_f_homo_{}{}_o{}'.format(data_path, G, extra, order), homo.sig_f_homo)
 
 def run_dgm_homogenized(G, mmap, xs_name, mapping, order, method, basis, dgmstructure, homogOption):
     print('running the homogenized problem with DGM: order {}'.format(order))
@@ -208,7 +182,8 @@ if __name__ == '__main__':
     task = os.environ['SLURM_ARRAY_TASK_ID']
     task = int(task) - 1
 
-    data_path = 'data3'
+    version = 3
+    data_path = 'data{}'.format('' if version == 1 else str(version))
 
     parameters = getInfo(task)
     print(parameters)
@@ -226,10 +201,8 @@ if __name__ == '__main__':
 
     if flag:
         run_reference(G, mmap, xs_name, mapping)
-        run_homogenized(G, mmap, xs_name, mapping)
-        run_homogenized(G, mmap, xs_name, mapping, False)
-        run_homogenized_full(G, mmap, xs_name, mapping)
-        run_homogenized_full(G, mmap, xs_name, mapping, False)
+    run_homogenized(G, mmap, xs_name, structure(G, dgmstructure, order), order)
+    run_homogenized(G, mmap, xs_name, structure(G, dgmstructure, order), order, False)
     run_dgm_homogenized(G, mmap, xs_name, mapping, order, method, basis, dgmstructure, homogOption)
 
     print('complete')

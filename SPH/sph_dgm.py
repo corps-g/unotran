@@ -143,7 +143,7 @@ class DGMSOLVER():
         pydgm.control.max_recon_iters = 10000
         pydgm.control.max_eigen_iters = 10000
         pydgm.control.max_outer_iters = 1
-        pydgm.control.lamb = 0.01 if self.dgmstructure.G == 44 else 0.2
+        pydgm.control.lamb = 0.3 if self.dgmstructure.G == 44 else 0.2
         pydgm.control.store_psi = True
         pydgm.control.solver_type = 'eigen'.ljust(256)
         pydgm.control.source_value = 0.0

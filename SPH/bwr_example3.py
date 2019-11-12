@@ -10,13 +10,13 @@ import pickle
 
 
 def buildGEO(ass_map, homogenzied=False):
-    fine_map = [3, 22, 3]
-    coarse_map = [0.09, 1.08, 0.09]
+    fine_map = [3, 22, 3] * 5
+    coarse_map = [0.09, 1.08, 0.09] * 5
 
     if G > 40:
-        material_map = [[5, 1, 5], [5, 4, 5]]
+        material_map = [[5, 1, 5] * 5, [5, 4, 5] * 5]
     else:
-        material_map = [[9, 1, 9], [9, 4, 9]]
+        material_map = [[9, 1, 9] * 5, [9, 4, 9] * 5]
 
     npins = len(ass_map)
 
@@ -152,8 +152,8 @@ if __name__ == '__main__':
     np.set_printoptions(precision=6)
 
     G = 44
-    data_path = 'data2'
-    assay_map = [0, 0, 0, 0, 0, 1, 1, 1, 1, 1]
+    data_path = 'data3'
+    assay_map = [0, 1]
 
     dgmstructure = computeBounds(G, 'full', 1, 0.0, 1.3, 60)
     O = dgmstructure.maxOrder
