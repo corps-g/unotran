@@ -63,6 +63,7 @@ module control
       recon_print=1,              & ! Enable/Disable recon iteration printing
       eigen_print=1,              & ! Enable/Disable eigen iteration printing
       outer_print=1,              & ! Enable/Disable outer iteration printing
+      store_phi_order=-1,         & ! Legendre order for storage of the scalar flux moments
       scatter_leg_order=-1,       & ! Legendre order for anisotropic scattering
       delta_leg_order=-1            ! Legendre order for truncated expansion of delta term
   logical :: &
