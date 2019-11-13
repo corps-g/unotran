@@ -108,6 +108,7 @@ class TestDGMSOLVER(unittest.TestCase):
 
         expansion_order = len(basis)
         number_materials = len(sig_t)
+        number_cells = pydgm.control.fine_mesh_x[0]
         number_fine_groups = len(basis[0])
         number_coarse_groups = 1
         scatter_leg_order = 1
@@ -115,6 +116,7 @@ class TestDGMSOLVER(unittest.TestCase):
         expanded_sig_t = np.zeros((expansion_order, number_coarse_groups, number_materials, expansion_order), order='F')
         expanded_nu_sig_f = np.zeros((expansion_order, number_coarse_groups, number_materials), order='F')
         expanded_sig_s = np.zeros((expansion_order, scatter_leg_order, number_coarse_groups, number_coarse_groups, number_materials, expansion_order), order='F')
+        chi_m = np.zeros((number_coarse_groups, number_cells, expansion_order), order='F')
 
         for i in range(expansion_order):
             for m in range(number_materials):
@@ -136,7 +138,12 @@ class TestDGMSOLVER(unittest.TestCase):
                         for l in range(scatter_leg_order):
                             expanded_sig_s[:, l, cgp, cg, m, i] += basis[i, g] * sig_s[m, gp, g] * basis[:, gp]
 
-        pydgm.dgmsolver.initialize_dgmsolver_with_moments(expanded_sig_t, expanded_nu_sig_f, expanded_sig_s, chi)
+        for i in range(expansion_order):
+            for g in range(number_fine_groups):
+                cg = 0
+                chi_m[cg, :, i] += basis[i, g] * chi[g, 0]
+
+        pydgm.dgmsolver.initialize_dgmsolver_with_moments(2, expanded_sig_t, expanded_nu_sig_f, expanded_sig_s, chi_m)
 
         # Set the test flux
         phi_test = np.array([0.7263080826036219, 0.12171194697729938, 1.357489062141697, 0.2388759408761157, 1.8494817499319578, 0.32318764022244134, 2.199278050699694, 0.38550684315075284, 2.3812063412628075, 0.4169543421336097, 2.381206341262808, 0.41695434213360977, 2.1992780506996943, 0.38550684315075295, 1.8494817499319585, 0.3231876402224415, 1.3574890621416973, 0.23887594087611572, 0.7263080826036221, 0.12171194697729937])
