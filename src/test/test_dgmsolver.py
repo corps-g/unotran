@@ -90,6 +90,77 @@ class TestDGMSOLVER(unittest.TestCase):
 
         np.testing.assert_array_almost_equal(pydgm.state.phi[0, :, :], phi_test, 12)
 
+    def test_dgmsolver_intialize_using_mass(self):
+        self.setGroups(2)
+        self.setSolver('eigen')
+        self.setMesh('10')
+        self.setBoundary('vacuum')
+        pydgm.control.material_map = [1]
+
+        sig_t = np.array([[1.0, 2.0], [1.0, 3.0]])
+        vsig_f = np.array([[0.5, 0.5], [0.0, 0.0]])
+        sig_s = np.array([[[0.3, 0.3],
+                           [0.0, 0.3]],
+                          [[0.8, 1.2],
+                           [0.0, 1.2]]])
+        chi = np.array([[1.0, 0.0], [1.0, 0.0]]).T
+        basis = np.loadtxt('test/2gbasis')
+
+        expansion_order = len(basis)
+        number_materials = len(sig_t)
+        number_cells = pydgm.control.fine_mesh_x[0]
+        number_fine_groups = len(basis[0])
+        number_coarse_groups = 1
+        scatter_leg_order = 1
+
+        expanded_sig_t = np.zeros((expansion_order, number_coarse_groups, number_materials, expansion_order), order='F')
+        expanded_nu_sig_f = np.zeros((expansion_order, number_coarse_groups, number_materials), order='F')
+        expanded_sig_s = np.zeros((expansion_order, scatter_leg_order, number_coarse_groups, number_coarse_groups, number_materials, expansion_order), order='F')
+        chi_m = np.zeros((number_coarse_groups, number_cells, expansion_order), order='F')
+
+        for i in range(expansion_order):
+            for m in range(number_materials):
+                for g in range(number_fine_groups):
+                    cg = 0
+                    expanded_sig_t[:, cg, m, i] += basis[i, g] * sig_t[m, g] * basis[:, g]
+
+        for m in range(number_materials):
+            for g in range(number_fine_groups):
+                cg = 0
+                expanded_nu_sig_f[:, cg, m] += vsig_f[m, g] * basis[:, g]
+
+        for i in range(expansion_order):
+            for m in range(number_materials):
+                for g in range(number_fine_groups):
+                    cg = 0
+                    for gp in range(number_fine_groups):
+                        cgp = 0
+                        for l in range(scatter_leg_order):
+                            expanded_sig_s[:, l, cgp, cg, m, i] += basis[i, g] * sig_s[m, gp, g] * basis[:, gp]
+
+        for i in range(expansion_order):
+            for g in range(number_fine_groups):
+                cg = 0
+                chi_m[cg, :, i] += basis[i, g] * chi[g, 0]
+
+        pydgm.dgmsolver.initialize_dgmsolver_with_moments(2, expanded_sig_t, expanded_nu_sig_f, expanded_sig_s, chi_m)
+
+        # Set the test flux
+        phi_test = np.array([0.7263080826036219, 0.12171194697729938, 1.357489062141697, 0.2388759408761157, 1.8494817499319578, 0.32318764022244134, 2.199278050699694, 0.38550684315075284, 2.3812063412628075, 0.4169543421336097, 2.381206341262808, 0.41695434213360977, 2.1992780506996943, 0.38550684315075295, 1.8494817499319585, 0.3231876402224415, 1.3574890621416973, 0.23887594087611572, 0.7263080826036221, 0.12171194697729937])
+
+        # Solve the problem
+        pydgm.dgmsolver.dgmsolve()
+
+        # Test the eigenvalue
+        assert_almost_equal(pydgm.state.keff, 0.8099523232983424, 12)
+
+        # Test the scalar flux
+        phi = pydgm.state.phi[0, :, :].flatten('F')
+        np.testing.assert_array_almost_equal(phi / phi[0] * phi_test[0], phi_test, 12)
+
+        # Test the angular flux
+        self.angular_test()
+
     def test_dgmsolver_solve_orders_fission(self):
         '''
         Test order 0 returns the same value when given the converged input for fixed problem
@@ -220,7 +291,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.allow_fission = False
         nA = 2
 
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         ########################################################################
         order = 0
@@ -664,9 +737,11 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setBoundary('reflect')
         pydgm.control.material_map = [1, 1, 1]
         pydgm.control.angle_order = 10
-        pydgm.control.lamb = 0.45
+        pydgm.control.lamb = 0.4
 
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
@@ -696,6 +771,8 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.lamb = 0.9
         pydgm.control.allow_fission = True
         phi_test = np.array([1.0781901438738859, 1.5439788126739036, 1.0686290157458673, 1.0348940034466163, 1.0409956199943164, 1.670442207080332, 0.2204360523334687])
+        # pydgm.control.recon_print = 1
+        # pydgm.control.eigen_print = 1
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -729,7 +806,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.lamb = 0.45
 
         # Initialize the dependancies
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
@@ -852,7 +931,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
 
         # Initialize the dependancies
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
@@ -893,7 +974,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.material_map = [1]
 
         # Initialize the dependancies
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
@@ -933,7 +1016,9 @@ class TestDGMSOLVER(unittest.TestCase):
         pydgm.control.lamb = 0.46
 
         # Initialize the dependancies
-        pydgm.dgmsolver.initialize_dgmsolver()
+        pydgm.state.initialize_state()
+        pydgm.state.mg_mmap = pydgm.control.homogenization_map
+        pydgm.dgmsolver.compute_source_moments()
 
         # Compute the test flux
         T = np.diag(pydgm.material.sig_t[:, 0])
@@ -1201,7 +1286,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setMesh('coarse_pin')
         self.setBoundary('reflect')
         pydgm.control.material_map = [5, 1, 5]
-        pydgm.control.lamb = 0.25
+        pydgm.control.lamb = 0.27
 
         # Initialize the dependancies
         pydgm.dgmsolver.initialize_dgmsolver()
@@ -1284,7 +1369,7 @@ class TestDGMSOLVER(unittest.TestCase):
         self.setSolver('eigen')
         self.setBoundary('reflect')
         pydgm.control.scatter_leg_order = 3
-        pydgm.control.lamb = 0.95
+        pydgm.control.lamb = 0.85
 
         # Partisn output flux
         phi_test = [[[3.4348263649218573, 3.433888018868773, 3.4319780924466303, 3.42902287259914, 3.424889537793379, 3.419345135226939, 3.411967983491092, 3.401955097583459, 3.3876978314964576, 3.3658226138962055, 3.34060976759337, 3.3219476543135085, 3.311461944978981, 3.3067065381042795], [0.0020423376009602104, 0.0061405490727312745, 0.010279647696426843, 0.014487859380892587, 0.01879501657686898, 0.023233575719681245, 0.027840232201383777, 0.03265902220608759, 0.0377496380894604, 0.04322160597649044, 0.040276170715938614, 0.02871879421071569, 0.0172133108882554, 0.005734947202660587], [-0.014080757853872444, -0.013902043581305812, -0.013529929565041343, -0.012931463587873976, -0.012046199898157889, -0.01076583796993369, -0.008890167424784212, -0.006031191544566744, -0.0014017648096517898, 0.006661714787003198, 0.016668552081138488, 0.024174518049647653, 0.028202353769555294, 0.029973018707551896], [-0.0005793248806626183, -0.001756926314379438, -0.002992384144214974, -0.004327832838676431, -0.0058116663533987895, -0.007503402096014022, -0.009482521534408456, -0.011866075285174027, -0.014846832287363936, -0.018786937451990907, -0.018006190583241585, -0.0122930135244824, -0.007176905800153899, -0.0023616380722009875]], [[1.0468914012024944, 1.0481968358689602, 1.0508312357939356, 1.0548444570440296, 1.0603189615576314, 1.0673816455493632, 1.076228676326199, 1.0872017225096173, 1.1011537915124854, 1.1216747771114552, 1.1506436314870738, 1.1750453435123285, 1.1877668049794452, 1.1939304950579657], [-0.0018035802543606028, -0.005420473986754876, -0.009066766225751461, -0.01276274710378097, -0.016529853018089805, -0.020391389910122064, -0.02437367793449243, -0.02850824856871196, -0.032837766571938154, -0.03744058644378857, -0.03479493818294627, -0.02478421594673745, -0.014845697536314062, -0.004944617763983217], [0.009044528296445413, 0.0089941262937423, 0.00888482790544369, 0.008698315780443527, 0.008403457458358271, 0.00795064328003027, 0.0072597762570490235, 0.006182844624800746, 0.004322369521129958, -7.745469082057199e-05, -0.007283839517581971, -0.01236885988414086, -0.013996362056737995, -0.014714527559469726], [0.00015593171761653195, 0.00048010038877656716, 0.000842299907640745, 0.0012717736906895632, 0.0018042482177840942, 0.002486031735562782, 0.003380433007147932, 0.004580592143898934, 0.006250135781847204, 0.008825755375993198, 0.00828387207848599, 0.004886452046255631, 0.0026569024049473873, 0.0008431177342006317]]]

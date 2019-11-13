@@ -68,6 +68,7 @@ module control
       delta_leg_order=-1            ! Legendre order for truncated expansion of delta term
   logical :: &
       allow_fission=.false.,      & ! Enable/Disable fission in the problem
+      allow_scatter=.true.,       & ! Enable/Disable scattering in the problem
       use_dgm=.false.,            & ! Enable/Disable DGM solver
       store_psi=.false.,          & ! Enable/Disable storing the angular flux
       ignore_warnings=.true.,     & ! Enable/Disable warning messages
@@ -355,6 +356,7 @@ module control
     ! Check that the energy_group_map is provided correctly
     if (allocated(energy_group_map)) then
       if (size(energy_group_map) /= number_fine_groups) then
+        print *, size(energy_group_map), number_fine_groups
         print *, 'INPUT ERROR : energy group map must have a coarse group for all fine groups'
         stop
       end if

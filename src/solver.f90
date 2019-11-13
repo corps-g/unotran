@@ -19,13 +19,14 @@ module solver
     use state, only : initialize_state, mg_nu_sig_f, mg_chi, mg_sig_s, mg_sig_t, &
                       mg_phi, phi, mg_psi, psi, mg_mMap, &
                       update_fission_density
-    use material, only : nu_sig_f, chi, sig_s, sig_t
+    use material, only : nu_sig_f, chi, sig_s, sig_t, finalize_material
     use mesh, only : mMap
     use control, only : store_psi, number_regions,scatter_leg_order
 
     ! Variable definitions
     integer :: &
-        r     ! Region index
+        r          ! Region index
+
 
     ! allocate the solutions variables
     call initialize_state()
@@ -38,6 +39,10 @@ module solver
       mg_sig_s(:,:,:,r) = sig_s(:scatter_leg_order,:,:,r)
       mg_sig_t(:,r) = sig_t(:,r)
     end do  ! End r loop
+
+    ! Delete the fine-group cross sections
+    call finalize_material()
+
     mg_phi(:, :, :) = phi(:, :, :)
     if (store_psi) then
       mg_psi(:, :, :) = psi(:, :, :)

@@ -98,8 +98,8 @@ class TestSOLVER(unittest.TestCase):
         assert(pydgm.control.number_groups == 1)
 
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:, 0])
-        S = pydgm.material.sig_s[0, :, :, 0].T
+        T = np.diag(pydgm.state.mg_sig_t[:, 0])
+        S = pydgm.state.mg_sig_s[0, :, :, 0].T
         phi_test = np.linalg.solve((T - S), np.ones(1))
         phi_test = np.array([phi_test for i in range(28)]).flatten()
 
@@ -130,8 +130,8 @@ class TestSOLVER(unittest.TestCase):
         assert(pydgm.control.number_groups == 2)
 
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:, 0])
-        S = pydgm.material.sig_s[0, :, :, 0].T
+        T = np.diag(pydgm.state.mg_sig_t[:, 0])
+        S = pydgm.state.mg_sig_s[0, :, :, 0].T
         phi_test = np.linalg.solve((T - S), np.ones(2))
         phi_test = np.array([phi_test for i in range(28)]).flatten()
 
@@ -161,8 +161,8 @@ class TestSOLVER(unittest.TestCase):
         assert(pydgm.control.number_groups == 7)
 
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:, 0])
-        S = pydgm.material.sig_s[0, :, :, 0].T
+        T = np.diag(pydgm.state.mg_sig_t[:, 0])
+        S = pydgm.state.mg_sig_s[0, :, :, 0].T
         phi_test = np.linalg.solve((T - S), np.ones(7))
         phi_test = np.array([phi_test for i in range(28)]).flatten()
 
@@ -257,8 +257,8 @@ class TestSOLVER(unittest.TestCase):
         assert(pydgm.control.number_groups == 7)
 
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:, 0])
-        S = pydgm.material.sig_s[0, :, :, 0].T
+        T = np.diag(pydgm.state.mg_sig_t[:, 0])
+        S = pydgm.state.mg_sig_s[0, :, :, 0].T
         phi_test = np.linalg.solve((T - S), np.ones(7))
         phi_test = np.array([phi_test for i in range(10)]).flatten()
 
@@ -391,9 +391,9 @@ class TestSOLVER(unittest.TestCase):
         assert(pydgm.control.number_groups == 1)
 
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:, 0])
-        S = pydgm.material.sig_s[0, :, :, 0].T
-        X = np.outer(pydgm.material.chi[:, 0], pydgm.material.nu_sig_f[:, 0])
+        T = np.diag(pydgm.state.mg_sig_t[:, 0])
+        S = pydgm.state.mg_sig_s[0, :, :, 0].T
+        X = np.outer(pydgm.state.mg_chi[:, 0], pydgm.state.mg_nu_sig_f[:, 0])
 
         keff, phi = np.linalg.eig(np.linalg.inv(T - S).dot(X))
         i = np.argmax(keff)
@@ -437,9 +437,9 @@ class TestSOLVER(unittest.TestCase):
         assert(pydgm.control.number_groups == 2)
 
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:, 0])
-        S = pydgm.material.sig_s[0, :, :, 0].T
-        X = np.outer(pydgm.material.chi[:, 0], pydgm.material.nu_sig_f[:, 0])
+        T = np.diag(pydgm.state.mg_sig_t[:, 0])
+        S = pydgm.state.mg_sig_s[0, :, :, 0].T
+        X = np.outer(pydgm.state.mg_chi[:, 0], pydgm.state.mg_nu_sig_f[:, 0])
 
         keff, phi = np.linalg.eig(np.linalg.inv(T - S).dot(X))
         i = np.argmax(keff)
@@ -482,9 +482,9 @@ class TestSOLVER(unittest.TestCase):
         assert(pydgm.control.number_groups == 7)
 
         # Compute the test flux
-        T = np.diag(pydgm.material.sig_t[:, 0])
-        S = pydgm.material.sig_s[0, :, :, 0].T
-        X = np.outer(pydgm.material.chi[:, 0], pydgm.material.nu_sig_f[:, 0])
+        T = np.diag(pydgm.state.mg_sig_t[:, 0])
+        S = pydgm.state.mg_sig_s[0, :, :, 0].T
+        X = np.outer(pydgm.state.mg_chi[:, 0], pydgm.state.mg_nu_sig_f[:, 0])
 
         keff, phi = np.linalg.eig(np.linalg.inv(T - S).dot(X))
 
